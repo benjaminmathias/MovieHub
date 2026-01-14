@@ -7,5 +7,4 @@ data class Movie (
     val posterPath: String,
     val voteAverage: Double,
     val releaseDate: String
-
 )

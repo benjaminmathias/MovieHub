@@ -19,6 +19,7 @@ class MainActivity : ComponentActivity() {
             MovieHubTheme {
                 val viewModel : MovieListViewModel = hiltViewModel()
                 MovieListScreen(viewModel = viewModel)
+
             }
         }
     }

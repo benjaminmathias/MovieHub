@@ -11,8 +11,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.benjamin.moviehub.domain.model.MovieListUiState
@@ -22,7 +20,6 @@ import com.benjamin.moviehub.presentation.components.MovieItem
 @Composable
 fun MovieListScreen(viewModel: MovieListViewModel) {
 
-    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -31,12 +28,13 @@ fun MovieListScreen(viewModel: MovieListViewModel) {
                 { Text("MovieHub Popular") }
             )
         }
-    ) {
-        paddingValues ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)) {
-            when (val state = uiState) {
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            when (val state = viewModel.uiState) {
                 is MovieListUiState.Loading -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
