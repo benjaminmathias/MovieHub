@@ -2,21 +2,20 @@ package com.benjamin.moviehub.domain.data
 
 import com.google.gson.annotations.SerializedName
 
-data class MovieResponse (
-    @SerializedName("results")
-    val movies: List<MovieDto>
+data class MovieResponse(
+    @SerializedName("results") val movies: List<MovieDto>
 )
 
 data class MovieDto(
-    val id: Int,
-    val title: String,
+    @SerializedName("id") val id: Int,
 
-    @SerializedName("overview")
-    val description: String,
+    @SerializedName("title") val title: String,
 
-    @SerializedName("poster_path")
-    val posterPath : String?,
+    @SerializedName("overview") val description: String,
 
-    @SerializedName("vote_average")
-    val rating: Double,
+    @SerializedName("poster_path") val posterPath: String?,
+
+    @SerializedName("backdrop_path") val backdropPath: String?,
+
+    @SerializedName("vote_average") val voteAverage: Double,
 )

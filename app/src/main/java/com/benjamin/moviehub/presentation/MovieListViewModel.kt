@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.presentation
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -32,7 +33,8 @@ class MovieListViewModel @Inject constructor(
                 val movies = repository.getPopularMovies()
                 uiState = MovieListUiState.Success(movies)
             } catch (e: Exception) {
-                uiState = MovieListUiState.Error("Erreur réseau")
+                Log.e("MovieListViewModel", "Erreur de chargement", e)
+                uiState = MovieListUiState.Error("Impossible de récupérer les films. Vérifiez votre connexion")
             }
         }
     }

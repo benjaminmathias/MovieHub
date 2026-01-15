@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.presentation.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,11 +21,13 @@ import coil.compose.AsyncImage
 import com.benjamin.moviehub.domain.model.Movie
 
 @Composable
-fun MovieItem(movie: Movie) {
+fun MovieItem(movie: Movie,
+              onMovieClick: (Int) -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable {onMovieClick(movie.id)},
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(12.dp)
     ) {

@@ -13,13 +13,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.benjamin.moviehub.domain.model.MovieListUiState
 import com.benjamin.moviehub.presentation.components.MovieItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MovieListScreen(viewModel: MovieListViewModel) {
-
+fun MovieListScreen(
+    onMovieClick: (Int) -> Unit,
+    viewModel: MovieListViewModel = hiltViewModel()
+) {
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -47,7 +50,10 @@ fun MovieListScreen(viewModel: MovieListViewModel) {
                 is MovieListUiState.Success -> {
                     LazyColumn {
                         items(state.movies) {
-                            MovieItem(movie = it)
+                            MovieItem(
+                                movie = it,
+                                onMovieClick = onMovieClick
+                            )
                         }
                     }
                 }

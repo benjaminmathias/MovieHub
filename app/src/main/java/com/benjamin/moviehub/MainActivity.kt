@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.benjamin.moviehub.presentation.MovieListScreen
 import com.benjamin.moviehub.presentation.MovieListViewModel
+import com.benjamin.moviehub.ui.navigation.MovieNavGraph
 import com.benjamin.moviehub.ui.theme.MovieHubTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -17,9 +18,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MovieHubTheme {
-                val viewModel : MovieListViewModel = hiltViewModel()
-                MovieListScreen(viewModel = viewModel)
-
+                MovieNavGraph()
             }
         }
     }
