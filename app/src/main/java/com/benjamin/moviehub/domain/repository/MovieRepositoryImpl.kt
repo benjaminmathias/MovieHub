@@ -3,26 +3,17 @@ package com.benjamin.moviehub.domain.repository
 import android.util.Log
 import com.benjamin.moviehub.BuildConfig
 import com.benjamin.moviehub.domain.data.remote.MovieApiService
+import com.benjamin.moviehub.domain.data.toDomain
 import com.benjamin.moviehub.domain.model.Movie
 import javax.inject.Inject
 
 class MovieRepositoryImpl @Inject constructor(
     private val apiService: MovieApiService
 ) : MovieRepository {
-    override suspend fun getPopularMovies(): List<Movie> {
 
+    override suspend fun getPopularMovies(): List<Movie> {
         val response = apiService.getPopularMovies(apiKey = BuildConfig.TMDB_API_KEY)
-        return response.movies.map { dto ->
-            Movie(
-                id = dto.id,
-                title = dto.title,
-                overview = dto.description,
-                posterPath = "https://image.tmdb.org/t/p/w500${dto.posterPath}",
-                backdropPath = "https://image.tmdb.org/t/p/w780${dto.backdropPath}",
-                voteAverage = dto.voteAverage,
-                releaseDate = ""
-            )
-        }
+        return response.movies.map { it.toDomain() }
     }
 
     override suspend fun getMovieDetails(movieId: Int): Movie {
@@ -30,17 +21,14 @@ class MovieRepositoryImpl @Inject constructor(
             movieId = movieId,
             apiKey = BuildConfig.TMDB_API_KEY,
         )
+        return dto.toDomain()
+    }
 
-        Log.d("Movie :", dto.voteAverage.toString())
-
-        return Movie(
-            id = dto.id,
-            title = dto.title,
-            overview = dto.description,
-            posterPath = "https://image.tmdb.org/t/p/w500${dto.posterPath}",
-            backdropPath = "https://image.tmdb.org/t/p/w780${dto.backdropPath}",
-            voteAverage = dto.voteAverage,
-            releaseDate = ""
+    override suspend fun getSearchedMovies(query: String): List<Movie> {
+        val query = apiService.searchMovies(
+            apiKey = BuildConfig.TMDB_API_KEY,
+            query = query
         )
+        return query.movies.map { it.toDomain() }
     }
 }
