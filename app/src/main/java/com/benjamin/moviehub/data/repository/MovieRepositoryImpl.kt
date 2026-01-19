@@ -1,10 +1,10 @@
-package com.benjamin.moviehub.domain.repository
+package com.benjamin.moviehub.data.repository
 
-import android.util.Log
 import com.benjamin.moviehub.BuildConfig
-import com.benjamin.moviehub.domain.data.remote.MovieApiService
-import com.benjamin.moviehub.domain.data.toDomain
+import com.benjamin.moviehub.data.remote.MovieApiService
+import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.domain.model.Movie
+import com.benjamin.moviehub.domain.repository.MovieRepository
 import javax.inject.Inject
 
 class MovieRepositoryImpl @Inject constructor(

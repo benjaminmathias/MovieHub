@@ -1,4 +1,4 @@
-package com.benjamin.moviehub.ui
+package com.benjamin.moviehub.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,17 +19,20 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun EmptyStateView() {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.Companion.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.Companion.CenterHorizontally
     ) {
         Icon(
             Icons.Default.SearchOff,
             contentDescription = null,
-            modifier = Modifier.size(80.dp),
+            modifier = Modifier.Companion.size(80.dp),
             tint = MaterialTheme.colorScheme.outline
         )
-        Spacer(Modifier.height(16.dp))
-        Text("Aucun film ne correspond à votre recherche", style = MaterialTheme.typography.bodyLarge)
+        Spacer(Modifier.Companion.height(16.dp))
+        Text(
+            "Aucun film ne correspond à votre recherche",
+            style = MaterialTheme.typography.bodyLarge
+        )
     }
 }

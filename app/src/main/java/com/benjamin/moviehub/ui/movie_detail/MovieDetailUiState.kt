@@ -1,4 +1,6 @@
-package com.benjamin.moviehub.domain.model
+package com.benjamin.moviehub.ui.movie_detail
+
+import com.benjamin.moviehub.domain.model.Movie
 
 sealed class MovieDetailUiState {
     object Loading : MovieDetailUiState()

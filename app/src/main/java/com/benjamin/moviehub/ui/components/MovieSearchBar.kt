@@ -1,4 +1,4 @@
-package com.benjamin.moviehub.ui
+package com.benjamin.moviehub.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 fun MovieSearchBar(
     query: String,
     onQueryChanged: (String) -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier.Companion,
 ) {
 
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -51,7 +51,7 @@ fun MovieSearchBar(
             unfocusedContainerColor = MaterialTheme.colorScheme.surface
         ),
         keyboardOptions = KeyboardOptions(
-            imeAction = ImeAction.Search
+            imeAction = ImeAction.Companion.Search
         ),
         keyboardActions = KeyboardActions(
             onSearch = {

@@ -1,4 +1,4 @@
-package com.benjamin.moviehub.domain.data
+package com.benjamin.moviehub.data.remote
 
 import com.google.gson.annotations.SerializedName
 

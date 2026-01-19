@@ -1,9 +1,9 @@
-package com.benjamin.moviehub.presentation
+package com.benjamin.moviehub.ui.movie_detail
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.benjamin.moviehub.domain.model.MovieDetailUiState
+import com.benjamin.moviehub.ui.movie_detail.MovieDetailUiState
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch

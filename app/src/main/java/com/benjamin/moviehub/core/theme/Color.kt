@@ -1,4 +1,4 @@
-package com.benjamin.moviehub.ui.theme
+package com.benjamin.moviehub.core.theme
 
 import androidx.compose.ui.graphics.Color
 

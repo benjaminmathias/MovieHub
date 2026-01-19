@@ -1,9 +1,8 @@
-package com.benjamin.moviehub.presentation.components
+package com.benjamin.moviehub.ui.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -24,10 +23,10 @@ import com.benjamin.moviehub.domain.model.Movie
 fun MovieItem(movie: Movie,
               onMovieClick: (Int) -> Unit) {
     Card(
-        modifier = Modifier
+        modifier = Modifier.Companion
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clickable {onMovieClick(movie.id)},
+            .clickable { onMovieClick(movie.id) },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
@@ -35,20 +34,20 @@ fun MovieItem(movie: Movie,
             AsyncImage(
                 model = "https://image.tmdb.org/t/p/w500${movie.posterPath}",
                 contentDescription = "Poster of ${movie.title}",
-                modifier = Modifier
+                modifier = Modifier.Companion
                     .fillMaxWidth()
                     .height(200.dp),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Companion.Crop
             )
         }
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.Companion.padding(16.dp)) {
             Text(
                 text = movie.title,
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.primary
             )
             Spacer(
-                modifier = Modifier.height(8.dp)
+                modifier = Modifier.Companion.height(8.dp)
             )
             Text(
                 text = "${movie.voteAverage}/10",
@@ -58,7 +57,7 @@ fun MovieItem(movie: Movie,
             Text(
                 text = movie.overview,
                 maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
+                overflow = TextOverflow.Companion.Ellipsis,
                 style = MaterialTheme.typography.bodyMedium
             )
         }

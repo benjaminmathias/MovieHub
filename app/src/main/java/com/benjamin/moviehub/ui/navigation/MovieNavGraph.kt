@@ -7,10 +7,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.benjamin.moviehub.presentation.MovieDetailScreen
-import com.benjamin.moviehub.presentation.MovieDetailViewModel
-import com.benjamin.moviehub.presentation.MovieListScreen
-import com.benjamin.moviehub.presentation.MovieListViewModel
+import com.benjamin.moviehub.ui.movie_detail.MovieDetailScreen
+import com.benjamin.moviehub.ui.movie_detail.MovieDetailViewModel
+import com.benjamin.moviehub.ui.movie_list.MovieListRoute
 
 @Composable
 fun MovieNavGraph() {
@@ -22,9 +21,9 @@ fun MovieNavGraph() {
     ) {
         // Destination 1 : La Liste
         composable(route = Screen.MovieList.route) {
-            val viewModel: MovieListViewModel = hiltViewModel()
-            MovieListScreen(
-                viewModel = viewModel,
+            //val viewModel: MovieListViewModel = hiltViewModel()
+            MovieListRoute(
+                //viewModel = viewModel,
                 onMovieClick = { movieId ->
                     navController.navigate(Screen.MovieDetail.createRoute(movieId))
                 }

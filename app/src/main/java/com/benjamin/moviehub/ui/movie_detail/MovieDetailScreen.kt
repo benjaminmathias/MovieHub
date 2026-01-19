@@ -1,11 +1,10 @@
-package com.benjamin.moviehub.presentation
+package com.benjamin.moviehub.ui.movie_detail
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -19,9 +18,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.benjamin.moviehub.domain.model.Movie
-import com.benjamin.moviehub.domain.model.MovieDetailUiState
-import com.benjamin.moviehub.presentation.components.MovieDetailContent
+import com.benjamin.moviehub.ui.movie_detail.MovieDetailUiState
+import com.benjamin.moviehub.ui.movie_detail.MovieDetailContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

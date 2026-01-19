@@ -1,8 +1,7 @@
-package com.benjamin.moviehub.domain.data.remote
+package com.benjamin.moviehub.data.remote
 
-import com.benjamin.moviehub.domain.data.MovieDto
-import com.benjamin.moviehub.domain.data.MovieResponse
-import com.benjamin.moviehub.domain.model.Movie
+import com.benjamin.moviehub.data.remote.MovieDto
+import com.benjamin.moviehub.data.remote.MovieResponse
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query

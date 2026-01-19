@@ -1,7 +1,7 @@
 package com.benjamin.moviehub.di
 
 import com.benjamin.moviehub.domain.repository.MovieRepository
-import com.benjamin.moviehub.domain.repository.MovieRepositoryImpl
+import com.benjamin.moviehub.data.repository.MovieRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

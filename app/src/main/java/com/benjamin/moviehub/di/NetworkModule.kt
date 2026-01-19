@@ -1,6 +1,6 @@
 package com.benjamin.moviehub.di
 
-import com.benjamin.moviehub.domain.data.remote.MovieApiService
+import com.benjamin.moviehub.data.remote.MovieApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

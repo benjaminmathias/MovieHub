@@ -1,5 +1,6 @@
-package com.benjamin.moviehub.domain.data
+package com.benjamin.moviehub.data.mapper
 
+import com.benjamin.moviehub.data.remote.MovieDto
 import com.benjamin.moviehub.domain.model.Movie
 
 fun MovieDto.toDomain() : Movie {

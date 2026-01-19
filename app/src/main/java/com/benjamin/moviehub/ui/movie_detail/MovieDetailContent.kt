@@ -1,4 +1,4 @@
-package com.benjamin.moviehub.presentation.components
+package com.benjamin.moviehub.ui.movie_detail
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -28,7 +27,7 @@ import com.benjamin.moviehub.domain.model.Movie
 @Composable
 fun MovieDetailContent(movie: Movie) {
     Column(
-        modifier = Modifier
+        modifier = Modifier.Companion
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
@@ -37,48 +36,48 @@ fun MovieDetailContent(movie: Movie) {
             AsyncImage(
                 model = "https://image.tmdb.org/t/p/w780${movie.backdropPath}",
                 contentDescription = null,
-                modifier = Modifier
+                modifier = Modifier.Companion
                     .fillMaxWidth()
                     .height(280.dp),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Companion.Crop
             )
 
             Surface(
-                modifier = Modifier
+                modifier = Modifier.Companion
                     .padding(16.dp)
-                    .align(Alignment.BottomEnd),
+                    .align(Alignment.Companion.BottomEnd),
                 color = MaterialTheme.colorScheme.primaryContainer,
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
                     text = "⭐ ${String.format("%.1f", movie.voteAverage)}",
-                    modifier = Modifier.padding(8.dp),
+                    modifier = Modifier.Companion.padding(8.dp),
                     style = MaterialTheme.typography.labelLarge
                 )
             }
         }
 
 
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(modifier = Modifier.Companion.padding(20.dp)) {
             Text(
                 text = movie.title,
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.ExtraBold
+                fontWeight = FontWeight.Companion.ExtraBold
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.Companion.height(16.dp))
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.Companion.height(16.dp))
 
             Text(
                 text = "Synopsis",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Companion.SemiBold
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.Companion.height(8.dp))
 
             Text(
                 text = movie.overview,
