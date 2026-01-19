@@ -14,26 +14,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.benjamin.moviehub.ui.movie_detail.MovieDetailUiState
-import com.benjamin.moviehub.ui.movie_detail.MovieDetailContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MovieDetailScreen(
-    movieId: Int,
+    uiState: MovieDetailUiState,
     onBackClick: () -> Unit,
-    viewModel: MovieDetailViewModel = hiltViewModel()
 ) {
-
-    LaunchedEffect(movieId) {
-        viewModel.loadMovieDetails(movieId)
-    }
-
-    val state = viewModel.uiState
 
     Scaffold(
         topBar = {
@@ -52,18 +41,18 @@ fun MovieDetailScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            when (state) {
+            when (uiState) {
                 is MovieDetailUiState.Loading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
 
                 is MovieDetailUiState.Success -> {
-                    MovieDetailContent(movie = state.movie)
+                    MovieDetailContent(movie = uiState.movie)
                 }
 
                 is MovieDetailUiState.Error -> {
                     Text(
-                        text = state.message,
+                        text = uiState.message,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.align(Alignment.Center)
                     )

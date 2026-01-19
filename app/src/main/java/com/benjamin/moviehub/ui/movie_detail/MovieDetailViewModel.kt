@@ -1,15 +1,14 @@
 package com.benjamin.moviehub.ui.movie_detail
 
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.benjamin.moviehub.ui.movie_detail.MovieDetailUiState
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 
 
 @HiltViewModel
@@ -17,16 +16,17 @@ class MovieDetailViewModel @Inject constructor(
     private val repository: MovieRepository
 ) : ViewModel() {
 
-    var uiState by mutableStateOf<MovieDetailUiState>(MovieDetailUiState.Loading)
-        private set
+    private val _uiState = MutableStateFlow<MovieDetailUiState>(MovieDetailUiState.Loading)
+    val uiState: StateFlow<MovieDetailUiState> = _uiState.asStateFlow()
+
 
     fun loadMovieDetails(movieId: Int) {
         viewModelScope.launch {
             try {
                 val movie = repository.getMovieDetails(movieId)
-                uiState = MovieDetailUiState.Success(movie)
+                _uiState.value = MovieDetailUiState.Success(movie)
             } catch (e: Exception) {
-                uiState = MovieDetailUiState.Error("Erreur de chargement")
+                _uiState.value = MovieDetailUiState.Error("Erreur de chargement")
             }
         }
     }

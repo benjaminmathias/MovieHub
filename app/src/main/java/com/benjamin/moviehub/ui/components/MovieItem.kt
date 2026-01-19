@@ -23,7 +23,7 @@ import com.benjamin.moviehub.domain.model.Movie
 fun MovieItem(movie: Movie,
               onMovieClick: (Int) -> Unit) {
     Card(
-        modifier = Modifier.Companion
+        modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .clickable { onMovieClick(movie.id) },
@@ -34,20 +34,20 @@ fun MovieItem(movie: Movie,
             AsyncImage(
                 model = "https://image.tmdb.org/t/p/w500${movie.posterPath}",
                 contentDescription = "Poster of ${movie.title}",
-                modifier = Modifier.Companion
+                modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp),
-                contentScale = ContentScale.Companion.Crop
+                contentScale = ContentScale.Crop
             )
         }
-        Column(modifier = Modifier.Companion.padding(16.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = movie.title,
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.primary
             )
             Spacer(
-                modifier = Modifier.Companion.height(8.dp)
+                modifier = Modifier.height(8.dp)
             )
             Text(
                 text = "${movie.voteAverage}/10",
@@ -57,7 +57,7 @@ fun MovieItem(movie: Movie,
             Text(
                 text = movie.overview,
                 maxLines = 3,
-                overflow = TextOverflow.Companion.Ellipsis,
+                overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.bodyMedium
             )
         }

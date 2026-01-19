@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.jetbrains.kotlin.serialization)
 }
 
 android {
@@ -95,5 +96,19 @@ dependencies {
     implementation(libs.retrofit.gson)
 
     implementation(libs.androidx.navigation.compose)
+
+    // La base (contient Icons.Default)
+    implementation("androidx.compose.material:material-icons-core")
+
+    // L'extension (contient Icons.AutoMirrored et les icônes supplémentaires)
     implementation("androidx.compose.material:material-icons-extended")
+
+
+    // Nav3
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    implementation(libs.androidx.material3.adaptive.navigation3)
+    implementation(libs.kotlinx.serialization.core)
+
 }

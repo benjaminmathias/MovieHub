@@ -30,17 +30,11 @@ import com.benjamin.moviehub.ui.components.MovieSearchBar
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MovieListScreen(
-    // onMovieClick: (Int) -> Unit,
-    // viewModel: MovieListViewModel = hiltViewModel()
     uiState: MovieListUiState,
     searchQuery: String,
     onSearchChanged: (String) -> Unit,
     onMovieClick: (Int) -> Unit
 ) {
-
-    //val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    //val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
-
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -57,7 +51,7 @@ fun MovieListScreen(
 
             MovieSearchBar(
                 query = searchQuery,
-                onQueryChanged = { //viewModel.onSearchQueryChanged(it)
+                onQueryChanged = {
                     onSearchChanged(it)
                 }
             )
@@ -106,21 +100,5 @@ fun MovieListScreen(
             }
         }
     }
-}
-
-@Composable
-fun MovieListRoute(
-    onMovieClick: (Int) -> Unit,
-    viewModel: MovieListViewModel = hiltViewModel()
-) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
-
-    MovieListScreen(
-        uiState = uiState,
-        searchQuery = searchQuery,
-        onSearchChanged = viewModel::onSearchQueryChanged,
-        onMovieClick = onMovieClick
-    )
 }
 

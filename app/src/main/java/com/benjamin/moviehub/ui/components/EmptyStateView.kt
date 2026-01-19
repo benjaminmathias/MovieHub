@@ -19,17 +19,17 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun EmptyStateView() {
     Column(
-        modifier = Modifier.Companion.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.Companion.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
             Icons.Default.SearchOff,
             contentDescription = null,
-            modifier = Modifier.Companion.size(80.dp),
+            modifier = Modifier.size(80.dp),
             tint = MaterialTheme.colorScheme.outline
         )
-        Spacer(Modifier.Companion.height(16.dp))
+        Spacer(Modifier.height(16.dp))
         Text(
             "Aucun film ne correspond à votre recherche",
             style = MaterialTheme.typography.bodyLarge

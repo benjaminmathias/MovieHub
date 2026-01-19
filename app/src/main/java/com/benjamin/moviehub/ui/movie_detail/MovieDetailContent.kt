@@ -27,7 +27,7 @@ import com.benjamin.moviehub.domain.model.Movie
 @Composable
 fun MovieDetailContent(movie: Movie) {
     Column(
-        modifier = Modifier.Companion
+        modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
@@ -36,14 +36,14 @@ fun MovieDetailContent(movie: Movie) {
             AsyncImage(
                 model = "https://image.tmdb.org/t/p/w780${movie.backdropPath}",
                 contentDescription = null,
-                modifier = Modifier.Companion
+                modifier = Modifier
                     .fillMaxWidth()
                     .height(280.dp),
                 contentScale = ContentScale.Companion.Crop
             )
 
             Surface(
-                modifier = Modifier.Companion
+                modifier = Modifier
                     .padding(16.dp)
                     .align(Alignment.Companion.BottomEnd),
                 color = MaterialTheme.colorScheme.primaryContainer,
@@ -51,33 +51,33 @@ fun MovieDetailContent(movie: Movie) {
             ) {
                 Text(
                     text = "⭐ ${String.format("%.1f", movie.voteAverage)}",
-                    modifier = Modifier.Companion.padding(8.dp),
+                    modifier = Modifier.padding(8.dp),
                     style = MaterialTheme.typography.labelLarge
                 )
             }
         }
 
 
-        Column(modifier = Modifier.Companion.padding(20.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Text(
                 text = movie.title,
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Companion.ExtraBold
+                fontWeight = FontWeight.ExtraBold
             )
 
-            Spacer(modifier = Modifier.Companion.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            Spacer(modifier = Modifier.Companion.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = "Synopsis",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Companion.SemiBold
+                fontWeight = FontWeight.SemiBold
             )
 
-            Spacer(modifier = Modifier.Companion.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = movie.overview,
