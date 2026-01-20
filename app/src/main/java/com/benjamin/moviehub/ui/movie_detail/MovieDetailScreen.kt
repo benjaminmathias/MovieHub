@@ -5,9 +5,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -16,12 +20,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import com.benjamin.moviehub.domain.model.Movie
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MovieDetailScreen(
     uiState: MovieDetailUiState,
     onBackClick: () -> Unit,
+    onToggleFavorite: (Movie) -> Unit
 ) {
 
     Scaffold(
@@ -34,6 +41,21 @@ fun MovieDetailScreen(
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            if (uiState is MovieDetailUiState.Success) {
+                val movie = uiState.movie
+                FloatingActionButton(
+                    onClick = { onToggleFavorite(movie) },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    Icon(
+                        imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                        contentDescription = "Ajouter aux favoris",
+                        tint = if (movie.isFavorite) Color.Red else Color.Gray
+                    )
+                }
+            }
         }
     ) { paddingValues ->
         Box(
@@ -60,4 +82,5 @@ fun MovieDetailScreen(
             }
         }
     }
+
 }

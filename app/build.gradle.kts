@@ -97,12 +97,8 @@ dependencies {
 
     implementation(libs.androidx.navigation.compose)
 
-    // La base (contient Icons.Default)
     implementation("androidx.compose.material:material-icons-core")
-
-    // L'extension (contient Icons.AutoMirrored et les icônes supplémentaires)
     implementation("androidx.compose.material:material-icons-extended")
-
 
     // Nav3
     implementation(libs.androidx.navigation3.ui)
@@ -110,5 +106,10 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.androidx.material3.adaptive.navigation3)
     implementation(libs.kotlinx.serialization.core)
+
+    // Room
+    implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
 
 }

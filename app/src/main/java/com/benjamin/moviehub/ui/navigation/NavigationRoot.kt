@@ -54,7 +54,8 @@ fun NavigationRoot(
 
                 MovieDetailScreen(
                     uiState = detailsUiState,
-                    onBackClick = { backStack.removeLastOrNull() }
+                    onBackClick = { backStack.removeLastOrNull() },
+                    onToggleFavorite = { movie -> viewModel.toggleFavorite(movie) }
                 )
             }
         },

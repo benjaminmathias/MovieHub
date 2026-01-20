@@ -2,6 +2,7 @@ package com.benjamin.moviehub.ui.movie_detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +29,15 @@ class MovieDetailViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.value = MovieDetailUiState.Error("Erreur de chargement")
             }
+        }
+    }
+
+    fun toggleFavorite(movie: Movie){
+        viewModelScope.launch {
+            val newStatus = !movie.isFavorite
+            repository.toggleFavorite(movie.id, newStatus)
+
+            loadMovieDetails(movie.id)
         }
     }
 }

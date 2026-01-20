@@ -10,6 +10,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -32,13 +33,19 @@ class MovieListViewModel @Inject constructor(
 
     private fun loadPopularMovies() {
         viewModelScope.launch {
-            try {
+            repository.getPopularMovies()
+                .catch { e ->
+                    Log.e("MovieListViewModel", "Erreur de chargement", e) }
+                .collect { movies ->
+                    _uiState.value = MovieListUiState.Success(movies)
+                }
+           /* try {
                 val movies = repository.getPopularMovies()
                 _uiState.value = MovieListUiState.Success(movies)
             } catch (e: Exception) {
                 Log.e("MovieListViewModel", "Erreur de chargement", e)
                 _uiState.value = MovieListUiState.Error("Impossible de récupérer les films. Vérifiez votre connexion")
-            }
+            }*/
         }
     }
 
