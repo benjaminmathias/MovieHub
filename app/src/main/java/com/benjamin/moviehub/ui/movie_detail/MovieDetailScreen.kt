@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,6 +22,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import com.benjamin.moviehub.core.util.shareMovie
 import com.benjamin.moviehub.domain.model.Movie
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,13 +34,24 @@ fun MovieDetailScreen(
     onToggleFavorite: (Movie) -> Unit
 ) {
 
+    val context = LocalContext.current
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                { Text("MovieHub Details") },
+                { Text("Details") },
                 navigationIcon = {
                     IconButton(onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
+                    }
+                },
+                actions = {
+                    if (uiState is MovieDetailUiState.Success) {
+                        IconButton(onClick = {
+                            shareMovie(context, uiState.movie)
+                        }) {
+                            Icon(Icons.Outlined.Share, contentDescription = "Partager")
+                        }
                     }
                 }
             )
@@ -82,5 +96,4 @@ fun MovieDetailScreen(
             }
         }
     }
-
 }

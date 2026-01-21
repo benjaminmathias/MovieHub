@@ -8,5 +8,6 @@ data class Movie (
     val backdropPath: String?,
     val voteAverage: Double,
     val releaseDate: String,
+    val webUrl: String?,
     val isFavorite: Boolean
 )

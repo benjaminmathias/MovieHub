@@ -40,7 +40,8 @@ fun NavigationRoot(
                     onSearchChanged = viewModel::onSearchQueryChanged,
                     onMovieClick = { id ->
                         backStack.add(Route.Detail(id))
-                    }
+                    },
+                    onRefresh = {viewModel.refreshMovies()}
                 )
             }
 

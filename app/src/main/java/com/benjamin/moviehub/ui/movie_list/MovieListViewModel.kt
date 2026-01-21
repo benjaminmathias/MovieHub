@@ -39,13 +39,6 @@ class MovieListViewModel @Inject constructor(
                 .collect { movies ->
                     _uiState.value = MovieListUiState.Success(movies)
                 }
-           /* try {
-                val movies = repository.getPopularMovies()
-                _uiState.value = MovieListUiState.Success(movies)
-            } catch (e: Exception) {
-                Log.e("MovieListViewModel", "Erreur de chargement", e)
-                _uiState.value = MovieListUiState.Error("Impossible de récupérer les films. Vérifiez votre connexion")
-            }*/
         }
     }
 
@@ -73,5 +66,9 @@ class MovieListViewModel @Inject constructor(
                 _uiState.value = MovieListUiState.Error("Aucun résultat trouvé")
             }
         }
+    }
+
+    fun refreshMovies() {
+        loadPopularMovies()
     }
 }

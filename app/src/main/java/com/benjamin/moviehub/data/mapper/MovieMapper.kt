@@ -28,6 +28,7 @@ fun MovieEntity.toDomain(): Movie {
         backdropPath = "https://image.tmdb.org/t/p/w780$backdropPath",
         voteAverage = voteAverage,
         releaseDate = releaseDate,
+        webUrl = "https://www.themoviedb.org/movie/$id",
         isFavorite = isFavorite
     )
 }
@@ -43,6 +44,7 @@ fun MovieDto.toDomain(): Movie {
         backdropPath = "https://image.tmdb.org/t/p/w780${this.backdropPath}",
         voteAverage = this.voteAverage,
         releaseDate = this.releaseDate ?: "",
+        webUrl = "https://www.themoviedb.org/movie/${this.id}",
         isFavorite = false
     )
 }

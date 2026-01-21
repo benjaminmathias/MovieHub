@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class MovieRepositoryImpl @Inject constructor(
@@ -45,7 +46,6 @@ class MovieRepositoryImpl @Inject constructor(
         if (localMovie != null) {
             return localMovie.toDomain()
         } else {
-
             val dto = apiService.getMovieDetails(
                 movieId = movieId,
                 apiKey = BuildConfig.TMDB_API_KEY,

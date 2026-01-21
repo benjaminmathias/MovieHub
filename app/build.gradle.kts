@@ -100,6 +100,8 @@ dependencies {
     implementation("androidx.compose.material:material-icons-core")
     implementation("androidx.compose.material:material-icons-extended")
 
+    implementation("com.valentinilk.shimmer:compose-shimmer:1.3.3")
+
     // Nav3
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.navigation3.runtime)
