@@ -1,7 +1,5 @@
 package com.benjamin.moviehub.data.remote
 
-import com.benjamin.moviehub.data.remote.MovieDto
-import com.benjamin.moviehub.data.remote.MovieResponse
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -25,8 +23,8 @@ interface MovieApiService {
     @GET("search/movie")
     suspend fun searchMovies(
         @Query("api_key") apiKey: String,
-        @Query("query") query : String,
+        @Query("query") query: String,
         @Query("language") language: String = "fr-FR",
         @Query("page") page: Int = 1
-    ) : MovieResponse
+    ): MovieResponse
 }

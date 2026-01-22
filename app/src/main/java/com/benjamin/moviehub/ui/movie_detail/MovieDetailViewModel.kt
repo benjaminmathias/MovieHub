@@ -32,7 +32,7 @@ class MovieDetailViewModel @Inject constructor(
         }
     }
 
-    fun toggleFavorite(movie: Movie){
+    fun toggleFavorite(movie: Movie) {
         viewModelScope.launch {
             val newStatus = !movie.isFavorite
             repository.toggleFavorite(movie.id, newStatus)

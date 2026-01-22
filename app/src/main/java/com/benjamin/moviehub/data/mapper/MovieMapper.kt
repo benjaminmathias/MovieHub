@@ -4,7 +4,9 @@ import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.remote.MovieDto
 import com.benjamin.moviehub.domain.model.Movie
 
-// API to DB
+/**
+ * Convert a MovieDto (API response) to a MovieEntity(DB entity)
+ */
 fun MovieDto.toEntity(isFavorite: Boolean = false): MovieEntity {
     return MovieEntity(
         id = this.id,
@@ -18,7 +20,9 @@ fun MovieDto.toEntity(isFavorite: Boolean = false): MovieEntity {
     )
 }
 
-// DB to Domain
+/**
+ * Convert a MovieEntity (DB entity) to a Movie (Domain model)
+ */
 fun MovieEntity.toDomain(): Movie {
     return Movie(
         id = id,
@@ -34,7 +38,9 @@ fun MovieEntity.toDomain(): Movie {
 }
 
 
-// API to Domain
+/**
+ * Convert a MovieDto (API response) to a Movie (Domain model)
+ */
 fun MovieDto.toDomain(): Movie {
     return Movie(
         id = this.id,

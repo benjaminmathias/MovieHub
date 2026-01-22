@@ -41,7 +41,7 @@ fun NavigationRoot(
                     onMovieClick = { id ->
                         backStack.add(Route.Detail(id))
                     },
-                    onRefresh = {viewModel.refreshMovies()}
+                    onRefresh = { viewModel.refreshMovies() }
                 )
             }
 

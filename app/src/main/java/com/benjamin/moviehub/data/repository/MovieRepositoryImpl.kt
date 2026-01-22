@@ -3,16 +3,15 @@ package com.benjamin.moviehub.data.repository
 import android.util.Log
 import com.benjamin.moviehub.BuildConfig
 import com.benjamin.moviehub.data.local.MovieDao
-import com.benjamin.moviehub.data.remote.MovieApiService
 import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.mapper.toEntity
+import com.benjamin.moviehub.data.remote.MovieApiService
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class MovieRepositoryImpl @Inject constructor(

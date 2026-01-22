@@ -11,7 +11,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
@@ -20,7 +19,7 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(
         @ApplicationContext context: Context
-    ) : MovieDatabase {
+    ): MovieDatabase {
         return Room.databaseBuilder(
             context,
             MovieDatabase::class.java,
@@ -30,7 +29,7 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideMovieDao(db: MovieDatabase) : MovieDao {
+    fun provideMovieDao(db: MovieDatabase): MovieDao {
         return db.movieDao()
     }
 }

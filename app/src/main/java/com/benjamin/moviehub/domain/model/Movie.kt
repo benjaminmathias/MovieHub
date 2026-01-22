@@ -1,6 +1,6 @@
 package com.benjamin.moviehub.domain.model
 
-data class Movie (
+data class Movie(
     val id: Int,
     val title: String,
     val overview: String,

@@ -20,7 +20,7 @@ class MovieListViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<MovieListUiState>(MovieListUiState.Loading)
-    val uiState : StateFlow<MovieListUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<MovieListUiState> = _uiState.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -35,7 +35,8 @@ class MovieListViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getPopularMovies()
                 .catch { e ->
-                    Log.e("MovieListViewModel", "Erreur de chargement", e) }
+                    Log.e("MovieListViewModel", "Erreur de chargement", e)
+                }
                 .collect { movies ->
                     _uiState.value = MovieListUiState.Success(movies)
                 }
