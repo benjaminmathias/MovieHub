@@ -1,7 +1,9 @@
 package com.benjamin.moviehub.ui.movie_detail
 
+import com.benjamin.moviehub.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.benjamin.moviehub.core.util.UiText
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,11 +25,15 @@ class MovieDetailViewModel @Inject constructor(
 
     fun loadMovieDetails(movieId: Int) {
         viewModelScope.launch {
+
+            _uiState.value = MovieDetailUiState.Loading
+
             try {
                 val movie = repository.getMovieDetails(movieId)
                 _uiState.value = MovieDetailUiState.Success(movie)
             } catch (e: Exception) {
-                _uiState.value = MovieDetailUiState.Error("Erreur de chargement")
+                _uiState.value =
+                    MovieDetailUiState.Error(UiText.StringResource(R.string.error_loading_movie_detail))
             }
         }
     }

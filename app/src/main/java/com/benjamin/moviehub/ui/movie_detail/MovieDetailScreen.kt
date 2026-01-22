@@ -22,6 +22,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.util.shareMovie
 import com.benjamin.moviehub.domain.model.Movie
 
@@ -38,7 +40,7 @@ fun MovieDetailScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                { Text("Details") },
+                { stringResource(R.string.details) },
                 navigationIcon = {
                     IconButton(onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
@@ -64,7 +66,7 @@ fun MovieDetailScreen(
                 ) {
                     Icon(
                         imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = "Ajouter aux favoris",
+                        contentDescription = stringResource(R.string.favorite),
                         tint = if (movie.isFavorite) Color.Red else Color.Gray
                     )
                 }
@@ -87,7 +89,7 @@ fun MovieDetailScreen(
 
                 is MovieDetailUiState.Error -> {
                     Text(
-                        text = uiState.message,
+                        text = uiState.errorMessage.asString(),
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.align(Alignment.Center)
                     )

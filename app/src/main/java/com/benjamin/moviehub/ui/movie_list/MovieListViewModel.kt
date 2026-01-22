@@ -3,6 +3,8 @@ package com.benjamin.moviehub.ui.movie_list
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.benjamin.moviehub.R
+import com.benjamin.moviehub.core.util.UiText
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -35,10 +37,14 @@ class MovieListViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getPopularMovies()
                 .catch { e ->
+                    _uiState.value =
+                        MovieListUiState.Error(UiText.StringResource(R.string.error_loading_movies))
                     Log.e("MovieListViewModel", "Erreur de chargement", e)
                 }
                 .collect { movies ->
-                    _uiState.value = MovieListUiState.Success(movies)
+                    val emptyMsg =
+                        if (movies.isEmpty()) UiText.StringResource(R.string.no_movie_available) else null
+                    _uiState.value = MovieListUiState.Success(movies, emptyMsg)
                 }
         }
     }
@@ -62,9 +68,14 @@ class MovieListViewModel @Inject constructor(
             try {
                 _uiState.value = MovieListUiState.Loading
                 val movies = repository.getSearchedMovies(query)
-                _uiState.value = MovieListUiState.Success(movies)
+                val emptyMsg = if (movies.isEmpty()) {
+                    UiText.StringResource(R.string.empty_search_results, query)
+                } else null
+
+                _uiState.value = MovieListUiState.Success(movies, emptyMsg)
             } catch (e: Exception) {
-                _uiState.value = MovieListUiState.Error("Aucun résultat trouvé")
+                _uiState.value =
+                    MovieListUiState.Error(UiText.StringResource(R.string.error_loading_movies))
             }
         }
     }

@@ -1,3 +1,23 @@
 <resources>
     <string name="app_name">MovieHub</string>
+
+    <string name="movie_hub_popular">MovieHub Popular</string>
+    <string name="search">Recherche</string>
+    <string name="details">Détails</string>
+    <string name="error_prefix">Erreur : %1$s</string>
+
+    <string name="search_placeholder">Rechercher un film…</string>
+    <string name="error_loading_movies">Impossible de charger les films.</string>
+    <string name="no_movie_available">Aucun film disponible</string>
+    <string name="no_result_found">Aucun résultat trouvé</string>
+    <string name="empty_search_results">Aucun résultat pour : %1$s</string>
+    <string name="retry">Réessayer</string>
+
+    <string name="error_loading_movie_detail">Impossible de charger les détails du film.</string>
+    <string name="release_date_label">Date de sortie : %1$s</string>
+    <string name="release_date_unknown">Date de sortie inconnue</string>
+    <string name="rating_label">Note : %1$.1f/10</string>
+    <string name="share_movie_text">Regarde ce film : %1$s \nPlus d\'infos ici : %2$s</string>
+    <string name="favorite">Ajouter aux favoris</string>
+    <string name="favorite_removed">Retiré des favoris</string>
 </resources>

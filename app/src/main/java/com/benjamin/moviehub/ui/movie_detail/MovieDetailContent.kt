@@ -27,11 +27,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.Movie
 
 @Composable
@@ -119,7 +121,9 @@ fun MovieDetailContent(movie: Movie) {
             )
 
             Text(
-                text = movie.releaseDate.take(4).ifBlank { "Date inconnue" },
+                text = movie.releaseDate.take(4).ifBlank {
+                    stringResource(R.string.release_date_unknown)
+                },
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.secondary
             )

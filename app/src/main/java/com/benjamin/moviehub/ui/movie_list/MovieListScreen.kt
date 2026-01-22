@@ -21,6 +21,8 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.benjamin.moviehub.R
 import com.benjamin.moviehub.ui.components.EmptyStateView
 import com.benjamin.moviehub.ui.components.MovieItem
 import com.benjamin.moviehub.ui.components.MovieSearchBar
@@ -43,7 +45,13 @@ fun MovieListScreen(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             CenterAlignedTopAppBar(
-                { Text(if (searchQuery.isEmpty()) "MovieHub Popular" else "Recherche") }
+                {
+                    Text(
+                        if (searchQuery.isEmpty()) stringResource(R.string.movie_hub_popular) else stringResource(
+                            R.string.search
+                        )
+                    )
+                }
             )
         }
     ) { paddingValues ->
@@ -89,10 +97,7 @@ fun MovieListScreen(
                         is MovieListUiState.Success -> {
                             if (state.movies.isEmpty()) {
                                 EmptyStateView(
-                                    message = if (searchQuery.isEmpty())
-                                        "Aucun film disponible"
-                                    else
-                                        "Aucun résultat pour \"$searchQuery\"",
+                                    message = state.emptyMessage?.asString() ?: ""
                                 )
                             } else {
                                 LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -106,8 +111,9 @@ fun MovieListScreen(
                         }
 
                         is MovieListUiState.Error -> {
+                            val message = state.errorMessage?.asString() ?: stringResource(R.string.error_loading_movies)
                             Text(
-                                text = "Erreur: ${state.message}",
+                                text = stringResource(R.string.error_prefix, message),
                                 modifier = Modifier.align(Alignment.Center)
                             )
                         }

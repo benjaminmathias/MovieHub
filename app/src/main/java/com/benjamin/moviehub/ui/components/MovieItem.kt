@@ -2,7 +2,9 @@ package com.benjamin.moviehub.ui.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -27,6 +30,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -51,28 +55,43 @@ fun MovieItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp)
+                .height(IntrinsicSize.Max)
         ) {
-            AsyncImage(
-                model = ImageRequest.Builder(
-                    LocalContext.current
+            Box(modifier = Modifier.size(width = 100.dp, height = 150.dp)) {
+                AsyncImage(
+                    model = ImageRequest.Builder(
+                        LocalContext.current
+                    )
+                        .data(movie.posterPath)
+                        .crossfade(true)
+                        .build(),
+                    // placeholder = painterResource(R.drawable.placeholder_loading),
+                    // error = painterResource(R.drawable.placeholder_error),
+                    contentDescription = "Poster of ${movie.title}",
+                    modifier = Modifier
+                        .width(120.dp)
+                        .fillMaxHeight(),
+                    contentScale = ContentScale.Crop
                 )
-                    .data(movie.posterPath)
-                    .crossfade(true)
-                    .build(),
-                // placeholder = painterResource(R.drawable.placeholder_loading),
-                // error = painterResource(R.drawable.placeholder_error),
-                contentDescription = "Poster of ${movie.title}",
-                modifier = Modifier
-                    .width(120.dp)
-                    .fillMaxHeight(),
-                contentScale = ContentScale.Crop
-            )
 
+                if (movie.isFavorite) {
+                    Icon(
+                        imageVector = Icons.Filled.Favorite,
+                        contentDescription = null,
+                        tint = Color.Red,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                            .size(24.dp)
+                    )
+                }
+
+            }
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                    .fillMaxHeight()
+                    .padding(8.dp)
+                    .weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
@@ -90,6 +109,8 @@ fun MovieItem(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.secondary
                 )
+
+                Spacer(modifier = Modifier.weight(1f))
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically
@@ -111,77 +132,25 @@ fun MovieItem(
             }
         }
     }
+}
 
+@Preview(showBackground = true)
+@Composable
+fun MovieItemPreview() {
+    val fakeMovie = Movie(
+        id = 1,
+        title = "Avatar : De feu et de cendres",
+        posterPath = "",
+        voteAverage = 7.3,
+        releaseDate = "2025-12-20",
+        isFavorite = true,
+        overview = "Test",
+        backdropPath = "",
+        webUrl = ""
+    )
 
-    /*Column {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            AsyncImage(
-                model = movie.posterPath,
-                contentDescription = "Poster of ${movie.title}",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(220.dp),
-                contentScale = ContentScale.Crop
-            )
-        }
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = movie.title,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-
-                Text(
-                    text = if (movie.releaseDate.isNotBlank()) "Sorti le ${movie.releaseDate}" else "Date de sortie inconnue",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary
-                )
-
-                Surface(
-                    color = MaterialTheme.colorScheme.tertiaryContainer,
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = "Rating",
-                            modifier = Modifier.size(12.dp),
-                            tint = Color(0xFFFFD700)
-                        )
-
-                        Spacer (modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "${movie.voteAverage.toString().take(3)}/10",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = movie.overview,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}*/
+    MovieItem(
+        movie = fakeMovie,
+        onMovieClick = {}
+    )
 }
