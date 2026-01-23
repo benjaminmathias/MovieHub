@@ -5,6 +5,8 @@
     <string name="search">Recherche</string>
     <string name="details">Détails</string>
     <string name="error_prefix">Erreur : %1$s</string>
+    <string name="home_tab">Accueil</string>
+    <string name="favorite_tab">Favoris</string>
 
     <string name="search_placeholder">Rechercher un film…</string>
     <string name="error_loading_movies">Impossible de charger les films.</string>

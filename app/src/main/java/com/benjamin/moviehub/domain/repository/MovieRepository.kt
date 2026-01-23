@@ -29,4 +29,9 @@ interface MovieRepository {
      * Toggle the favorite status of a movie by saving in the db
      */
     suspend fun toggleFavorite(movieId: Int, isFavorite: Boolean)
+
+    /**
+     * Get favorite movies from the db
+     */
+    suspend fun getFavoriteMovies() : Flow<List<Movie>>
 }

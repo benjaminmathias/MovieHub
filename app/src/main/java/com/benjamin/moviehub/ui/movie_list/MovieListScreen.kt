@@ -100,7 +100,8 @@ fun MovieListScreen(
                                     message = state.emptyMessage?.asString() ?: ""
                                 )
                             } else {
-                                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                                LazyColumn(modifier = Modifier.fillMaxSize()
+                                    ) {
                                     items(state.movies) { movie ->
                                         MovieItem(
                                             movie = movie, onMovieClick = onMovieClick

@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class MovieRepositoryImpl @Inject constructor(
@@ -64,4 +65,13 @@ class MovieRepositoryImpl @Inject constructor(
     override suspend fun toggleFavorite(movieId: Int, isFavorite: Boolean) {
         movieDao.updateFavoriteStatus(movieId, isFavorite)
     }
+
+    override suspend fun getFavoriteMovies(): Flow<List<Movie>> {
+        return movieDao.getFavoriteMovies()
+            .map { entities ->
+                entities.map {it.toDomain()}
+            }
+            .flowOn(Dispatchers.IO)
+    }
+
 }
