@@ -14,6 +14,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
@@ -24,8 +26,9 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.Movie
@@ -86,7 +89,8 @@ fun FavoriteScreen(
                         is MovieFavoriteListUiState.Success -> {
                             if (state.movies.isEmpty()) {
                                 EmptyStateView(
-                                    message = state.emptyMessage?.asString() ?: ""
+                                    message = state.emptyMessage?.asString() ?: "",
+                                    icon = Icons.Default.ErrorOutline
                                 )
                             } else {
                                 LazyColumn(
@@ -94,9 +98,11 @@ fun FavoriteScreen(
                                 ) {
                                     items(state.movies, key = { it.id }) { movie ->
 
+                                        val haptic = LocalHapticFeedback.current
                                         val dismissState = rememberSwipeToDismissBoxState(
                                             confirmValueChange = { value ->
                                                 if (value == SwipeToDismissBoxValue.EndToStart) {
+                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                     onRemoveFavorite(movie)
                                                     true
                                                 } else {
@@ -132,12 +138,11 @@ fun FavoriteScreen(
                         }
 
                         is MovieFavoriteListUiState.Error -> {
-                            val message =
-                                state.errorMessage?.asString()
-                                    ?: stringResource(R.string.error_loading_movies)
-                            Text(
-                                text = stringResource(R.string.error_prefix, message),
-                                modifier = Modifier.align(Alignment.Center)
+                            val errorMessage = state.errorMessage?.asString()
+                                ?: stringResource(R.string.error_loading_movies)
+                            EmptyStateView(
+                                message = stringResource(R.string.error_prefix, errorMessage),
+                                icon = Icons.Default.ErrorOutline
                             )
                         }
                     }

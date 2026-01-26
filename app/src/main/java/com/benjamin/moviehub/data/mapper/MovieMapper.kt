@@ -7,7 +7,7 @@ import com.benjamin.moviehub.domain.model.Movie
 /**
  * Convert a MovieDto (API response) to a MovieEntity(DB entity)
  */
-fun MovieDto.toEntity(isFavorite: Boolean = false): MovieEntity {
+fun MovieDto.toEntity(isFavorite: Boolean = false, isPopular: Boolean = false): MovieEntity {
     return MovieEntity(
         id = this.id,
         title = this.title,
@@ -16,7 +16,8 @@ fun MovieDto.toEntity(isFavorite: Boolean = false): MovieEntity {
         backdropPath = this.backdropPath ?: "",
         voteAverage = this.voteAverage,
         releaseDate = this.releaseDate ?: "",
-        isFavorite = isFavorite
+        isFavorite = isFavorite,
+        isPopular = isPopular
     )
 }
 
@@ -52,5 +53,22 @@ fun MovieDto.toDomain(): Movie {
         releaseDate = this.releaseDate ?: "",
         webUrl = "https://www.themoviedb.org/movie/${this.id}",
         isFavorite = false
+    )
+}
+
+/**
+ * Convert a Movie (Domain model) to a MovieEntity (DB entity)
+ */
+fun Movie.toEntity(isFavorite: Boolean, isPopular: Boolean): MovieEntity {
+    return MovieEntity(
+        id = this.id,
+        title = this.title,
+        overview = this.overview,
+        posterPath = this.posterPath,
+        backdropPath = this.backdropPath,
+        releaseDate = this.releaseDate,
+        voteAverage = this.voteAverage,
+        isFavorite = isFavorite,
+        isPopular = isPopular
     )
 }

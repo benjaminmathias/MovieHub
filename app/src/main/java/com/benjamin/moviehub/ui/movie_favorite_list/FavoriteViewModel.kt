@@ -36,7 +36,7 @@ class FavoriteViewModel @Inject constructor(
                 }
                 .collect { movies ->
                     val emptyMsg =
-                        if (movies.isEmpty()) UiText.StringResource(R.string.no_movie_available) else null
+                        if (movies.isEmpty()) UiText.StringResource(R.string.no_favorite_added) else null
                     _uiState.value = MovieFavoriteListUiState.Success(movies, emptyMsg)
                 }
         }
@@ -44,7 +44,7 @@ class FavoriteViewModel @Inject constructor(
 
     fun onToggleFavorite(movie: Movie) {
         viewModelScope.launch {
-            repository.toggleFavorite(movie.id, !movie.isFavorite)
+            repository.toggleFavorite(movie, !movie.isFavorite)
         }
     }
 

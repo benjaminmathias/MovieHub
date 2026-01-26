@@ -41,9 +41,14 @@ class MovieDetailViewModel @Inject constructor(
     fun toggleFavorite(movie: Movie) {
         viewModelScope.launch {
             val newStatus = !movie.isFavorite
-            repository.toggleFavorite(movie.id, newStatus)
 
-            loadMovieDetails(movie.id)
+            val currentState = _uiState.value
+            if(currentState is MovieDetailUiState.Success) {
+                _uiState.value = MovieDetailUiState.Success(
+                    currentState.movie.copy(isFavorite = newStatus)
+                )
+            }
+            repository.toggleFavorite(movie, newStatus)
         }
     }
 }

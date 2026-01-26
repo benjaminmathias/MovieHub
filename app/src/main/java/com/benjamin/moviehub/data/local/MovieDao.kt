@@ -10,8 +10,8 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface MovieDao {
 
-    @Query("SELECT * FROM movies")
-    suspend fun getAllMovies(): List<MovieEntity>
+    @Query("SELECT * FROM movies WHERE isPopular = 1")
+    fun getPopularMovies(): Flow<List<MovieEntity>>
 
     @Query("SELECT * FROM movies WHERE isFavorite = 1")
     fun getFavoriteMovies(): Flow<List<MovieEntity>>

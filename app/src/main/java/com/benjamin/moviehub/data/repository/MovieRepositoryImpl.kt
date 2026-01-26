@@ -9,10 +9,13 @@ import com.benjamin.moviehub.data.remote.MovieApiService
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class MovieRepositoryImpl @Inject constructor(
@@ -21,22 +24,26 @@ class MovieRepositoryImpl @Inject constructor(
 ) : MovieRepository {
 
     override fun getPopularMovies(): Flow<List<Movie>> = flow {
-
-        val localMovies = movieDao.getAllMovies()
-        emit(localMovies.map { it.toDomain() })
-
-        try {
-            val response = apiService.getPopularMovies(apiKey = BuildConfig.TMDB_API_KEY)
-            val favoriteIds = movieDao.getFavoriteMovieIds().toSet()
-            val entities = response.movies.map {
-                it.toEntity(isFavorite = favoriteIds.contains(it.id))
+        coroutineScope {
+            launch {
+                try {
+                    val response = apiService.getPopularMovies(apiKey = BuildConfig.TMDB_API_KEY)
+                    val favoriteIds = movieDao.getFavoriteMovieIds().toSet()
+                    val entities = response.movies.map { dto ->
+                        dto.toEntity(
+                            isFavorite = favoriteIds.contains(dto.id),
+                            isPopular = true
+                        )
+                    }
+                    movieDao.insertMovies(entities)
+                } catch (e: Exception) {
+                    Log.e("MovieRepository", "API Error", e)
+                }
             }
 
-            movieDao.insertMovies(entities)
-
-            emit(entities.map { it.toDomain() })
-        } catch (e: Exception) {
-            Log.e("MovieRepository", "Erreur lors de la récupération des films", e)
+            emitAll(movieDao.getPopularMovies().map { entities ->
+                entities.map { it.toDomain() }
+            })
         }
     }.flowOn(Dispatchers.IO)
 
@@ -55,21 +62,43 @@ class MovieRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getSearchedMovies(query: String): List<Movie> {
-        val query = apiService.searchMovies(
+        val response = apiService.searchMovies(
             apiKey = BuildConfig.TMDB_API_KEY,
             query = query
         )
-        return query.movies.map { it.toDomain() }
+
+        val favoriteIds = movieDao.getFavoriteMovieIds().toSet()
+
+        return response.movies.map { dto ->
+            dto.toDomain().copy(
+                isFavorite = favoriteIds.contains(dto.id)
+            )
+        }
     }
 
-    override suspend fun toggleFavorite(movieId: Int, isFavorite: Boolean) {
-        movieDao.updateFavoriteStatus(movieId, isFavorite)
+    override suspend fun toggleFavorite(movie: Movie, isFavorite: Boolean) {
+
+        val localMovie = movieDao.getMovieById(movie.id)
+
+        if (localMovie == null) {
+            movieDao.insertMovies(
+                listOf(
+                    movie.toEntity(
+                        isFavorite = isFavorite,
+                        isPopular = false
+                    )
+                )
+            )
+        } else {
+            movieDao.updateFavoriteStatus(movie.id, isFavorite)
+        }
+        movieDao.updateFavoriteStatus(movie.id, isFavorite)
     }
 
     override suspend fun getFavoriteMovies(): Flow<List<Movie>> {
         return movieDao.getFavoriteMovies()
             .map { entities ->
-                entities.map {it.toDomain()}
+                entities.map { it.toDomain() }
             }
             .flowOn(Dispatchers.IO)
     }

@@ -22,4 +22,6 @@
     <string name="share_movie_text">Regarde ce film : %1$s \nPlus d\'infos ici : %2$s</string>
     <string name="favorite">Ajouter aux favoris</string>
     <string name="favorite_removed">Retiré des favoris</string>
+
+    <string name="no_favorite_added">Aucun film favori n\'a été ajouté !</string>
 </resources>
