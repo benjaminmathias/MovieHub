@@ -1,21 +1,21 @@
 package com.benjamin.moviehub.data.repository
 
-import android.util.Log
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import com.benjamin.moviehub.BuildConfig
 import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.mapper.toEntity
+import com.benjamin.moviehub.data.paging.MoviePagingSource
 import com.benjamin.moviehub.data.remote.MovieApiService
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class MovieRepositoryImpl @Inject constructor(
@@ -23,29 +23,19 @@ class MovieRepositoryImpl @Inject constructor(
     private val movieDao: MovieDao
 ) : MovieRepository {
 
-    override fun getPopularMovies(): Flow<List<Movie>> = flow {
-        coroutineScope {
-            launch {
-                try {
-                    val response = apiService.getPopularMovies(apiKey = BuildConfig.TMDB_API_KEY)
-                    val favoriteIds = movieDao.getFavoriteMovieIds().toSet()
-                    val entities = response.movies.map { dto ->
-                        dto.toEntity(
-                            isFavorite = favoriteIds.contains(dto.id),
-                            isPopular = true
-                        )
-                    }
-                    movieDao.insertMovies(entities)
-                } catch (e: Exception) {
-                    Log.e("MovieRepository", "API Error", e)
-                }
+    override fun getPagedMovies(query: String?): Flow<PagingData<Movie>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                prefetchDistance = 5,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = { MoviePagingSource(apiService, query) }
+        ).flow
+            .map { pagingData ->
+                pagingData.map { dto -> dto.toDomain() }
             }
-
-            emitAll(movieDao.getPopularMovies().map { entities ->
-                entities.map { it.toDomain() }
-            })
-        }
-    }.flowOn(Dispatchers.IO)
+    }
 
     override suspend fun getMovieDetails(movieId: Int): Movie {
 
@@ -58,21 +48,6 @@ class MovieRepositoryImpl @Inject constructor(
                 apiKey = BuildConfig.TMDB_API_KEY,
             )
             return dto.toDomain()
-        }
-    }
-
-    override suspend fun getSearchedMovies(query: String): List<Movie> {
-        val response = apiService.searchMovies(
-            apiKey = BuildConfig.TMDB_API_KEY,
-            query = query
-        )
-
-        val favoriteIds = movieDao.getFavoriteMovieIds().toSet()
-
-        return response.movies.map { dto ->
-            dto.toDomain().copy(
-                isFavorite = favoriteIds.contains(dto.id)
-            )
         }
     }
 
@@ -95,12 +70,11 @@ class MovieRepositoryImpl @Inject constructor(
         movieDao.updateFavoriteStatus(movie.id, isFavorite)
     }
 
-    override suspend fun getFavoriteMovies(): Flow<List<Movie>> {
+    override fun getFavoriteMovies(): Flow<List<Movie>> {
         return movieDao.getFavoriteMovies()
             .map { entities ->
                 entities.map { it.toDomain() }
             }
             .flowOn(Dispatchers.IO)
     }
-
 }
