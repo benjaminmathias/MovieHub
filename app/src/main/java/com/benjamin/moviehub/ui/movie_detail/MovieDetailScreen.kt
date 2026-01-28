@@ -40,7 +40,11 @@ fun MovieDetailScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                { stringResource(R.string.details) },
+                {
+                    Text(
+                        text = stringResource(R.string.details)
+                    )
+                },
                 navigationIcon = {
                     IconButton(onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
@@ -84,7 +88,10 @@ fun MovieDetailScreen(
                 }
 
                 is MovieDetailUiState.Success -> {
-                    MovieDetailContent(movie = uiState.movie)
+                    MovieDetailContent(
+                        movie = uiState.movie,
+                        actors = uiState.actors
+                    )
                 }
 
                 is MovieDetailUiState.Error -> {

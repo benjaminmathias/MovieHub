@@ -7,6 +7,7 @@ import com.benjamin.moviehub.core.util.UiText
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,12 +26,17 @@ class MovieDetailViewModel @Inject constructor(
 
     fun loadMovieDetails(movieId: Int) {
         viewModelScope.launch {
-
             _uiState.value = MovieDetailUiState.Loading
 
             try {
-                val movie = repository.getMovieDetails(movieId)
-                _uiState.value = MovieDetailUiState.Success(movie)
+
+                val movieDeferred = async { repository.getMovieDetails(movieId) }
+                val actorsDeferred = async { repository.getMovieActors(movieId) }
+
+                val movie = movieDeferred.await()
+                val actors = actorsDeferred.await().getOrDefault(emptyList())
+
+                _uiState.value = MovieDetailUiState.Success(movie, actors)
             } catch (e: Exception) {
                 _uiState.value =
                     MovieDetailUiState.Error(UiText.StringResource(R.string.error_loading_movie_detail))
@@ -40,15 +46,16 @@ class MovieDetailViewModel @Inject constructor(
 
     fun toggleFavorite(movie: Movie) {
         viewModelScope.launch {
-            val newStatus = !movie.isFavorite
-
             val currentState = _uiState.value
-            if(currentState is MovieDetailUiState.Success) {
+
+            if (currentState is MovieDetailUiState.Success) {
+                val newStatus = !movie.isFavorite
                 _uiState.value = MovieDetailUiState.Success(
-                    currentState.movie.copy(isFavorite = newStatus)
+                    currentState.movie.copy(isFavorite = newStatus),
+                    actors = currentState.actors
                 )
+                repository.toggleFavorite(movie, newStatus)
             }
-            repository.toggleFavorite(movie, newStatus)
         }
     }
 }

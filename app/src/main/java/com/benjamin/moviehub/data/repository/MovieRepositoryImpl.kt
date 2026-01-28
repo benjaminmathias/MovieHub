@@ -10,6 +10,7 @@ import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.mapper.toEntity
 import com.benjamin.moviehub.data.paging.MoviePagingSource
 import com.benjamin.moviehub.data.remote.MovieApiService
+import com.benjamin.moviehub.domain.model.Actor
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import kotlinx.coroutines.Dispatchers
@@ -77,4 +78,27 @@ class MovieRepositoryImpl @Inject constructor(
             }
             .flowOn(Dispatchers.IO)
     }
+
+    override suspend fun getMovieActors(movieId: Int): Result<List<Actor>> {
+        return try {
+            val response = apiService.getMovieCredits(movieId, BuildConfig.TMDB_API_KEY)
+
+            val actors = response.cast.take(15).map { dto ->
+                Actor(
+                    id = dto.id,
+                    name = dto.name,
+                    character = dto.character,
+                    profileUrl = if (dto.profilePath != null) {
+                        "https://image.tmdb.org/t/p/w185${dto.profilePath}"
+                    } else {
+                        ""
+                    }
+                )
+            }
+            Result.success(actors)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
 }

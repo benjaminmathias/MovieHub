@@ -1,6 +1,7 @@
 package com.benjamin.moviehub.domain.repository
 
 import androidx.paging.PagingData
+import com.benjamin.moviehub.domain.model.Actor
 import com.benjamin.moviehub.domain.model.Movie
 import kotlinx.coroutines.flow.Flow
 
@@ -29,4 +30,6 @@ interface MovieRepository {
      * Get favorite movies from the db
      */
     fun getFavoriteMovies() : Flow<List<Movie>>
+
+    suspend fun getMovieActors(movieId: Int): Result<List<Actor>>
 }

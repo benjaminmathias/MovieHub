@@ -21,3 +21,14 @@ data class MovieDto(
 
     @SerializedName("release_date") val releaseDate: String? = ""
 )
+
+data class MovieCreditsDto(
+    @SerializedName("cast") val cast: List<ActorDto>
+)
+
+data class ActorDto(
+    val id: Int,
+    @SerializedName("name") val name: String,
+    @SerializedName("character") val character: String,
+    @SerializedName("profile_path") val profilePath: String?
+)

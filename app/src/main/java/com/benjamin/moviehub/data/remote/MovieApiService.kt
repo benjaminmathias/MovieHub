@@ -27,4 +27,11 @@ interface MovieApiService {
         @Query("language") language: String = "fr-FR",
         @Query("page") page: Int
     ): MovieResponse
+
+    @GET("movie/{movie_id}/credits")
+    suspend fun getMovieCredits(
+        @Path("movie_id") movieId: Int,
+        @Query("api_key") apiKey: String,
+        @Query("language") language: String = "fr-FR"
+    ): MovieCreditsDto
 }
