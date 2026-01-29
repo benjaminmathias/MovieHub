@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.ui.components.EmptyStateView
 import com.benjamin.moviehub.ui.components.ErrorRetryItem
@@ -137,10 +138,7 @@ fun MovieListScreen(
                                     ) {
                                         items(
                                             count = pagedMovies.itemCount,
-                                            key = { index ->
-                                                val movie = pagedMovies[index]
-                                                movie?.let { "${it.id}_$index" } ?: index
-                                            }
+                                            key = pagedMovies.itemKey { it.id }
                                         ) { index ->
                                             pagedMovies[index]?.let { movie ->
                                                 MovieItem(

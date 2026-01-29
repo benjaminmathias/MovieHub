@@ -3,9 +3,7 @@ package com.benjamin.moviehub.ui.movie_list
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.cachedIn
-import androidx.paging.map
 import com.benjamin.moviehub.core.util.UiText
-import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -15,8 +13,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
@@ -31,22 +29,21 @@ class MovieListViewModel @Inject constructor(
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
-    val uiState: StateFlow<MovieListUiState> = combine<String, List<Movie>, MovieListUiState>(
-        _searchQuery.debounce(500L),
-        repository.getFavoriteMovies()
-    ) { query, favorites ->
-        val favoriteIds = favorites.map { it.id }.toSet()
+    val pagedMovies = _searchQuery
+        .debounce(500L)
+        .flatMapLatest { query ->
+            repository.getPagedMovies(query)
+        }
+        .cachedIn(viewModelScope)
 
-        MovieListUiState.Success(
-            pagedMovies = repository.getPagedMovies(query)
-                .map { pagingData ->
-                    pagingData.map { movie ->
-                        movie.copy(isFavorite = favoriteIds.contains(movie.id))
-                    }
-                }.cachedIn(viewModelScope),
-            searchQuery = query
-        )
-    }
+    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+    val uiState: StateFlow<MovieListUiState> = searchQuery
+        .map<String, MovieListUiState> { query ->
+            MovieListUiState.Success(
+                pagedMovies = pagedMovies,
+                searchQuery = query
+            )
+        }
         .catch { e ->
             emit(
                 MovieListUiState.Error(

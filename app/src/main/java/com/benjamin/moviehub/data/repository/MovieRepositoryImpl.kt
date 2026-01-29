@@ -1,14 +1,16 @@
 package com.benjamin.moviehub.data.repository
 
+import androidx.paging.ExperimentalPagingApi
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
 import com.benjamin.moviehub.BuildConfig
 import com.benjamin.moviehub.data.local.MovieDao
+import com.benjamin.moviehub.data.local.MovieDatabase
 import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.mapper.toEntity
-import com.benjamin.moviehub.data.paging.MoviePagingSource
+import com.benjamin.moviehub.data.paging.MovieRemoteMediator
 import com.benjamin.moviehub.data.remote.MovieApiService
 import com.benjamin.moviehub.domain.model.Actor
 import com.benjamin.moviehub.domain.model.Movie
@@ -21,20 +23,24 @@ import javax.inject.Inject
 
 class MovieRepositoryImpl @Inject constructor(
     private val apiService: MovieApiService,
+    private val database: MovieDatabase,
     private val movieDao: MovieDao
 ) : MovieRepository {
 
+    @OptIn(ExperimentalPagingApi::class)
     override fun getPagedMovies(query: String?): Flow<PagingData<Movie>> {
         return Pager(
             config = PagingConfig(
                 pageSize = 20,
-                prefetchDistance = 5,
+                prefetchDistance = 1,
+                initialLoadSize = 20,
                 enablePlaceholders = false
             ),
-            pagingSourceFactory = { MoviePagingSource(apiService, query) }
+            remoteMediator = MovieRemoteMediator(apiService, database),
+            pagingSourceFactory = { movieDao.getPopularMoviesPaging() }
         ).flow
             .map { pagingData ->
-                pagingData.map { dto -> dto.toDomain() }
+                pagingData.map { entity -> entity.toDomain() }
             }
     }
 
