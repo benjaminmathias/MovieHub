@@ -7,5 +7,6 @@ import androidx.room.PrimaryKey
 data class MovieRemoteKey(
     @PrimaryKey val movieId: Int,
     val prevKey: Int?,
-    val nextKey: Int?
+    val nextKey: Int?,
+    val type: String // "POPULAR" or "SEARCH"
 )

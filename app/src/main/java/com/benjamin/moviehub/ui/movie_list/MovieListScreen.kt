@@ -1,10 +1,5 @@
 package com.benjamin.moviehub.ui.movie_list
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -69,7 +64,7 @@ fun MovieListScreen(
                 onQueryChanged =
                     onSearchChanged
             )
-            AnimatedContent(
+            /*AnimatedContent(
                 targetState = uiState,
                 transitionSpec = {
                     fadeIn(animationSpec = tween(300)) togetherWith fadeOut(
@@ -79,105 +74,103 @@ fun MovieListScreen(
                     )
                 },
                 label = "StateAnimation"
-            ) { state ->
-                when (state) {
-                    is MovieListUiState.Loading -> {
-                        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                            repeat(5) {
-                                MovieShimmerItem()
+            ) { state ->*/
+            when (val state = uiState) {
+                is MovieListUiState.Loading -> {
+                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                        repeat(5) {
+                            MovieShimmerItem()
+                        }
+                    }
+                }
+
+                is MovieListUiState.Success -> {
+                    val pagedMovies = state.pagedMovies.collectAsLazyPagingItems()
+
+                    val loadState = pagedMovies.loadState.refresh
+                    val isInitialLoading =
+                        loadState is LoadState.Loading && pagedMovies.itemCount == 0
+                    val isEmpty =
+                        loadState is LoadState.NotLoading && pagedMovies.itemCount == 0
+                    val isError =
+                        loadState is LoadState.Error && pagedMovies.itemCount == 0
+
+                    PullToRefreshBox(
+                        state = refreshState,
+                        isRefreshing = isInitialLoading && pagedMovies.itemCount > 0,
+                        onRefresh = { pagedMovies.refresh() },
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        when {
+                            isInitialLoading -> {
+                                Column { repeat(5) { MovieShimmerItem() } }
+                            }
+
+                            isError -> {
+                                val error =
+                                    loadState.error
+                                EmptyStateView(
+                                    message = error.localizedMessage
+                                        ?: stringResource(R.string.error_loading_movies),
+                                    icon = Icons.Default.CloudOff,
+                                    onRetry = { pagedMovies.retry() }
+                                )
+                            }
+
+                            isEmpty -> {
+                                EmptyStateView(
+                                    message = state.emptyMessage?.asString()
+                                        ?: stringResource(R.string.no_movie_available),
+                                    onRetry = { pagedMovies.refresh() }
+                                )
+                            }
+
+                            // Show data
+                            else -> {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    items(
+                                        count = pagedMovies.itemCount,
+                                        key = pagedMovies.itemKey { it.id }
+                                    ) { index ->
+                                        pagedMovies[index]?.let { movie ->
+                                            MovieItem(
+                                                movie = movie,
+                                                onMovieClick = onMovieClick
+                                            )
+                                        }
+                                    }
+
+                                    // Handle feedback if loading pages fails
+                                    val appendState = pagedMovies.loadState.append
+                                    if (appendState is LoadState.Error) {
+                                        item {
+                                            ErrorRetryItem(
+                                                message = appendState.error.localizedMessage
+                                                    ?: stringResource(R.string.error_loading_movies),
+                                                onRetry = { pagedMovies.retry() }
+                                            )
+                                        }
+                                    }
+
+                                    if (pagedMovies.loadState.append is LoadState.Loading) {
+                                        item { MovieShimmerItem() }
+                                    }
+                                }
                             }
                         }
                     }
+                }
 
-                    is MovieListUiState.Success -> {
-                        val pagedMovies = state.pagedMovies.collectAsLazyPagingItems()
-
-                        val isInitialLoading = pagedMovies.loadState.refresh is LoadState.Loading
-                        val isEmpty =
-                            pagedMovies.loadState.refresh is LoadState.NotLoading && pagedMovies.itemCount == 0
-
-                        PullToRefreshBox(
-                            state = refreshState,
-                            isRefreshing = isInitialLoading && pagedMovies.itemCount > 0,
-                            onRefresh = { pagedMovies.refresh() },
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            when {
-                                // Initial load
-                                isInitialLoading && pagedMovies.itemCount == 0 -> {
-                                    Column {
-                                        repeat(5) { MovieShimmerItem() }
-                                    }
-                                }
-
-                                // Handle error on initial load
-                                pagedMovies.loadState.refresh is LoadState.Error && pagedMovies.itemCount == 0 -> {
-                                    val error =
-                                        (pagedMovies.loadState.refresh as LoadState.Error).error
-                                    EmptyStateView(
-                                        message = error.localizedMessage
-                                            ?: stringResource(R.string.error_loading_movies),
-                                        icon = Icons.Default.CloudOff,
-                                        onRetry = { pagedMovies.retry() }
-                                    )
-                                }
-
-                                // Empty list
-                                isEmpty -> {
-                                    EmptyStateView(
-                                        message = state.emptyMessage?.asString()
-                                            ?: stringResource(R.string.no_movie_available),
-                                        onRetry = { pagedMovies.retry() }
-                                    )
-                                }
-
-                                // Show data
-                                else -> {
-                                    LazyColumn(
-                                        modifier = Modifier.fillMaxSize()
-                                    ) {
-                                        items(
-                                            count = pagedMovies.itemCount,
-                                            key = pagedMovies.itemKey { it.id }
-                                        ) { index ->
-                                            pagedMovies[index]?.let { movie ->
-                                                MovieItem(
-                                                    movie = movie,
-                                                    onMovieClick = onMovieClick
-                                                )
-                                            }
-                                        }
-
-                                        // Handle feedback if loading pages fails
-                                        val appendState = pagedMovies.loadState.append
-                                        if (appendState is LoadState.Error) {
-                                            item {
-                                                ErrorRetryItem(
-                                                    message = appendState.error.localizedMessage
-                                                        ?: stringResource(R.string.error_loading_movies),
-                                                    onRetry = { pagedMovies.retry() }
-                                                )
-                                            }
-                                        }
-
-                                        if (pagedMovies.loadState.append is LoadState.Loading) {
-                                            item { MovieShimmerItem() }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    is MovieListUiState.Error -> {
-                        val errorMessage = state.errorMessage?.asString()
-                            ?: stringResource(R.string.error_loading_movies)
-                        EmptyStateView(
-                            message = stringResource(R.string.error_prefix, errorMessage),
-                            icon = Icons.Default.Error,
-                            onRetry = retryGlobal
-                        )
-                    }
+                is MovieListUiState.Error -> {
+                    val errorMessage = state.errorMessage?.asString()
+                        ?: stringResource(R.string.error_loading_movies)
+                    EmptyStateView(
+                        message = stringResource(R.string.error_prefix, errorMessage),
+                        icon = Icons.Default.Error,
+                        onRetry = retryGlobal
+                    )
                 }
             }
         }

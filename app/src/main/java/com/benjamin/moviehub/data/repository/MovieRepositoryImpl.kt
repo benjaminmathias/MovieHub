@@ -11,6 +11,7 @@ import com.benjamin.moviehub.data.local.MovieDatabase
 import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.mapper.toEntity
 import com.benjamin.moviehub.data.paging.MovieRemoteMediator
+import com.benjamin.moviehub.data.paging.SearchMovieRemoteMediator
 import com.benjamin.moviehub.data.remote.MovieApiService
 import com.benjamin.moviehub.domain.model.Actor
 import com.benjamin.moviehub.domain.model.Movie
@@ -29,6 +30,9 @@ class MovieRepositoryImpl @Inject constructor(
 
     @OptIn(ExperimentalPagingApi::class)
     override fun getPagedMovies(query: String?): Flow<PagingData<Movie>> {
+
+        val isSearch = !query.isNullOrBlank()
+
         return Pager(
             config = PagingConfig(
                 pageSize = 20,
@@ -36,8 +40,19 @@ class MovieRepositoryImpl @Inject constructor(
                 initialLoadSize = 20,
                 enablePlaceholders = false
             ),
-            remoteMediator = MovieRemoteMediator(apiService, database),
-            pagingSourceFactory = { movieDao.getPopularMoviesPaging() }
+            remoteMediator =
+                if (isSearch) {
+                    SearchMovieRemoteMediator(apiService, database, query)
+                } else {
+                    MovieRemoteMediator(apiService, database)
+                },
+            pagingSourceFactory = {
+                if (isSearch) {
+                    movieDao.searchMoviesPaging(query)
+                } else {
+                    movieDao.getPopularMoviesPaging()
+                }
+            }
         ).flow
             .map { pagingData ->
                 pagingData.map { entity -> entity.toDomain() }
@@ -63,12 +78,10 @@ class MovieRepositoryImpl @Inject constructor(
         val localMovie = movieDao.getMovieById(movie.id)
 
         if (localMovie == null) {
-            movieDao.insertMovies(
-                listOf(
-                    movie.toEntity(
-                        isFavorite = isFavorite,
-                        isPopular = false
-                    )
+            movieDao.insertMovie(
+                movie.toEntity(
+                    isFavorite = isFavorite,
+                    isPopular = false
                 )
             )
         } else {
@@ -78,7 +91,7 @@ class MovieRepositoryImpl @Inject constructor(
     }
 
     override fun getFavoriteMovies(): Flow<List<Movie>> {
-        return movieDao.getFavoriteMovies()
+        return movieDao.getFavoriteMoviesFlow()
             .map { entities ->
                 entities.map { it.toDomain() }
             }

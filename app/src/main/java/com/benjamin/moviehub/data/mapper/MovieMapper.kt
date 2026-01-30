@@ -7,7 +7,7 @@ import com.benjamin.moviehub.domain.model.Movie
 /**
  * Convert a MovieDto (API response) to a MovieEntity(DB entity)
  */
-fun MovieDto.toEntity(isFavorite: Boolean = false, isPopular: Boolean = false, pageOrder: Int = 0): MovieEntity {
+fun MovieDto.toEntity(isFavorite: Boolean = false, isPopular: Boolean = false, isSearchResult: Boolean = false, pageOrder: Int = 0): MovieEntity {
     return MovieEntity(
         id = this.id,
         title = this.title,
@@ -18,6 +18,7 @@ fun MovieDto.toEntity(isFavorite: Boolean = false, isPopular: Boolean = false, p
         releaseDate = this.releaseDate ?: "",
         isFavorite = isFavorite,
         isPopular = isPopular,
+        isSearchResult = isSearchResult,
         pageOrder = pageOrder
     )
 }
