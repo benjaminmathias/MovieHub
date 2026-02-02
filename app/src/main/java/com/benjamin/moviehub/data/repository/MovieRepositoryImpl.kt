@@ -61,16 +61,42 @@ class MovieRepositoryImpl @Inject constructor(
 
     override suspend fun getMovieDetails(movieId: Int): Movie {
 
+        // Try to get cached movie
         val localMovie = movieDao.getMovieById(movieId)
+
+        return try {
+            // API call
+            val dto = apiService.getMovieDetails(
+                movieId = movieId,
+                apiKey = BuildConfig.TMDB_API_KEY
+            )
+
+            val remoteMovieEntity = dto.toEntity(
+                isFavorite = localMovie?.isFavorite ?: false,
+                isPopular = localMovie?.isFavorite ?: false,
+                isSearchResult = localMovie?.isSearchResult ?: false,
+                pageOrder = localMovie?.pageOrder ?: -1
+            )
+
+            // Save to DB
+            movieDao.insertMovie(remoteMovieEntity)
+
+            remoteMovieEntity.toDomain()
+
+        } catch (e: Exception) {
+            localMovie?.toDomain() ?: throw e
+        }
+
+        /*
         if (localMovie != null) {
             return localMovie.toDomain()
         } else {
             val dto = apiService.getMovieDetails(
                 movieId = movieId,
-                apiKey = BuildConfig.TMDB_API_KEY,
+                apiKey = BuildConfig.TMDB_API_KEY
             )
             return dto.toDomain()
-        }
+        }*/
     }
 
     override suspend fun toggleFavorite(movie: Movie, isFavorite: Boolean) {

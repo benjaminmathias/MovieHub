@@ -25,6 +25,12 @@ class MovieDetailViewModel @Inject constructor(
 
 
     fun loadMovieDetails(movieId: Int) {
+
+        val currentState = _uiState.value
+        if (currentState is MovieDetailUiState.Success && currentState.movie.id == movieId) {
+            return
+        }
+
         viewModelScope.launch {
             _uiState.value = MovieDetailUiState.Loading
 
@@ -46,15 +52,17 @@ class MovieDetailViewModel @Inject constructor(
 
     fun toggleFavorite(movie: Movie) {
         viewModelScope.launch {
-            val currentState = _uiState.value
+            val currentState = _uiState.value as? MovieDetailUiState.Success ?: return@launch
+            val newStatus = !movie.isFavorite
 
-            if (currentState is MovieDetailUiState.Success) {
-                val newStatus = !movie.isFavorite
-                _uiState.value = MovieDetailUiState.Success(
-                    currentState.movie.copy(isFavorite = newStatus),
-                    actors = currentState.actors
-                )
+            _uiState.value = currentState.copy(
+                movie = currentState.movie.copy(isFavorite = newStatus)
+            )
+
+            try {
                 repository.toggleFavorite(movie, newStatus)
+            } catch (e: Exception) {
+                _uiState.value = currentState
             }
         }
     }
