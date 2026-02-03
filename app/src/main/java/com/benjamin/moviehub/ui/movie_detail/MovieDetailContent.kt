@@ -1,5 +1,8 @@
 package com.benjamin.moviehub.ui.movie_detail
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,40 +17,56 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.benjamin.moviehub.R
+import com.benjamin.moviehub.core.util.formatReleaseDate
 import com.benjamin.moviehub.domain.model.Actor
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.ActorItem
 
+
 @Composable
 fun MovieDetailContent(
     movie: Movie,
-    actors : List<Actor>) {
+    actors: List<Actor>,
+    onToggleFavorite: (Movie) -> Unit
+) {
 
     val scrollState = rememberScrollState()
+
+    val scale by animateFloatAsState(
+        targetValue = if (movie.isFavorite) 1.2f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "FavoriteScale"
+    )
 
     Column(
         modifier = Modifier
@@ -62,14 +81,12 @@ fun MovieDetailContent(
         ) {
 
             AsyncImage(
-                model = ImageRequest.Builder(
-                    LocalContext.current
-                )
+                model = ImageRequest.Builder(LocalContext.current)
                     .data(movie.backdropPath)
                     .crossfade(true)
                     .build(),
-                // placeholder = painterResource(R.drawable.placeholder_loading),
-                // error = painterResource(R.drawable.placeholder_error),
+                placeholder = painterResource(R.drawable.ic_launcher_foreground),
+                error = painterResource(R.drawable.ic_launcher_foreground),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
@@ -89,30 +106,51 @@ fun MovieDetailContent(
             Surface(
                 modifier = Modifier
                     .padding(16.dp)
-                    .align(Alignment.BottomEnd),
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                shape = RoundedCornerShape(12.dp),
-                shadowElevation = 4.dp
+                    .align(Alignment.TopEnd),
+                color = Color.Black.copy(alpha = 0.6f),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         Icons.Default.Star,
                         contentDescription = "Liked",
                         tint = Color(0xFFFFD700),
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
 
                     Spacer(modifier = Modifier.size(4.dp))
 
                     Text(
-                        text = movie.voteAverage.toString().take(3),
-                        style = MaterialTheme.typography.titleMedium,
+                        text = if (movie.voteAverage > 0) {
+                            "%.1f".format(movie.voteAverage)
+                        } else {
+                            "N/A"
+                        },
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
                 }
+            }
+
+            FloatingActionButton(
+                onClick = { onToggleFavorite(movie) },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp)
+                    .offset(y = 28.dp),
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                shape = CircleShape
+            ) {
+                Icon(
+                    imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = "Ajouter aux favoris",
+                    tint = if (movie.isFavorite) Color.Red else Color.Gray,
+                    modifier = Modifier.scale(scale)
+                )
             }
         }
 
@@ -129,9 +167,10 @@ fun MovieDetailContent(
             )
 
             Text(
-                text = movie.releaseDate.take(4).ifBlank {
-                    stringResource(R.string.release_date_unknown)
-                },
+                text = formatReleaseDate(movie.releaseDate),
+                /*text = movie.releaseDate.take(4).ifBlank {
+                stringResource(R.string.release_date_unknown)
+            },*/
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.secondary
             )
@@ -176,10 +215,14 @@ fun MovieDetailContent(
                     }
                 }
             } else {
-                Spacer(modifier = Modifier.height(32.dp))
+                Text(
+                    text = "Informations de casting indisponible",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
             }
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(8.dp))
         }
-
     }
 }
