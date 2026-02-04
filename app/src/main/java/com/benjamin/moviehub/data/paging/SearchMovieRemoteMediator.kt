@@ -58,7 +58,7 @@ class SearchMovieRemoteMediator(
             Log.d("PagingLog", "Reçu ${response.movies.size} films")
 
             val movies = response.movies
-            val endOfPaginationReached = movies.isEmpty()
+            val endOfPaginationReached = movies.isEmpty() || movies.size < state.config.pageSize
 
             database.withTransaction {
                 if (loadType == LoadType.REFRESH) {
@@ -66,12 +66,10 @@ class SearchMovieRemoteMediator(
                     movieDao.clearSearchResults()
                 }
 
-                val isEnd = movies.size < state.config.pageSize
-
                 val favoriteIds = movieDao.getFavoriteMovieIds().toSet()
 
                 val prevKey = if (page == 1) null else page - 1
-                val nextKey = if (isEnd) null else page + 1
+                val nextKey = if (endOfPaginationReached) null else page + 1
 
                 val keys = movies.map {
                     MovieRemoteKey(
@@ -110,10 +108,6 @@ class SearchMovieRemoteMediator(
     }
 
     override suspend fun initialize(): InitializeAction {
-        /* val hasKeys = database.withTransaction {
-             movieDao.getRemoteKeysCountByType("SEARCH") > 0
-         }
-         return if (hasKeys) InitializeAction.SKIP_INITIAL_REFRESH
-         else */return InitializeAction.LAUNCH_INITIAL_REFRESH
+       return InitializeAction.LAUNCH_INITIAL_REFRESH
     }
 }

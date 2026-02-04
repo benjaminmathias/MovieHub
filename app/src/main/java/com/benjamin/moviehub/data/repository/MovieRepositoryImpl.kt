@@ -48,7 +48,7 @@ class MovieRepositoryImpl @Inject constructor(
                 },
             pagingSourceFactory = {
                 if (isSearch) {
-                    movieDao.searchMoviesPaging(query)
+                    movieDao.searchMoviesPaging()
                 } else {
                     movieDao.getPopularMoviesPaging()
                 }
@@ -73,7 +73,7 @@ class MovieRepositoryImpl @Inject constructor(
 
             val remoteMovieEntity = dto.toEntity(
                 isFavorite = localMovie?.isFavorite ?: false,
-                isPopular = localMovie?.isFavorite ?: false,
+                isPopular = localMovie?.isPopular ?: false,
                 isSearchResult = localMovie?.isSearchResult ?: false,
                 pageOrder = localMovie?.pageOrder ?: -1
             )

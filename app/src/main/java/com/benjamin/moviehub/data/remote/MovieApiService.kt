@@ -25,7 +25,7 @@ interface MovieApiService {
         @Query("api_key") apiKey: String,
         @Query("query") query: String,
         @Query("language") language: String = "fr-FR",
-        @Query("page") page: Int
+        @Query("page") page: Int,
     ): MovieResponse
 
     @GET("movie/{movie_id}/credits")

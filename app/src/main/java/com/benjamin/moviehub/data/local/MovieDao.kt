@@ -32,8 +32,11 @@ interface MovieDao {
     @Query("SELECT * FROM movies WHERE isPopular = 1 ORDER BY pageOrder ASC")
     fun getPopularMoviesPaging(): PagingSource<Int, MovieEntity>
 
-    @Query("SELECT * FROM movies WHERE isSearchResult = 1 AND title LIKE '%'|| :query ||'%' ORDER BY pageOrder ASC")
-    fun searchMoviesPaging(query: String): PagingSource<Int, MovieEntity>
+   /* @Query("SELECT * FROM movies WHERE isSearchResult = 1 AND title LIKE '%'|| :query ||'%' ORDER BY pageOrder ASC")
+    fun searchMoviesPaging(query: String): PagingSource<Int, MovieEntity>*/
+
+    @Query("SELECT * FROM movies WHERE isSearchResult = 1 ORDER BY pageOrder ASC")
+    fun searchMoviesPaging(): PagingSource<Int, MovieEntity>
 
     // --- LOGIQUE DE SYNCHRONISATION (UPSERT) ---
     @Insert(onConflict = OnConflictStrategy.IGNORE)

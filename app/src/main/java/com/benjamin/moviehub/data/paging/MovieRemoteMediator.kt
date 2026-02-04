@@ -60,7 +60,7 @@ class MovieRemoteMediator(
 
             database.withTransaction {
                 if (loadType == LoadType.REFRESH) {
-                    movieDao.clearRemoteKeysByType("POPULAR")
+                    //movieDao.clearRemoteKeysByType("POPULAR")
                     movieDao.clearPopularMovies()
                     movieDao.resetPopularPageOrders()
                 }

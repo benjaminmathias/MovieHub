@@ -3,16 +3,16 @@ package com.benjamin.moviehub.ui.movie_list
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.cachedIn
-import com.benjamin.moviehub.core.util.UiText
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -25,32 +25,28 @@ class MovieListViewModel @Inject constructor(
     private val repository: MovieRepository
 ) : ViewModel() {
 
-
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val refreshTrigger = MutableSharedFlow<Unit>(replay = 1).apply {
+        tryEmit(Unit)
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     val pagedMovies = _searchQuery
         .debounce(500L)
         .distinctUntilChanged()
+        .combine(refreshTrigger) {query, _ -> query}
         .flatMapLatest { query ->
             repository.getPagedMovies(query)
         }
         .cachedIn(viewModelScope)
 
-    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
-    val uiState: StateFlow<MovieListUiState> = searchQuery
-        .map<String, MovieListUiState> { query ->
+    val uiState: StateFlow<MovieListUiState> = _searchQuery
+        .map { query ->
             MovieListUiState.Success(
                 pagedMovies = pagedMovies,
                 searchQuery = query
-            )
-        }
-        .catch { e ->
-            emit(
-                MovieListUiState.Error(
-                    errorMessage = UiText.DynamicString(e.localizedMessage ?: "Erreur inconnue")
-                )
             )
         }
         .stateIn(
@@ -64,6 +60,6 @@ class MovieListViewModel @Inject constructor(
     }
 
     fun retryGlobal() {
-        _searchQuery.value = _searchQuery.value
+        refreshTrigger.tryEmit(Unit)
     }
 }

@@ -2,6 +2,7 @@ package com.benjamin.moviehub
 
 import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.mapper.toDomain
+import com.benjamin.moviehub.data.mapper.toEntity
 import com.benjamin.moviehub.data.remote.MovieDto
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -58,6 +59,33 @@ class MovieMapperUnitTest {
         val dto = createFakeDto(posterPath = null)
         val result = dto.toDomain()
 
-        assertEquals("https://image.tmdb.org/t/p/w500", result.posterPath)
+        assertEquals("", result.posterPath)
+    }
+
+    @Test
+    fun `toEntity should handle null fields and use default empty strings`() {
+        val dto = createFakeDto(posterPath = null)
+        val entity = dto.toEntity(isFavorite = true)
+
+        assertEquals("", entity.posterPath)
+        assertEquals(true, entity.isFavorite)
+    }
+
+    @Test
+    fun `toDomain from Entity should keep all status flags intact`() {
+        val entity = createFakeEntity(isFavorite = true)
+        val domain = entity.toDomain()
+
+        assertEquals(true, domain.isFavorite)
+        assertEquals("https://www.themoviedb.org/movie/1", domain.webUrl)
+    }
+
+    @Test
+    fun `toEntity should map page order correctly`() {
+        val dto = createFakeDto(id = 500)
+        val entity = dto.toEntity(pageOrder = 10)
+
+        assertEquals(10, entity.pageOrder)
+        assertEquals(500, entity.id)
     }
 }
