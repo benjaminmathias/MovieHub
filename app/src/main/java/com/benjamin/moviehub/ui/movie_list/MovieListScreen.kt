@@ -9,6 +9,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
@@ -64,17 +66,6 @@ fun MovieListScreen(
                 onQueryChanged =
                     onSearchChanged
             )
-            /*AnimatedContent(
-                targetState = uiState,
-                transitionSpec = {
-                    fadeIn(animationSpec = tween(300)) togetherWith fadeOut(
-                        animationSpec = tween(
-                            300
-                        )
-                    )
-                },
-                label = "StateAnimation"
-            ) { state ->*/
             when (val state = uiState) {
                 is MovieListUiState.Loading -> {
                     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
@@ -85,19 +76,35 @@ fun MovieListScreen(
                 }
 
                 is MovieListUiState.Success -> {
+                    // Get paged data from Flow
                     val pagedMovies = state.pagedMovies.collectAsLazyPagingItems()
+                    // Get combined state (room + mediator)
+                    val combinedLoadStates = pagedMovies.loadState
 
-                    val loadState = pagedMovies.loadState.refresh
-                    val isInitialLoading =
-                        loadState is LoadState.Loading && pagedMovies.itemCount == 0
-                    val isEmpty =
-                        loadState is LoadState.NotLoading && pagedMovies.itemCount == 0
-                    val isError =
-                        loadState is LoadState.Error && pagedMovies.itemCount == 0
+                    val refreshLoadState = combinedLoadStates.refresh
+                    val mediatorLoadState = combinedLoadStates.mediator?.refresh
+
+                    // Forcing loading if Mediator is null (first load) or running
+                    val isMediatorLoadingOrNull = mediatorLoadState == null || mediatorLoadState is LoadState.Loading
+
+                    // Shimmer on if loading and empty list
+                    val isInitialLoading = (refreshLoadState is LoadState.Loading || isMediatorLoadingOrNull)
+                            && pagedMovies.itemCount == 0
+
+                    // Checking that pagination is completed
+                    val isAppendEndOfPagination = (combinedLoadStates.append as? LoadState.NotLoading)?.endOfPaginationReached == true
+
+                    // Empty state if : not loading, end of pagination and no items
+                    val isEmpty = refreshLoadState is LoadState.NotLoading
+                            && isAppendEndOfPagination
+                            && pagedMovies.itemCount == 0
+
+                    val isError = (refreshLoadState is LoadState.Error || mediatorLoadState is LoadState.Error)
+                            && pagedMovies.itemCount == 0
 
                     PullToRefreshBox(
                         state = refreshState,
-                        isRefreshing = isInitialLoading && pagedMovies.itemCount > 0,
+                        isRefreshing = !isInitialLoading && (refreshLoadState is LoadState.Loading || mediatorLoadState is LoadState.Loading),
                         onRefresh = { pagedMovies.refresh() },
                         modifier = Modifier.fillMaxSize()
                     ) {
@@ -107,10 +114,10 @@ fun MovieListScreen(
                             }
 
                             isError -> {
-                                val error =
-                                    loadState.error
+                                val errorState = (mediatorLoadState as? LoadState.Error)
+                                    ?: (refreshLoadState as? LoadState.Error)
                                 EmptyStateView(
-                                    message = error.localizedMessage
+                                    message = errorState?.error?.localizedMessage
                                         ?: stringResource(R.string.error_loading_movies),
                                     icon = Icons.Default.CloudOff,
                                     onRetry = { pagedMovies.retry() }
@@ -118,11 +125,24 @@ fun MovieListScreen(
                             }
 
                             isEmpty -> {
-                                EmptyStateView(
-                                    message = state.emptyMessage?.asString()
-                                        ?: stringResource(R.string.no_movie_available),
-                                    onRetry = { pagedMovies.refresh() }
-                                )
+                                if (searchQuery.isNotEmpty()) {
+                                    // Search without result
+                                    EmptyStateView(
+                                        message = stringResource(
+                                            R.string.empty_search_results,
+                                            searchQuery
+                                        ),
+                                        icon = Icons.Default.SearchOff,
+                                        onRetry = null
+                                    )
+                                } else {
+                                    // Empty popular list
+                                    EmptyStateView(
+                                        message = stringResource(R.string.no_movie_available),
+                                        icon = Icons.Default.Movie,
+                                        onRetry = { pagedMovies.refresh() }
+                                    )
+                                }
                             }
 
                             // Show data

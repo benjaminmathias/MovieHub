@@ -5,7 +5,6 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -32,9 +31,6 @@ interface MovieDao {
     @Query("SELECT * FROM movies WHERE isPopular = 1 ORDER BY pageOrder ASC")
     fun getPopularMoviesPaging(): PagingSource<Int, MovieEntity>
 
-   /* @Query("SELECT * FROM movies WHERE isSearchResult = 1 AND title LIKE '%'|| :query ||'%' ORDER BY pageOrder ASC")
-    fun searchMoviesPaging(query: String): PagingSource<Int, MovieEntity>*/
-
     @Query("SELECT * FROM movies WHERE isSearchResult = 1 ORDER BY pageOrder ASC")
     fun searchMoviesPaging(): PagingSource<Int, MovieEntity>
 
@@ -48,15 +44,8 @@ interface MovieDao {
     @Query("UPDATE movies SET isSearchResult = 1 WHERE id = :movieId")
     suspend fun markAsSearchResult(movieId: Int)
 
-    @Transaction
-    suspend fun upsertMovies(movies: List<MovieEntity>, isSearch: Boolean) {
-        movies.forEach { movie ->
-            val id = insertOrIgnore(listOf(movie)).first()
-            if (id == -1L) {
-                if (isSearch) markAsSearchResult(movie.id) else markAsPopular(movie.id)
-            }
-        }
-    }
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertMovies(movies: List<MovieEntity>)
 
     // --- GESTION DES CLÉS (REMOTE KEYS) ---
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -72,7 +61,7 @@ interface MovieDao {
     @Query("DELETE FROM remote_keys WHERE type = :type")
     suspend fun clearRemoteKeysByType(type: String)
 
-    @Query("DELETE FROM movies WHERE isPopular = 1 AND isFavorite = 0")
+    @Query("UPDATE movies SET isPopular = 0, pageOrder = -1 WHERE isPopular = 1")
     suspend fun clearPopularMovies()
 
     @Query("UPDATE movies SET isSearchResult = 0")

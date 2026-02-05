@@ -1,6 +1,5 @@
 package com.benjamin.moviehub.data.paging
 
-import android.util.Log
 import androidx.paging.ExperimentalPagingApi
 import androidx.paging.LoadType
 import androidx.paging.PagingState
@@ -45,47 +44,45 @@ class MovieRemoteMediator(
                 }
 
             }
-
-            Log.d("PagingLog", "Popular LoadType: $loadType | Page: $page")
-
-            Log.d("PagingLog", "Appel API Page $page")
             val response = apiService.getPopularMovies(
                 BuildConfig.TMDB_API_KEY,
                 page = page
             )
-            Log.d("PagingLog", "Reçu ${response.movies.size} films")
 
             val movies = response.movies
             val endOfPaginationReached = movies.isEmpty()
 
             database.withTransaction {
                 if (loadType == LoadType.REFRESH) {
-                    //movieDao.clearRemoteKeysByType("POPULAR")
                     movieDao.clearPopularMovies()
-                    movieDao.resetPopularPageOrders()
                 }
-
-                val favoriteIds = movieDao.getFavoriteMovieIds().toSet()
 
                 val prevKey = if (page == 1) null else page - 1
                 val nextKey = if (endOfPaginationReached) null else page + 1
 
                 val keys = movies.map {
-                    MovieRemoteKey(movieId = it.id, prevKey = prevKey, nextKey = nextKey, type = "POPULAR")
+                    MovieRemoteKey(
+                        movieId = it.id,
+                        prevKey = prevKey,
+                        nextKey = nextKey,
+                        type = "POPULAR"
+                    )
                 }
 
                 val movieEntities = movies.mapIndexed { index, dto ->
-
                     val position = ((page - 1) * state.config.pageSize) + index
+
+                    val localMovie = movieDao.getMovieById(dto.id)
+
                     dto.toEntity(
-                        isFavorite = favoriteIds.contains(dto.id),
+                        isFavorite = localMovie?.isFavorite ?: false,
                         isPopular = true,
-                        isSearchResult = false,
+                        isSearchResult = localMovie?.isSearchResult ?: false,
                         pageOrder = position
                     )
                 }
                 movieDao.insertAllKeys(keys)
-                movieDao.upsertMovies(movieEntities, false)
+                movieDao.upsertMovies(movieEntities)
             }
             MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)
         } finally {

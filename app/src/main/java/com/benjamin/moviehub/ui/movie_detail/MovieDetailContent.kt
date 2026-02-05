@@ -39,13 +39,11 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.util.formatReleaseDate
 import com.benjamin.moviehub.domain.model.Actor
@@ -81,10 +79,7 @@ fun MovieDetailContent(
         ) {
 
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(movie.backdropPath)
-                    .crossfade(true)
-                    .build(),
+                model = movie.backdropPath,
                 placeholder = painterResource(R.drawable.ic_launcher_foreground),
                 error = painterResource(R.drawable.ic_launcher_foreground),
                 contentDescription = null,

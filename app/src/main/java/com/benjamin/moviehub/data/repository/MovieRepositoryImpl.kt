@@ -36,7 +36,7 @@ class MovieRepositoryImpl @Inject constructor(
         return Pager(
             config = PagingConfig(
                 pageSize = 20,
-                prefetchDistance = 1,
+                prefetchDistance = 5,
                 initialLoadSize = 20,
                 enablePlaceholders = false
             ),
@@ -86,17 +86,6 @@ class MovieRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             localMovie?.toDomain() ?: throw e
         }
-
-        /*
-        if (localMovie != null) {
-            return localMovie.toDomain()
-        } else {
-            val dto = apiService.getMovieDetails(
-                movieId = movieId,
-                apiKey = BuildConfig.TMDB_API_KEY
-            )
-            return dto.toDomain()
-        }*/
     }
 
     override suspend fun toggleFavorite(movie: Movie, isFavorite: Boolean) {
@@ -104,6 +93,7 @@ class MovieRepositoryImpl @Inject constructor(
         val localMovie = movieDao.getMovieById(movie.id)
 
         if (localMovie == null) {
+            // Like a movie not in db
             movieDao.insertMovie(
                 movie.toEntity(
                     isFavorite = isFavorite,
@@ -111,9 +101,9 @@ class MovieRepositoryImpl @Inject constructor(
                 )
             )
         } else {
+            // Update favorite status of existing movie in db
             movieDao.updateFavoriteStatus(movie.id, isFavorite)
         }
-        movieDao.updateFavoriteStatus(movie.id, isFavorite)
     }
 
     override fun getFavoriteMovies(): Flow<List<Movie>> {
@@ -145,5 +135,4 @@ class MovieRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
-
 }

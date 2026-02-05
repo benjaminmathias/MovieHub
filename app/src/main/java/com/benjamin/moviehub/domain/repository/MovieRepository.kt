@@ -31,5 +31,8 @@ interface MovieRepository {
      */
     fun getFavoriteMovies() : Flow<List<Movie>>
 
+    /**
+     * Get movie actors from the API
+     */
     suspend fun getMovieActors(movieId: Int): Result<List<Actor>>
 }

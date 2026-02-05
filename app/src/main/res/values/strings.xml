@@ -12,7 +12,7 @@
     <string name="error_loading_movies">Impossible de charger les films.</string>
     <string name="no_movie_available">Aucun film disponible</string>
     <string name="no_result_found">Aucun résultat trouvé</string>
-    <string name="empty_search_results">Aucun résultat pour : %1$s</string>
+    <string name="empty_search_results">Aucun résultat pour "%1$s"</string>
     <string name="retry">Réessayer</string>
 
     <string name="error_loading_movie_detail">Impossible de charger les détails du film.</string>
