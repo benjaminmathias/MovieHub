@@ -1,50 +1,51 @@
-🎬 MovieHub - Android Tech Project
+# MovieHub 🎬
 
-<hr>
+MovieHub est une application Android permettant d'afficher les films populaires et d'en rechercher via l'API TMDB.
+L'application est **Offline-First** avec une gestion de la pagination.
 
-Une application Android moderne démontrant l'application des dernières recommandations de Google pour le développement d'applications natives robustes et performantes.
+<p align="center">
+  <img src="screenshots/home_popular.png" width="200" />
+  <img src="screenshots/details.png" width="200" />
+  <img src="screenshots/search_result.png" width="200" />
+</p>
 
-<hr>
+## 🚀 Fonctionnalités Clés
 
-🛠 Stack Technique
+* **Architecture Offline-First** : Utilisation de Room comme *Single Source of Truth* (SSOT). L'application fonctionne parfaitement sans connexion réseau grâce au cache local.
+* **Pagination Infinie** : Implémentation de Paging 3 avec `RemoteMediator` pour gérer la synchronisation API/Base de données.
+* **Recherche Réactive** : Recherche instantanée avec *Debounce* et gestion des états vides/erreurs.
+* **Gestion des Favoris** : Sauvegarde locale des films favoris.
+* **Image Caching** : Optimisation réseau et mémoire avec Coil (Cache disque agressif).
 
-    Langage : Kotlin (Coroutines, Flow)
+## 🛠 Tech Stack
 
-    UI : Jetpack Compose (Material 3)
+* **Langage** : Kotlin
+* **UI** : Jetpack Compose (Material 3)
+* **Navigation** : Navigation 3
+* **Architecture** : MVVM + Clean Architecture (Domain/Data/UI layers)
+* **Injection de dépendance** : Hilt
+* **Réseau** : Retrofit
+* **Base de données** : Room
+* **Pagination** : Paging 3 (avec RemoteMediator)
+* **Images** : Coil
+* **Programmation Asynchrone** : Coroutines + Flow
 
-    Architecture : MVVM (Model-View-ViewModel) + Clean Architecture (Data/Domain/UI)
+## 🏗 Choix d'Architecture
 
-    Injection de dépendances : Hilt (Dagger)
+### Single Source of Truth (SSOT)
+L'application ne montre jamais directement les données venant de l'API.
+1.  Le `RemoteMediator` récupère les données réseau.
+2.  Il fusionne intelligemment les données (préserve les favoris locaux via une stratégie de *Merge*).
+3.  Il sauvegarde dans Room.
+4.  L'UI observe uniquement la base de données Room.
+Cela garantit une cohérence totale des données et permet le support hors-ligne natif.
 
-    Réseau : Retrofit
+### Gestion des États (State Management)
+Chaque écran expose un `UiState` scellé (Loading, Success, Error) via un `StateFlow`, consommé par l'UI de manière réactive.
 
-    Base de donnée locale : Room Database (Offline-first)
+## 🧪 Tests
 
-    Chargement d'images : Coil   
-<hr>
-✨ Fonctionnalités
-
-
-💾 Gestion des Favoris & Persistance
-
-    Synchronisation Intelligente : Implémentation d'une logique de fusion (Merge) dans le Repository. Lorsqu'un film est rafraîchi via l'API, son état "Favori" stocké localement dans Room est préservé.
-
-    Single Source of Truth (SSOT) : L'UI n'observe que la base de données locale. Cela garantit une interface stable et évite les clignotements lors des mises à jour réseau.
-
-    Offline-first : Mise en cache locale complète via Room pour une consultation des données sans connexion réseau.
-
-🔍 Recherche en Temps Réel
-
-    Filtrage Dynamique : Utilisation de StateFlow pour lier la barre de recherche à la base de données, permettant un filtrage instantané des films déjà chargés.
-
-    Gestion des États : Vues différenciées pour "Aucun résultat trouvé" et "Chargement en cours" pour une expérience utilisateur sans friction.
-
-🎨 UI/UX Avancée
-
-    Feedback Visuel : Intégration de Shimmer Effects sur mesure imitant la structure des cartes de films pour réduire la charge cognitive pendant le chargement.
-
-    Navigation Intuitive : Utilisation de Jetpack Navigation pour un passage fluide entre les écrans avec gestion rigoureuse du cycle de vie des ViewModels.
-
-📸 Aperçu
-
-<table style="width: 100%"> <tr> <td align="center" width="50%"><b>Liste des films</b></td> <td align="center" width="50%"><b>Détails du film</b></td> </tr> <tr> <td align="center"> <img src="https://github.com/user-attachments/assets/3d45eb7c-5924-4dde-a256-817ca60aea29" height="500" /> </td> <td align="center"> <img src="https://github.com/user-attachments/assets/4faf06c0-08be-43ae-9978-918b4f80b8dd" height="500" /> </td> </tr> </table>
+Le projet inclut des tests unitaires sur les ViewModels critiques, vérifiant notamment :
+* Le mécanisme de *Debounce* de la recherche.
+* La logique de *Retry*.
+* Le mapping des données.
