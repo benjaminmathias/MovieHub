@@ -50,7 +50,6 @@ import com.benjamin.moviehub.domain.model.Actor
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.ActorItem
 
-
 @Composable
 fun MovieDetailContent(
     movie: Movie,

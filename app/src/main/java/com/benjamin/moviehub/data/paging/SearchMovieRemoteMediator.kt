@@ -89,6 +89,8 @@ class SearchMovieRemoteMediator(
                 movieDao.upsertMovies(movieEntities)
             }
             MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)
+        } catch (e: Exception) {
+            MediatorResult.Error(e)
         } finally {
             isFetching = false
         }
