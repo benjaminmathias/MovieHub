@@ -157,14 +157,12 @@ fun MovieDetailContent(
                 text = movie.title,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.ExtraBold,
-                lineHeight = 34.sp
+                lineHeight = 34.sp,
+                modifier = Modifier.padding(end = 52.dp)
             )
 
             Text(
                 text = formatReleaseDate(movie.releaseDate),
-                /*text = movie.releaseDate.take(4).ifBlank {
-                stringResource(R.string.release_date_unknown)
-            },*/
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.secondary
             )
