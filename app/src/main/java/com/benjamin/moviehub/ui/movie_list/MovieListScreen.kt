@@ -1,18 +1,27 @@
 package com.benjamin.moviehub.ui.movie_list
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -20,6 +29,7 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
@@ -35,6 +45,8 @@ import com.benjamin.moviehub.ui.components.MovieShimmerItem
 fun MovieListScreen(
     uiState: MovieListUiState,
     searchQuery: String,
+    selectedGenres: Set<String>,
+    onGenreClick: (String) -> Unit,
     onSearchChanged: (String) -> Unit,
     onMovieClick: (Int) -> Unit,
     retryGlobal: () -> Unit
@@ -66,6 +78,15 @@ fun MovieListScreen(
                 onQueryChanged =
                     onSearchChanged
             )
+
+            Spacer(modifier = Modifier.size(4.dp))
+
+            GenreFilterBar(
+                genres = listOf("Action", "Comédie", "Drame", "Sci-Fi"),
+                selectedGenres = selectedGenres,
+                onGenreClick = onGenreClick
+            )
+
             when (val state = uiState) {
                 is MovieListUiState.Loading -> {
                     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
@@ -85,22 +106,26 @@ fun MovieListScreen(
                     val mediatorLoadState = combinedLoadStates.mediator?.refresh
 
                     // Forcing loading if Mediator is null (first load) or running
-                    val isMediatorLoadingOrNull = mediatorLoadState == null || mediatorLoadState is LoadState.Loading
+                    val isMediatorLoadingOrNull =
+                        mediatorLoadState == null || mediatorLoadState is LoadState.Loading
 
                     // Shimmer on if loading and empty list
-                    val isInitialLoading = (refreshLoadState is LoadState.Loading || isMediatorLoadingOrNull)
-                            && pagedMovies.itemCount == 0
+                    val isInitialLoading =
+                        (refreshLoadState is LoadState.Loading || isMediatorLoadingOrNull)
+                                && pagedMovies.itemCount == 0
 
                     // Checking that pagination is completed
-                    val isAppendEndOfPagination = (combinedLoadStates.append as? LoadState.NotLoading)?.endOfPaginationReached == true
+                    val isAppendEndOfPagination =
+                        (combinedLoadStates.append as? LoadState.NotLoading)?.endOfPaginationReached == true
 
                     // Empty state if : not loading, end of pagination and no items
                     val isEmpty = refreshLoadState is LoadState.NotLoading
                             && isAppendEndOfPagination
                             && pagedMovies.itemCount == 0
 
-                    val isError = (refreshLoadState is LoadState.Error || mediatorLoadState is LoadState.Error)
-                            && pagedMovies.itemCount == 0
+                    val isError =
+                        (refreshLoadState is LoadState.Error || mediatorLoadState is LoadState.Error)
+                                && pagedMovies.itemCount == 0
 
                     PullToRefreshBox(
                         state = refreshState,
@@ -193,6 +218,42 @@ fun MovieListScreen(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun GenreFilterBar(
+    genres: List<String>,
+    selectedGenres: Set<String>,
+    onGenreClick: (String) -> Unit
+) {
+
+    LazyRow(
+        modifier = Modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp)
+    ) {
+        items(genres.size) { index ->
+            val genre = genres[index]
+            val isSelected = selectedGenres.contains(genre)
+
+            FilterChip(
+                onClick = { onGenreClick(genre) },
+                label = { Text(genre) },
+                selected = isSelected,
+                leadingIcon = if (isSelected) {
+                    {
+                        Icon(
+                            imageVector = Icons.Filled.Done,
+                            contentDescription = "Selectionné",
+                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                        )
+                    }
+                } else {
+                    null
+                },
+            )
         }
     }
 }

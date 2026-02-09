@@ -80,10 +80,14 @@ fun NavigationRoot(
                         val viewModel: MovieListViewModel = hiltViewModel()
                         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                         val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+                        val selectedGenres by viewModel.selectedGenres.collectAsStateWithLifecycle()
+
 
                         MovieListScreen(
                             uiState = uiState,
                             searchQuery = searchQuery,
+                            selectedGenres =selectedGenres,
+                            onGenreClick = { genre -> viewModel.toggleGenre(genre) },
                             onSearchChanged = viewModel::onSearchQueryChanged,
                             onMovieClick = { id ->
                                 backStack.add(Route.Detail(id))
