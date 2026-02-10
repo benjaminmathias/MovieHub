@@ -19,7 +19,9 @@ data class MovieDto(
 
     @SerializedName("vote_average") val voteAverage: Double,
 
-    @SerializedName("release_date") val releaseDate: String? = ""
+    @SerializedName("release_date") val releaseDate: String? = "",
+
+    @SerializedName("genre_ids") val genreIds: List<Int>? = null
 )
 
 data class MovieCreditsDto(

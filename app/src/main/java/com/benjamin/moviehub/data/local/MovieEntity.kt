@@ -12,6 +12,7 @@ data class MovieEntity(
     val backdropPath: String?,
     val voteAverage: Double,
     val releaseDate: String,
+    val genreIds: List<Int> = emptyList(),
     val isFavorite: Boolean = false,
     val isPopular: Boolean = false,
     val isSearchResult: Boolean = false,

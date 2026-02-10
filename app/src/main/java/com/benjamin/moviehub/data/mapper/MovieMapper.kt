@@ -16,6 +16,7 @@ fun MovieDto.toEntity(isFavorite: Boolean = false, isPopular: Boolean = false, i
         backdropPath = this.backdropPath ?: "",
         voteAverage = this.voteAverage,
         releaseDate = this.releaseDate ?: "",
+        genreIds = this.genreIds ?: emptyList(),
         isFavorite = isFavorite,
         isPopular = isPopular,
         isSearchResult = isSearchResult,
@@ -36,7 +37,8 @@ fun MovieEntity.toDomain(): Movie {
         voteAverage = voteAverage,
         releaseDate = releaseDate,
         webUrl = "https://www.themoviedb.org/movie/$id",
-        isFavorite = isFavorite
+        isFavorite = isFavorite,
+        genreIds = genreIds
     )
 }
 
@@ -50,11 +52,12 @@ fun MovieDto.toDomain(): Movie {
         title = this.title,
         overview = this.description,
         posterPath = if (this.posterPath != null ) "https://image.tmdb.org/t/p/w500${this.posterPath}" else "",
-        backdropPath = if (this.posterPath != null) "https://image.tmdb.org/t/p/w780${this.backdropPath}" else "",
+        backdropPath = if (this.backdropPath != null) "https://image.tmdb.org/t/p/w780${this.backdropPath}" else "",
         voteAverage = this.voteAverage,
         releaseDate = this.releaseDate ?: "",
         webUrl = "https://www.themoviedb.org/movie/${this.id}",
-        isFavorite = false
+        isFavorite = false,
+        genreIds = genreIds ?: emptyList()
     )
 }
 
@@ -70,6 +73,7 @@ fun Movie.toEntity(isFavorite: Boolean, isPopular: Boolean): MovieEntity {
         backdropPath = this.backdropPath,
         releaseDate = this.releaseDate,
         voteAverage = this.voteAverage,
+        genreIds = this.genreIds,
         isFavorite = isFavorite,
         isPopular = isPopular
     )
