@@ -140,7 +140,8 @@ fun MovieItemPreview() {
         overview = "Test",
         backdropPath = "",
         webUrl = "",
-        genreIds = emptyList()
+        genreIds = emptyList(),
+        genres = emptyList()
     )
 
     MovieItem(

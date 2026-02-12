@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.data.repository
 
+import android.util.Log
 import androidx.paging.ExperimentalPagingApi
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
@@ -63,6 +64,8 @@ class MovieRepositoryImpl @Inject constructor(
 
         // Try to get cached movie
         val localMovie = movieDao.getMovieById(movieId)
+
+        Log.d("localMovie GenreId", localMovie?.genreIds.toString())
 
         return try {
             // API call

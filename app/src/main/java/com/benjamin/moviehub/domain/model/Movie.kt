@@ -10,5 +10,6 @@ data class Movie(
     val releaseDate: String,
     val webUrl: String?,
     val isFavorite: Boolean,
-    val genreIds: List<Int>
+    val genreIds: List<Int>,
+    val genres: List<String>
 )

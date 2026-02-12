@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.data.mapper
 
+import com.benjamin.moviehub.core.util.GenreUtils
 import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.remote.MovieDto
 import com.benjamin.moviehub.domain.model.Movie
@@ -8,6 +9,11 @@ import com.benjamin.moviehub.domain.model.Movie
  * Convert a MovieDto (API response) to a MovieEntity(DB entity)
  */
 fun MovieDto.toEntity(isFavorite: Boolean = false, isPopular: Boolean = false, isSearchResult: Boolean = false, pageOrder: Int = 0): MovieEntity {
+
+    val finalGenreIds = this.genreIds
+        ?: this.genres?.map { it.id }
+        ?: emptyList()
+
     return MovieEntity(
         id = this.id,
         title = this.title,
@@ -16,7 +22,7 @@ fun MovieDto.toEntity(isFavorite: Boolean = false, isPopular: Boolean = false, i
         backdropPath = this.backdropPath ?: "",
         voteAverage = this.voteAverage,
         releaseDate = this.releaseDate ?: "",
-        genreIds = this.genreIds ?: emptyList(),
+        genreIds = finalGenreIds,
         isFavorite = isFavorite,
         isPopular = isPopular,
         isSearchResult = isSearchResult,
@@ -38,7 +44,8 @@ fun MovieEntity.toDomain(): Movie {
         releaseDate = releaseDate,
         webUrl = "https://www.themoviedb.org/movie/$id",
         isFavorite = isFavorite,
-        genreIds = genreIds
+        genreIds = genreIds,
+        genres = genreIds.mapNotNull { GenreUtils.idToNameMap[it] }
     )
 }
 
@@ -57,7 +64,8 @@ fun MovieDto.toDomain(): Movie {
         releaseDate = this.releaseDate ?: "",
         webUrl = "https://www.themoviedb.org/movie/${this.id}",
         isFavorite = false,
-        genreIds = genreIds ?: emptyList()
+        genreIds = genreIds ?: emptyList(),
+        genres = genreIds?.mapNotNull { GenreUtils.idToNameMap[it] } ?: emptyList()
     )
 }
 
@@ -65,6 +73,7 @@ fun MovieDto.toDomain(): Movie {
  * Convert a Movie (Domain model) to a MovieEntity (DB entity)
  */
 fun Movie.toEntity(isFavorite: Boolean, isPopular: Boolean): MovieEntity {
+
     return MovieEntity(
         id = this.id,
         title = this.title,

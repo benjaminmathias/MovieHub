@@ -4,6 +4,7 @@ import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.mapper.toEntity
 import com.benjamin.moviehub.data.remote.MovieDto
+import com.benjamin.moviehub.domain.model.GenreObject
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -36,7 +37,6 @@ class MovieMapperUnitTest {
         voteAverage = 7.5,
         releaseDate = "2024-01-01"
     )
-
 
     @Test
     fun `Check image URL format`() {
@@ -87,5 +87,47 @@ class MovieMapperUnitTest {
 
         assertEquals(10, entity.pageOrder)
         assertEquals(500, entity.id)
+    }
+
+    @Test
+    fun `toEntity should extract genre IDs from genre objects when genreIds is null`() {
+        val detailDto = MovieDto(
+            id = 1,
+            title = "Test Movie",
+            description = "Desc",
+            posterPath = null,
+            backdropPath = null,
+            voteAverage = 8.0,
+            releaseDate = "2025-01-01",
+            genreIds = null,
+            genres = listOf(
+                GenreObject(id = 28, name = "Action"),
+                GenreObject(id = 12, name = "Aventure")
+            )
+        )
+
+        val entity = detailDto.toEntity()
+
+        val expectedGenreIds = listOf(28, 12)
+        assertEquals(expectedGenreIds, entity.genreIds)
+    }
+
+    @Test
+    fun `toEntity should prioritize genreIds if available`() {
+        val listDto = MovieDto(
+            id = 1,
+            title = "Test Movie",
+            description = "Desc",
+            posterPath = null,
+            backdropPath = null,
+            voteAverage = 8.0,
+            releaseDate = "2025-01-01",
+            genreIds = listOf(99, 100),
+            genres = null
+        )
+
+        val entity = listDto.toEntity()
+
+        assertEquals(listOf(99, 100), entity.genreIds)
     }
 }

@@ -49,6 +49,7 @@ import com.benjamin.moviehub.core.util.formatReleaseDate
 import com.benjamin.moviehub.domain.model.Actor
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.ActorItem
+import com.benjamin.moviehub.ui.components.MovieGenreTag
 
 @Composable
 fun MovieDetailContent(
@@ -162,21 +163,27 @@ fun MovieDetailContent(
             )
 
             Text(
-                text = formatReleaseDate(movie.releaseDate),
+                text = movie.releaseDate.formatReleaseDate(),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.secondary
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = "Synopsis",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
-            )
+            if (movie.genres.isNotEmpty()) {
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(movie.genres.size) { index ->
+                        MovieGenreTag(name = movie.genres[index])
+                    }
+                }
+            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = movie.overview,

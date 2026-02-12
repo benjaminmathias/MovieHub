@@ -25,7 +25,9 @@ object GenreUtils {
     )
 
     // Map ID to Name
-    val idToNameMap = genreMap.entries.associate { (key, value) -> value to key }
+    val idToNameMap: Map<Int, String> =
+        genreMap.map { (name, id) -> id to name }.toMap()
+        //genreMap.entries.associate { (key, value) -> value to key }
 
     fun getGenreId(name: String): Int? {
         return genreMap[name]

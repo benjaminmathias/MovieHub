@@ -1,17 +1,23 @@
 package com.benjamin.moviehub.core.util
 
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
-fun formatReleaseDate(dateString: String?): String {
-    if (dateString.isNullOrBlank()) return "Date inconnue"
+fun String?.formatReleaseDate(): String {
+
+    if (this.isNullOrBlank()) return "Date inconnue"
 
     return try {
-        val parser = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val formatter = SimpleDateFormat("dd MMMM yyyy", Locale.FRENCH)
-        val date = parser.parse(dateString)
-        if (date != null) formatter.format(date) else dateString.take(4)
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+
+        val outputFormat = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault())
+
+        val date: Date? = inputFormat.parse(this)
+
+        date?.let { outputFormat.format(it) } ?: this
+
     } catch (e: Exception) {
-        dateString.take(4)
+        this.take(4)
     }
 }

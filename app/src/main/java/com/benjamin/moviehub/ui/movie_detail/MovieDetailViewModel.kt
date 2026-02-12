@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.ui.movie_detail
 
+import android.util.Log
 import com.benjamin.moviehub.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -41,6 +42,8 @@ class MovieDetailViewModel @Inject constructor(
 
                 val movie = movieDeferred.await()
                 val actors = actorsDeferred.await().getOrDefault(emptyList())
+
+                Log.d("Genres", movie.genres.toString())
 
                 _uiState.value = MovieDetailUiState.Success(movie, actors)
             } catch (e: Exception) {
