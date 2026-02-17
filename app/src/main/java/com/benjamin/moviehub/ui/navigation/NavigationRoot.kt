@@ -28,6 +28,7 @@ import com.benjamin.moviehub.ui.movie_favorite_list.FavoriteScreen
 import com.benjamin.moviehub.ui.movie_favorite_list.FavoriteViewModel
 import com.benjamin.moviehub.ui.movie_list.MovieListScreen
 import com.benjamin.moviehub.ui.movie_list.MovieListViewModel
+import com.benjamin.moviehub.ui.settings.SettingsScreen
 
 @Composable
 fun NavigationRoot(
@@ -71,9 +72,7 @@ fun NavigationRoot(
             .consumeWindowInsets(paddingValues)) {
             NavDisplay(
                 backStack = backStack,
-                onBack = {
-                    if (backStack.size > 1) backStack.removeLastOrNull()
-                },
+                onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
                 entryProvider = entryProvider {
 
                     entry<Route.List> {
@@ -82,17 +81,15 @@ fun NavigationRoot(
                         val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
                         val selectedGenres by viewModel.selectedGenres.collectAsStateWithLifecycle()
 
-
                         MovieListScreen(
                             uiState = uiState,
                             searchQuery = searchQuery,
                             selectedGenres =selectedGenres,
                             onGenreClick = { genre -> viewModel.toggleGenre(genre) },
                             onSearchChanged = viewModel::onSearchQueryChanged,
-                            onMovieClick = { id ->
-                                backStack.add(Route.Detail(id))
-                            },
-                            retryGlobal = viewModel::retryGlobal
+                            onMovieClick = { id -> backStack.add(Route.Detail(id)) },
+                            retryGlobal = viewModel::retryGlobal,
+                            onSettingsClick = { backStack.add(Route.Settings) }
                         )
                     }
 
@@ -125,6 +122,11 @@ fun NavigationRoot(
                         )
                     }
 
+                    entry<Route.Settings> {
+                        SettingsScreen(
+                            onBackClick = { backStack.removeLastOrNull() }
+                        )
+                    }
                 },
                 entryDecorators = listOf(
                     rememberSaveableStateHolderNavEntryDecorator(),

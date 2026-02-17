@@ -98,11 +98,15 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.datastore.core)
     ksp(libs.hilt.compiler)
 
     // Network & Data
     implementation(libs.retrofit)
     implementation(libs.retrofit.gson)
+
+    // Datastore
+    implementation(libs.androidx.datastore.preferences)
 
     // Room & Paging
     implementation(libs.androidx.room.ktx)
