@@ -1,5 +1,11 @@
 package com.benjamin.moviehub.ui.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -40,7 +46,7 @@ fun NavigationRoot(
     val currentRoute = backStack.lastOrNull()
 
     Scaffold(
-        contentWindowInsets = WindowInsets(0,0,0,0),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             if (currentRoute is Route.List || currentRoute is Route.FavoriteList) {
                 NavigationBar {
@@ -66,26 +72,48 @@ fun NavigationRoot(
         }
 
     ) { paddingValues ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)
-            .consumeWindowInsets(paddingValues)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .consumeWindowInsets(paddingValues)
+        ) {
             NavDisplay(
                 backStack = backStack,
                 onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
+                transitionSpec = {
+                    (slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(400)
+                    ) + fadeIn(animationSpec = tween(400))).togetherWith(
+                        slideOutHorizontally(
+                            targetOffsetX = { fullWidth -> -fullWidth },
+                            animationSpec = tween(400)
+                        ) + fadeOut(animationSpec = tween(400))
+                    )
+                },
+
+                popTransitionSpec = {
+                    (slideInHorizontally(
+                        initialOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(400)
+                    ) + fadeIn(animationSpec = tween(400))).togetherWith(
+                        slideOutHorizontally(
+                            targetOffsetX = { fullWidth -> fullWidth },
+                            animationSpec = tween(400)
+                        ) + fadeOut(animationSpec = tween(400))
+                    )
+                },
                 entryProvider = entryProvider {
 
                     entry<Route.List> {
                         val viewModel: MovieListViewModel = hiltViewModel()
                         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                         val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
-                        val selectedGenres by viewModel.selectedGenres.collectAsStateWithLifecycle()
 
                         MovieListScreen(
                             uiState = uiState,
                             searchQuery = searchQuery,
-                            selectedGenres =selectedGenres,
-                            onGenreClick = { genre -> viewModel.toggleGenre(genre) },
                             onSearchChanged = viewModel::onSearchQueryChanged,
                             onMovieClick = { id -> backStack.add(Route.Detail(id)) },
                             retryGlobal = viewModel::retryGlobal,

@@ -1,27 +1,21 @@
 package com.benjamin.moviehub.ui.movie_list
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -47,8 +41,6 @@ import com.benjamin.moviehub.ui.components.MovieShimmerItem
 fun MovieListScreen(
     uiState: MovieListUiState,
     searchQuery: String,
-    selectedGenres: Set<String>,
-    onGenreClick: (String) -> Unit,
     onSearchChanged: (String) -> Unit,
     onMovieClick: (Int) -> Unit,
     retryGlobal: () -> Unit,
@@ -91,12 +83,6 @@ fun MovieListScreen(
             )
 
             Spacer(modifier = Modifier.size(4.dp))
-
-            GenreFilterBar(
-                genres = listOf("Action", "Comédie", "Drame", "Sci-Fi"),
-                selectedGenres = selectedGenres,
-                onGenreClick = onGenreClick
-            )
 
             when (val state = uiState) {
                 is MovieListUiState.Loading -> {
@@ -229,42 +215,6 @@ fun MovieListScreen(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun GenreFilterBar(
-    genres: List<String>,
-    selectedGenres: Set<String>,
-    onGenreClick: (String) -> Unit
-) {
-
-    LazyRow(
-        modifier = Modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp)
-    ) {
-        items(genres.size) { index ->
-            val genre = genres[index]
-            val isSelected = selectedGenres.contains(genre)
-
-            FilterChip(
-                onClick = { onGenreClick(genre) },
-                label = { Text(genre) },
-                selected = isSelected,
-                leadingIcon = if (isSelected) {
-                    {
-                        Icon(
-                            imageVector = Icons.Filled.Done,
-                            contentDescription = "Selectionné",
-                            modifier = Modifier.size(FilterChipDefaults.IconSize)
-                        )
-                    }
-                } else {
-                    null
-                },
-            )
         }
     }
 }

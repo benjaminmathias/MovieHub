@@ -87,7 +87,6 @@ fun MovieDetailScreen(
                             )
                         }
                     }
-                    // CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
 
                 is MovieDetailUiState.Success -> {
@@ -107,6 +106,5 @@ fun MovieDetailScreen(
                 }
             }
         }
-
     }
 }
