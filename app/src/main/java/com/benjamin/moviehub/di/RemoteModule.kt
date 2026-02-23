@@ -11,7 +11,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object NetworkModule {
+object RemoteModule {
 
     @Provides
     @Singleton
@@ -27,5 +27,4 @@ object NetworkModule {
     fun provideMovieApiService(retrofit: Retrofit): MovieApiService {
         return retrofit.create(MovieApiService::class.java)
     }
-
 }
