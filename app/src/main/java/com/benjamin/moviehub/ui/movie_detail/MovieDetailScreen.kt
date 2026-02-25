@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
@@ -39,6 +40,7 @@ fun MovieDetailScreen(
     val context = LocalContext.current
 
     Scaffold(
+        modifier = Modifier.testTag("detail_screen"),
         topBar = {
             CenterAlignedTopAppBar(
                 {

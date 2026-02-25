@@ -30,7 +30,7 @@ android {
         versionName = "1.0"
 
         //testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        testInstrumentationRunner = "com.benjamin.moviehub.CustomTestRunner"
+        testInstrumentationRunner = "com.benjamin.moviehub.HiltTestRunner"
 
         val properties = Properties()
         val propertiesFile = project.rootProject.file("local.properties")
@@ -90,7 +90,7 @@ dependencies {
     implementation(libs.androidx.material3)
 
     // Icons & Visuals
-    implementation("androidx.compose.material:material-icons-core")
+    implementation(libs.androidx.material.icons.core)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.coil.compose)
     implementation(libs.compose.shimmer)
@@ -136,9 +136,13 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.test.manifest)
     androidTestImplementation(libs.turbine)
     androidTestImplementation(libs.hilt.android.testing)
-    androidTestImplementation("com.google.dagger:hilt-android-compiler:2.59")
+    // androidTestImplementation(libs.hilt.android.compiler.v259)
+    // kspAndroidTest("com.google.dagger:hilt-android-compiler:2.59.1")
+    kspAndroidTest(libs.hilt.compiler)
+    kspAndroidTest(libs.androidx.room.compiler)
 
     // Debug
     debugImplementation(libs.androidx.compose.ui.tooling)
