@@ -19,15 +19,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -61,9 +60,12 @@ fun MovieDetailContent(
     val scrollState = rememberScrollState()
 
     val scale by animateFloatAsState(
-        targetValue = if (movie.isFavorite) 1.2f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "FavoriteScale"
+        targetValue = if (movie.isFavorite) 1.3f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioHighBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "favorite_spring_anim"
     )
 
     Column(
@@ -131,14 +133,12 @@ fun MovieDetailContent(
                 }
             }
 
-            FloatingActionButton(
+            IconButton(
                 onClick = { onToggleFavorite(movie) },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 16.dp)
-                    .offset(y = 28.dp),
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                shape = CircleShape
+                    .offset(y = 28.dp)
             ) {
                 Icon(
                     imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
