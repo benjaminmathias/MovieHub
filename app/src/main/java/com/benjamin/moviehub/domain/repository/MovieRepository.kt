@@ -35,4 +35,6 @@ interface MovieRepository {
      * Get movie actors from the API
      */
     suspend fun getMovieActors(movieId: Int): Result<List<Actor>>
+
+    suspend fun syncPopularMoviesCache()
 }

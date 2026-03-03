@@ -116,6 +116,13 @@ dependencies {
     implementation(libs.androidx.paging.runtime.ktx)
     implementation(libs.androidx.paging.compose)
 
+    // WorkManager
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
+
+
+
     // Navigation 3
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.navigation3.ui)
@@ -139,8 +146,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     androidTestImplementation(libs.turbine)
     androidTestImplementation(libs.hilt.android.testing)
-    // androidTestImplementation(libs.hilt.android.compiler.v259)
-    // kspAndroidTest("com.google.dagger:hilt-android-compiler:2.59.1")
     kspAndroidTest(libs.hilt.compiler)
     kspAndroidTest(libs.androidx.room.compiler)
 

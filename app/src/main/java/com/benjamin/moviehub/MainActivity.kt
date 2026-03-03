@@ -14,12 +14,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.core.util.AppTheme
+import com.benjamin.moviehub.domain.worker.SyncMoviesWorker
 import com.benjamin.moviehub.ui.MainViewModel
 import com.benjamin.moviehub.ui.components.NetworkStatusBar
 import com.benjamin.moviehub.ui.navigation.NavigationRoot
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.concurrent.TimeUnit
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -29,6 +36,24 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.UNMETERED)
+            .setRequiresBatteryNotLow(true)
+            .build()
+
+        val syncWorkRequest = PeriodicWorkRequestBuilder<SyncMoviesWorker>(
+            1, TimeUnit.DAYS
+        )
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+            "daily_movie_sync",
+            ExistingPeriodicWorkPolicy.KEEP,
+            syncWorkRequest
+        )
+
         setContent {
 
             val appTheme by mainViewModel.theme.collectAsStateWithLifecycle()

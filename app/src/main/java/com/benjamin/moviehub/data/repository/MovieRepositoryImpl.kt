@@ -138,4 +138,31 @@ class MovieRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun syncPopularMoviesCache() {
+        try {
+            val response = apiService.getPopularMovies(
+                apiKey = BuildConfig.TMDB_API_KEY,
+                page = 1
+            )
+
+            val remoteEntities = response.movies.map { dto ->
+                dto.toEntity(
+                    isFavorite = false,
+                    isPopular = true,
+                    isSearchResult = false,
+                    pageOrder = -1
+                )
+            }
+
+            movieDao.insertOrIgnore(remoteEntities)
+
+            remoteEntities.forEach { entity ->
+                movieDao.markAsPopular(entity.id)
+            }
+        } catch (e: Exception) {
+            Log.e("SyncWorker", "Échec de la synchronisation en arrière-plan", e)
+            throw e
+        }
+    }
 }
