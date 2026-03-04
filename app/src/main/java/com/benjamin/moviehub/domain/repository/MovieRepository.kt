@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
  * Repository interface for managing movies data
  */
 interface MovieRepository {
-
     /**
      * Get paged movies from the API, default ones or through query
      */
@@ -24,12 +23,15 @@ interface MovieRepository {
     /**
      * Toggle the favorite status of a movie by saving in the db
      */
-    suspend fun toggleFavorite(movie: Movie, isFavorite: Boolean)
+    suspend fun toggleFavorite(
+        movie: Movie,
+        isFavorite: Boolean,
+    )
 
     /**
      * Get favorite movies from the db
      */
-    fun getFavoriteMovies() : Flow<List<Movie>>
+    fun getFavoriteMovies(): Flow<List<Movie>>
 
     /**
      * Get movie actors from the API

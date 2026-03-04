@@ -5,7 +5,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 sealed interface Route : NavKey {
-
     @Serializable
     data object List : Route, NavKey
 
@@ -13,7 +12,10 @@ sealed interface Route : NavKey {
     data object FavoriteList : Route, NavKey
 
     @Serializable
-    data class Detail(val movieId: Int) : Route, NavKey
+    data class Detail(
+        val movieId: Int,
+    ) : Route,
+        NavKey
 
     @Serializable
     data object Settings : Route, NavKey

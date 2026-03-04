@@ -18,18 +18,19 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun DeleteBackground() {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(8.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.errorContainer)
-            .padding(horizontal = 20.dp),
-        contentAlignment = Alignment.CenterEnd
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(8.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.errorContainer)
+                .padding(horizontal = 20.dp),
+        contentAlignment = Alignment.CenterEnd,
     ) {
         Icon(
             imageVector = Icons.Default.Delete,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.onErrorContainer
+            tint = MaterialTheme.colorScheme.onErrorContainer,
         )
     }
 }

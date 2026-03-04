@@ -8,11 +8,16 @@ import com.benjamin.moviehub.domain.model.Movie
 /**
  * Convert a MovieDto (API response) to a MovieEntity(DB entity)
  */
-fun MovieDto.toEntity(isFavorite: Boolean = false, isPopular: Boolean = false, isSearchResult: Boolean = false, pageOrder: Int = 0): MovieEntity {
-
-    val finalGenreIds = this.genreIds
-        ?: this.genres?.map { it.id }
-        ?: emptyList()
+fun MovieDto.toEntity(
+    isFavorite: Boolean = false,
+    isPopular: Boolean = false,
+    isSearchResult: Boolean = false,
+    pageOrder: Int = 0,
+): MovieEntity {
+    val finalGenreIds =
+        this.genreIds
+            ?: this.genres?.map { it.id }
+            ?: emptyList()
 
     return MovieEntity(
         id = this.id,
@@ -26,15 +31,15 @@ fun MovieDto.toEntity(isFavorite: Boolean = false, isPopular: Boolean = false, i
         isFavorite = isFavorite,
         isPopular = isPopular,
         isSearchResult = isSearchResult,
-        pageOrder = pageOrder
+        pageOrder = pageOrder,
     )
 }
 
 /**
  * Convert a MovieEntity (DB entity) to a Movie (Domain model)
  */
-fun MovieEntity.toDomain(): Movie {
-    return Movie(
+fun MovieEntity.toDomain(): Movie =
+    Movie(
         id = id,
         title = title,
         overview = overview,
@@ -45,36 +50,35 @@ fun MovieEntity.toDomain(): Movie {
         webUrl = "https://www.themoviedb.org/movie/$id",
         isFavorite = isFavorite,
         genreIds = genreIds,
-        genres = genreIds.mapNotNull { GenreUtils.idToNameMap[it] }
+        genres = genreIds.mapNotNull { GenreUtils.idToNameMap[it] },
     )
-}
-
 
 /**
  * Convert a MovieDto (API response) to a Movie (Domain model)
  */
-fun MovieDto.toDomain(): Movie {
-    return Movie(
+fun MovieDto.toDomain(): Movie =
+    Movie(
         id = this.id,
         title = this.title,
         overview = this.description,
-        posterPath = if (this.posterPath != null ) "https://image.tmdb.org/t/p/w500${this.posterPath}" else "",
+        posterPath = if (this.posterPath != null) "https://image.tmdb.org/t/p/w500${this.posterPath}" else "",
         backdropPath = if (this.backdropPath != null) "https://image.tmdb.org/t/p/w780${this.backdropPath}" else "",
         voteAverage = this.voteAverage,
         releaseDate = this.releaseDate ?: "",
         webUrl = "https://www.themoviedb.org/movie/${this.id}",
         isFavorite = false,
         genreIds = genreIds ?: emptyList(),
-        genres = genreIds?.mapNotNull { GenreUtils.idToNameMap[it] } ?: emptyList()
+        genres = genreIds?.mapNotNull { GenreUtils.idToNameMap[it] } ?: emptyList(),
     )
-}
 
 /**
  * Convert a Movie (Domain model) to a MovieEntity (DB entity)
  */
-fun Movie.toEntity(isFavorite: Boolean, isPopular: Boolean): MovieEntity {
-
-    return MovieEntity(
+fun Movie.toEntity(
+    isFavorite: Boolean,
+    isPopular: Boolean,
+): MovieEntity =
+    MovieEntity(
         id = this.id,
         title = this.title,
         overview = this.overview,
@@ -84,6 +88,5 @@ fun Movie.toEntity(isFavorite: Boolean, isPopular: Boolean): MovieEntity {
         voteAverage = this.voteAverage,
         genreIds = this.genreIds,
         isFavorite = isFavorite,
-        isPopular = isPopular
+        isPopular = isPopular,
     )
-}

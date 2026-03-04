@@ -16,29 +16,29 @@ import com.benjamin.moviehub.data.remote.MovieApiService
 class SearchMovieRemoteMediator(
     private val apiService: MovieApiService,
     private val database: MovieDatabase,
-    private val query: String
+    private val query: String,
 ) : RemoteMediator<Int, MovieEntity>() {
-
     private val movieDao = database.movieDao()
 
     private var isFetching = false
 
     override suspend fun load(
         loadType: LoadType,
-        state: PagingState<Int, MovieEntity>
+        state: PagingState<Int, MovieEntity>,
     ): MediatorResult {
-
-        val page = when (loadType) {
-            LoadType.REFRESH -> 1
-            LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
-            LoadType.APPEND -> {
-                val remoteKeys = getRemoteKeyForLastItem(state)
-                val nextKey = remoteKeys?.nextKey ?: return MediatorResult.Success(
-                    endOfPaginationReached = remoteKeys != null
-                )
-                nextKey
+        val page =
+            when (loadType) {
+                LoadType.REFRESH -> 1
+                LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
+                LoadType.APPEND -> {
+                    val remoteKeys = getRemoteKeyForLastItem(state)
+                    val nextKey =
+                        remoteKeys?.nextKey ?: return MediatorResult.Success(
+                            endOfPaginationReached = remoteKeys != null,
+                        )
+                    nextKey
+                }
             }
-        }
 
         if (isFetching && loadType == LoadType.APPEND) {
             return MediatorResult.Success(endOfPaginationReached = false)
@@ -46,11 +46,12 @@ class SearchMovieRemoteMediator(
 
         return try {
             isFetching = true
-            val response = apiService.searchMovies(
-                BuildConfig.TMDB_API_KEY,
-                page = page,
-                query = query
-            )
+            val response =
+                apiService.searchMovies(
+                    BuildConfig.TMDB_API_KEY,
+                    page = page,
+                    query = query,
+                )
 
             val movies = response.movies
             val endOfPaginationReached = movies.isEmpty() || movies.size < state.config.pageSize
@@ -64,27 +65,29 @@ class SearchMovieRemoteMediator(
                 val prevKey = if (page == 1) null else page - 1
                 val nextKey = if (endOfPaginationReached) null else page + 1
 
-                val keys = movies.map {
-                    MovieRemoteKey(
-                        movieId = it.id,
-                        prevKey = prevKey,
-                        nextKey = nextKey,
-                        type = "SEARCH"
-                    )
-                }
+                val keys =
+                    movies.map {
+                        MovieRemoteKey(
+                            movieId = it.id,
+                            prevKey = prevKey,
+                            nextKey = nextKey,
+                            type = "SEARCH",
+                        )
+                    }
 
-                val movieEntities = movies.mapIndexed { index, dto ->
-                    val position = ((page - 1) * state.config.pageSize) + index
+                val movieEntities =
+                    movies.mapIndexed { index, dto ->
+                        val position = ((page - 1) * state.config.pageSize) + index
 
-                    val localMovie = movieDao.getMovieById(dto.id)
+                        val localMovie = movieDao.getMovieById(dto.id)
 
-                    dto.toEntity(
-                        isFavorite = localMovie?.isFavorite ?: false,
-                        isPopular = localMovie?.isPopular ?: false,
-                        isSearchResult = true,
-                        pageOrder = position
-                    )
-                }
+                        dto.toEntity(
+                            isFavorite = localMovie?.isFavorite ?: false,
+                            isPopular = localMovie?.isPopular ?: false,
+                            isSearchResult = true,
+                            pageOrder = position,
+                        )
+                    }
                 movieDao.insertAllKeys(keys)
                 movieDao.upsertMovies(movieEntities)
             }
@@ -96,15 +99,14 @@ class SearchMovieRemoteMediator(
         }
     }
 
-    private suspend fun getRemoteKeyForLastItem(state: PagingState<Int, MovieEntity>): MovieRemoteKey? {
-        return state.pages.lastOrNull { it.data.isNotEmpty() }
-            ?.data?.lastOrNull()
+    private suspend fun getRemoteKeyForLastItem(state: PagingState<Int, MovieEntity>): MovieRemoteKey? =
+        state.pages
+            .lastOrNull { it.data.isNotEmpty() }
+            ?.data
+            ?.lastOrNull()
             ?.let { movie ->
                 movieDao.getRemoteKeysForMovieId(movie.id, "SEARCH")
             }
-    }
 
-    override suspend fun initialize(): InitializeAction {
-        return InitializeAction.LAUNCH_INITIAL_REFRESH
-    }
+    override suspend fun initialize(): InitializeAction = InitializeAction.LAUNCH_INITIAL_REFRESH
 }

@@ -38,24 +38,27 @@ import com.benjamin.moviehub.domain.model.Movie
 @Composable
 fun MovieItem(
     movie: Movie,
-    onMovieClick: (Int) -> Unit
+    onMovieClick: (Int) -> Unit,
 ) {
     Card(
-        modifier = Modifier
-            .testTag("movie_item")
-            .fillMaxWidth()
-            .padding(8.dp)
-            .clickable { onMovieClick(movie.id) },
+        modifier =
+            Modifier
+                .testTag("movie_item")
+                .fillMaxWidth()
+                .padding(8.dp)
+                .clickable { onMovieClick(movie.id) },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Max)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Max),
         ) {
             Box(modifier = Modifier.size(width = 100.dp, height = 150.dp)) {
                 AsyncImage(
@@ -63,10 +66,11 @@ fun MovieItem(
                     // placeholder = painterResource(R.drawable.placeholder_loading),
                     // error = painterResource(R.drawable.placeholder_error),
                     contentDescription = "Poster of ${movie.title}",
-                    modifier = Modifier
-                        .width(120.dp)
-                        .fillMaxHeight(),
-                    contentScale = ContentScale.Crop
+                    modifier =
+                        Modifier
+                            .width(120.dp)
+                            .fillMaxHeight(),
+                    contentScale = ContentScale.Crop,
                 )
 
                 if (movie.isFavorite) {
@@ -74,54 +78,54 @@ fun MovieItem(
                         imageVector = Icons.Filled.Favorite,
                         contentDescription = null,
                         tint = Color.Red,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(4.dp)
-                            .size(24.dp)
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(4.dp)
+                                .size(24.dp),
                     )
                 }
-
             }
             Column(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .padding(8.dp)
-                    .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier =
+                    Modifier
+                        .fillMaxHeight()
+                        .padding(8.dp)
+                        .weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
                     text = movie.title,
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
-
 
                 val releaseYear = movie.releaseDate.take(4)
                 Text(
                     text = releaseYear.ifBlank { "N/A" },
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.secondary
+                    color = MaterialTheme.colorScheme.secondary,
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
 
                 Row(
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = movie.voteAverage.toString().take(3),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Icon(
                         imageVector = Icons.Default.Star,
                         contentDescription = "Rating",
                         modifier = Modifier.size(18.dp),
-                        tint = Color(0xFFFFD700)
+                        tint = Color(0xFFFFD700),
                     )
                 }
             }
@@ -132,22 +136,23 @@ fun MovieItem(
 @Preview(showBackground = true)
 @Composable
 fun MovieItemPreview() {
-    val fakeMovie = Movie(
-        id = 1,
-        title = "Avatar : De feu et de cendres",
-        posterPath = "",
-        voteAverage = 7.3,
-        releaseDate = "2025-12-20",
-        isFavorite = true,
-        overview = "Test",
-        backdropPath = "",
-        webUrl = "",
-        genreIds = emptyList(),
-        genres = emptyList()
-    )
+    val fakeMovie =
+        Movie(
+            id = 1,
+            title = "Avatar : De feu et de cendres",
+            posterPath = "",
+            voteAverage = 7.3,
+            releaseDate = "2025-12-20",
+            isFavorite = true,
+            overview = "Test",
+            backdropPath = "",
+            webUrl = "",
+            genreIds = emptyList(),
+            genres = emptyList(),
+        )
 
     MovieItem(
         movie = fakeMovie,
-        onMovieClick = {}
+        onMovieClick = {},
     )
 }

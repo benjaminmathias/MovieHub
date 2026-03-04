@@ -1,4 +1,4 @@
-package com.benjamin.moviehub.ui.movie_favorite_list
+package com.benjamin.moviehub.ui.favorites
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
@@ -43,41 +43,42 @@ fun FavoriteScreen(
     state: MovieFavoriteListUiState,
     onRemoveFavorite: (Movie) -> Unit,
     onMovieClick: (Int) -> Unit,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
 ) {
-
     val refreshState = rememberPullToRefreshState()
     val isRefreshing = state is MovieFavoriteListUiState.Loading
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(title = { Text(stringResource(R.string.favorite_tab)) })
-        }
+        },
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
         ) {
             PullToRefreshBox(
                 state = refreshState,
                 isRefreshing = isRefreshing,
                 onRefresh = onRefresh,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             ) {
                 AnimatedContent(
                     targetState = state,
                     transitionSpec = {
-                        fadeIn(animationSpec = tween(300)) togetherWith fadeOut(
-                            animationSpec = tween(
-                                300
+                        fadeIn(animationSpec = tween(300)) togetherWith
+                            fadeOut(
+                                animationSpec =
+                                    tween(
+                                        300,
+                                    ),
                             )
-                        )
                     },
-                    label = "StateAnimation"
+                    label = "StateAnimation",
                 ) { state ->
                     when (state) {
-
                         is MovieFavoriteListUiState.Loading -> {
                             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                                 repeat(5) {
@@ -90,29 +91,32 @@ fun FavoriteScreen(
                             if (state.movies.isEmpty()) {
                                 EmptyStateView(
                                     message = state.emptyMessage?.asString() ?: "",
-                                    icon = Icons.Default.ErrorOutline
+                                    icon = Icons.Default.ErrorOutline,
                                 )
                             } else {
                                 LazyColumn(
-                                    modifier = Modifier.fillMaxSize()
+                                    modifier = Modifier.fillMaxSize(),
                                 ) {
                                     items(state.movies, key = { it.id }) { movie ->
 
                                         val haptic = LocalHapticFeedback.current
-                                        val dismissState = rememberSwipeToDismissBoxState(
-                                            confirmValueChange = { value ->
-                                                if (value == SwipeToDismissBoxValue.EndToStart) {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                    onRemoveFavorite(movie)
-                                                    true
-                                                } else {
-                                                    false
-                                                }
-                                            })
+                                        val dismissState =
+                                            rememberSwipeToDismissBoxState(
+                                                confirmValueChange = { value ->
+                                                    if (value == SwipeToDismissBoxValue.EndToStart) {
+                                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                        onRemoveFavorite(movie)
+                                                        true
+                                                    } else {
+                                                        false
+                                                    }
+                                                },
+                                            )
                                         Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .animateItem()
+                                            modifier =
+                                                Modifier
+                                                    .fillMaxWidth()
+                                                    .animateItem(),
                                         ) {
                                             SwipeToDismissBox(
                                                 state = dismissState,
@@ -127,9 +131,9 @@ fun FavoriteScreen(
                                                 content = {
                                                     MovieItem(
                                                         movie = movie,
-                                                        onMovieClick = onMovieClick
+                                                        onMovieClick = onMovieClick,
                                                     )
-                                                }
+                                                },
                                             )
                                         }
                                     }
@@ -138,11 +142,12 @@ fun FavoriteScreen(
                         }
 
                         is MovieFavoriteListUiState.Error -> {
-                            val errorMessage = state.errorMessage?.asString()
-                                ?: stringResource(R.string.error_loading_movies)
+                            val errorMessage =
+                                state.errorMessage?.asString()
+                                    ?: stringResource(R.string.error_loading_movies)
                             EmptyStateView(
                                 message = stringResource(R.string.error_prefix, errorMessage),
-                                icon = Icons.Default.ErrorOutline
+                                icon = Icons.Default.ErrorOutline,
                             )
                         }
                     }

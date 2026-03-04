@@ -1,4 +1,4 @@
-package com.benjamin.moviehub.ui.movie_detail
+package com.benjamin.moviehub.ui.detail
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,9 +34,8 @@ import com.benjamin.moviehub.domain.model.Movie
 fun MovieDetailScreen(
     uiState: MovieDetailUiState,
     onBackClick: () -> Unit,
-    onToggleFavorite: (Movie) -> Unit
+    onToggleFavorite: (Movie) -> Unit,
 ) {
-
     val context = LocalContext.current
 
     Scaffold(
@@ -45,7 +44,7 @@ fun MovieDetailScreen(
             CenterAlignedTopAppBar(
                 {
                     Text(
-                        text = stringResource(R.string.details)
+                        text = stringResource(R.string.details),
                     )
                 },
                 navigationIcon = {
@@ -61,31 +60,32 @@ fun MovieDetailScreen(
                             Icon(Icons.Outlined.Share, contentDescription = "Partager")
                         }
                     }
-                }
+                },
             )
-        }
+        },
     ) { paddingValues ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
         ) {
             when (uiState) {
                 is MovieDetailUiState.Loading -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             CircularProgressIndicator(
                                 strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.primary,
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = "Chargement des détails...",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Gray
+                                color = Color.Gray,
                             )
                         }
                     }
@@ -95,7 +95,7 @@ fun MovieDetailScreen(
                     MovieDetailContent(
                         movie = uiState.movie,
                         actors = uiState.actors,
-                        onToggleFavorite = onToggleFavorite
+                        onToggleFavorite = onToggleFavorite,
                     )
                 }
 
@@ -103,7 +103,7 @@ fun MovieDetailScreen(
                     Text(
                         text = uiState.errorMessage.asString(),
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier.align(Alignment.Center),
                     )
                 }
             }

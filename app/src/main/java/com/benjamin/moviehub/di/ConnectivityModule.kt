@@ -11,11 +11,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class ConnectivityModule {
-
     @Binds
     @Singleton
-    abstract fun bindConnectivityObserver(
-        networkConnectivityObserver: NetworkConnectivityObserver
-    ): ConnectivityObserver
-
+    abstract fun bindConnectivityObserver(networkConnectivityObserver: NetworkConnectivityObserver): ConnectivityObserver
 }

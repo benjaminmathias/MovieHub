@@ -10,21 +10,22 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
 @HiltWorker
-class SyncMoviesWorker @AssistedInject constructor(
-    @Assisted appContext: Context,
-    @Assisted workerParams: WorkerParameters,
-    private val repository: MovieRepository
-) : CoroutineWorker(appContext, workerParams) {
-
-    override suspend fun doWork(): Result {
-        Log.d("SyncWorker", "Début de la tâche de fond")
-        return try {
-            repository.syncPopularMoviesCache()
-            Log.d("SyncWorker", "Tâche terminée avec succès")
-            Result.success()
-        } catch (e: Exception) {
-            Log.e("SyncWorker", "Échec de la tâche", e)
-            Result.retry()
+class SyncMoviesWorker
+    @AssistedInject
+    constructor(
+        @Assisted appContext: Context,
+        @Assisted workerParams: WorkerParameters,
+        private val repository: MovieRepository,
+    ) : CoroutineWorker(appContext, workerParams) {
+        override suspend fun doWork(): Result {
+            Log.d("SyncWorker", "Début de la tâche de fond")
+            return try {
+                repository.syncPopularMoviesCache()
+                Log.d("SyncWorker", "Tâche terminée avec succès")
+                Result.success()
+            } catch (e: Exception) {
+                Log.e("SyncWorker", "Échec de la tâche", e)
+                Result.retry()
+            }
         }
     }
-}

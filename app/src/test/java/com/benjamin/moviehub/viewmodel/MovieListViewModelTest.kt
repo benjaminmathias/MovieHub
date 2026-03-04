@@ -3,8 +3,8 @@ package com.benjamin.moviehub.viewmodel
 import androidx.paging.PagingData
 import app.cash.turbine.test
 import com.benjamin.moviehub.domain.repository.MovieRepository
-import com.benjamin.moviehub.ui.movie_list.MovieListUiState
-import com.benjamin.moviehub.ui.movie_list.MovieListViewModel
+import com.benjamin.moviehub.ui.list.MovieListUiState
+import com.benjamin.moviehub.ui.list.MovieListViewModel
 import com.benjamin.moviehub.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -22,7 +22,6 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MovieListViewModelTest {
-
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
@@ -36,71 +35,72 @@ class MovieListViewModelTest {
         viewModel = MovieListViewModel(repository)
     }
 
-
     @Test
-    fun `search query should be debounced`() = runTest {
-        val job = launch {
-            viewModel.pagedMovies.collect()
+    fun `search query should be debounced`() =
+        runTest {
+            val job =
+                launch {
+                    viewModel.pagedMovies.collect()
+                }
+
+            // On tape "A", puis "Av", puis "Ava"
+            viewModel.onSearchQueryChanged("A")
+            advanceTimeBy(100)
+            viewModel.onSearchQueryChanged("Av")
+            advanceTimeBy(100)
+            viewModel.onSearchQueryChanged("Ava")
+
+            // À ce stade (200ms écoulées), le repo ne doit pas avoir été appelé avec "A" ou "Av"
+            // On avance le temps pour dépasser les 500ms du dernier changement
+            advanceTimeBy(600)
+
+            // Le repo doit avoir été appelé avec la dernière valeur "Ava"
+            coVerify { repository.getPagedMovies("Ava") }
+
+            // On vérifie qu'il n'a pas été appelé pour les étapes intermédiaires
+            coVerify(exactly = 0) { repository.getPagedMovies("A") }
+            coVerify(exactly = 0) { repository.getPagedMovies("Av") }
+
+            job.cancel()
         }
 
-        // On tape "A", puis "Av", puis "Ava"
-        viewModel.onSearchQueryChanged("A")
-        advanceTimeBy(100)
-        viewModel.onSearchQueryChanged("Av")
-        advanceTimeBy(100)
-        viewModel.onSearchQueryChanged("Ava")
-
-        // À ce stade (200ms écoulées), le repo ne doit pas avoir été appelé avec "A" ou "Av"
-        // On avance le temps pour dépasser les 500ms du dernier changement
-        advanceTimeBy(600)
-
-        // Le repo doit avoir été appelé avec la dernière valeur "Ava"
-        coVerify { repository.getPagedMovies("Ava") }
-
-        // On vérifie qu'il n'a pas été appelé pour les étapes intermédiaires
-        coVerify(exactly = 0) { repository.getPagedMovies("A") }
-        coVerify(exactly = 0) { repository.getPagedMovies("Av") }
-
-        job.cancel()
-    }
-
-
     @Test
-    fun `retryGlobal should trigger repository reload without changing query`() = runTest {
-        val job = launch { viewModel.pagedMovies.collect() }
+    fun `retryGlobal should trigger repository reload without changing query`() =
+        runTest {
+            val job = launch { viewModel.pagedMovies.collect() }
 
-        // État initial (debounce passé)
-        advanceTimeBy(600)
+            // État initial (debounce passé)
+            advanceTimeBy(600)
 
-        // Le repo a dû être appelé une première fois avec la query vide ""
-        coVerify(exactly = 1) { repository.getPagedMovies("") }
+            // Le repo a dû être appelé une première fois avec la query vide ""
+            coVerify(exactly = 1) { repository.getPagedMovies("") }
 
-        // ACTION : On simule le clic sur Retry
-        viewModel.retryGlobal()
+            // ACTION : On simule le clic sur Retry
+            viewModel.retryGlobal()
 
-        // On laisse un tout petit peu de temps pour que le combine/flatMapLatest réagisse
-        advanceTimeBy(100)
+            // On laisse un tout petit peu de temps pour que le combine/flatMapLatest réagisse
+            advanceTimeBy(100)
 
-        // VERIFICATION : Le repo doit avoir été appelé une DEUXIÈME fois
-        coVerify(exactly = 2) { repository.getPagedMovies("") }
+            // VERIFICATION : Le repo doit avoir été appelé une DEUXIÈME fois
+            coVerify(exactly = 2) { repository.getPagedMovies("") }
 
-        job.cancel()
-    }
-
-    @Test
-    fun `uiState should update search query immediately`() = runTest {
-        viewModel.uiState.test {
-            // État initial
-            val initialState = awaitItem() as MovieListUiState.Success
-            assert(initialState.searchQuery == "")
-
-            // Action
-            viewModel.onSearchQueryChanged("Batman")
-
-            // Vérification immédiate (pas besoin d'advanceTimeBy ici car le uiState.map n'a pas de debounce)
-            val updatedState = awaitItem() as MovieListUiState.Success
-            assert(updatedState.searchQuery == "Batman")
+            job.cancel()
         }
-    }
 
+    @Test
+    fun `uiState should update search query immediately`() =
+        runTest {
+            viewModel.uiState.test {
+                // État initial
+                val initialState = awaitItem() as MovieListUiState.Success
+                assert(initialState.searchQuery == "")
+
+                // Action
+                viewModel.onSearchQueryChanged("Batman")
+
+                // Vérification immédiate (pas besoin d'advanceTimeBy ici car le uiState.map n'a pas de debounce)
+                val updatedState = awaitItem() as MovieListUiState.Success
+                assert(updatedState.searchQuery == "Batman")
+            }
+        }
 }

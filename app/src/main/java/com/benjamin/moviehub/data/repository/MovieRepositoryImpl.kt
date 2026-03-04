@@ -23,146 +23,151 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
-class MovieRepositoryImpl @Inject constructor(
-    private val apiService: MovieApiService,
-    private val database: MovieDatabase,
-    private val movieDao: MovieDao
-) : MovieRepository {
+class MovieRepositoryImpl
+    @Inject
+    constructor(
+        private val apiService: MovieApiService,
+        private val database: MovieDatabase,
+        private val movieDao: MovieDao,
+    ) : MovieRepository {
+        @OptIn(ExperimentalPagingApi::class)
+        override fun getPagedMovies(query: String?): Flow<PagingData<Movie>> {
+            val isSearch = !query.isNullOrBlank()
 
-    @OptIn(ExperimentalPagingApi::class)
-    override fun getPagedMovies(query: String?): Flow<PagingData<Movie>> {
-
-        val isSearch = !query.isNullOrBlank()
-
-        return Pager(
-            config = PagingConfig(
-                pageSize = 20,
-                prefetchDistance = 5,
-                initialLoadSize = 20,
-                enablePlaceholders = false
-            ),
-            remoteMediator =
-                if (isSearch) {
-                    SearchMovieRemoteMediator(apiService, database, query)
-                } else {
-                    MovieRemoteMediator(apiService, database)
-                },
-            pagingSourceFactory = {
-                if (isSearch) {
-                    movieDao.searchMoviesPaging()
-                } else {
-                    movieDao.getPopularMoviesPaging()
-                }
-            }
-        ).flow
-            .map { pagingData ->
-                pagingData.map { entity -> entity.toDomain() }
-            }
-    }
-
-    override suspend fun getMovieDetails(movieId: Int): Movie {
-
-        // Try to get cached movie
-        val localMovie = movieDao.getMovieById(movieId)
-
-        Log.d("localMovie GenreId", localMovie?.genreIds.toString())
-
-        return try {
-            // API call
-            val dto = apiService.getMovieDetails(
-                movieId = movieId,
-                apiKey = BuildConfig.TMDB_API_KEY
-            )
-
-            val remoteMovieEntity = dto.toEntity(
-                isFavorite = localMovie?.isFavorite ?: false,
-                isPopular = localMovie?.isPopular ?: false,
-                isSearchResult = localMovie?.isSearchResult ?: false,
-                pageOrder = localMovie?.pageOrder ?: -1
-            )
-
-            // Save to DB
-            movieDao.insertMovie(remoteMovieEntity)
-
-            remoteMovieEntity.toDomain()
-
-        } catch (e: Exception) {
-            localMovie?.toDomain() ?: throw e
-        }
-    }
-
-    override suspend fun toggleFavorite(movie: Movie, isFavorite: Boolean) {
-
-        val localMovie = movieDao.getMovieById(movie.id)
-
-        if (localMovie == null) {
-            // Like a movie not in db
-            movieDao.insertMovie(
-                movie.toEntity(
-                    isFavorite = isFavorite,
-                    isPopular = false
-                )
-            )
-        } else {
-            // Update favorite status of existing movie in db
-            movieDao.updateFavoriteStatus(movie.id, isFavorite)
-        }
-    }
-
-    override fun getFavoriteMovies(): Flow<List<Movie>> {
-        return movieDao.getFavoriteMoviesFlow()
-            .map { entities ->
-                entities.map { it.toDomain() }
-            }
-            .flowOn(Dispatchers.IO)
-    }
-
-    override suspend fun getMovieActors(movieId: Int): Result<List<Actor>> {
-        return try {
-            val response = apiService.getMovieCredits(movieId, BuildConfig.TMDB_API_KEY)
-
-            val actors = response.cast.take(15).map { dto ->
-                Actor(
-                    id = dto.id,
-                    name = dto.name,
-                    character = dto.character,
-                    profileUrl = if (dto.profilePath != null) {
-                        "https://image.tmdb.org/t/p/w185${dto.profilePath}"
+            return Pager(
+                config =
+                    PagingConfig(
+                        pageSize = 20,
+                        prefetchDistance = 5,
+                        initialLoadSize = 20,
+                        enablePlaceholders = false,
+                    ),
+                remoteMediator =
+                    if (isSearch) {
+                        SearchMovieRemoteMediator(apiService, database, query)
                     } else {
-                        ""
+                        MovieRemoteMediator(apiService, database)
+                    },
+                pagingSourceFactory = {
+                    if (isSearch) {
+                        movieDao.searchMoviesPaging()
+                    } else {
+                        movieDao.getPopularMoviesPaging()
                     }
-                )
+                },
+            ).flow
+                .map { pagingData ->
+                    pagingData.map { entity -> entity.toDomain() }
+                }
+        }
+
+        override suspend fun getMovieDetails(movieId: Int): Movie {
+            // Try to get cached movie
+            val localMovie = movieDao.getMovieById(movieId)
+
+            Log.d("localMovie GenreId", localMovie?.genreIds.toString())
+
+            return try {
+                // API call
+                val dto =
+                    apiService.getMovieDetails(
+                        movieId = movieId,
+                        apiKey = BuildConfig.TMDB_API_KEY,
+                    )
+
+                val remoteMovieEntity =
+                    dto.toEntity(
+                        isFavorite = localMovie?.isFavorite ?: false,
+                        isPopular = localMovie?.isPopular ?: false,
+                        isSearchResult = localMovie?.isSearchResult ?: false,
+                        pageOrder = localMovie?.pageOrder ?: -1,
+                    )
+
+                // Save to DB
+                movieDao.insertMovie(remoteMovieEntity)
+
+                remoteMovieEntity.toDomain()
+            } catch (e: Exception) {
+                localMovie?.toDomain() ?: throw e
             }
-            Result.success(actors)
-        } catch (e: Exception) {
-            Result.failure(e)
+        }
+
+        override suspend fun toggleFavorite(
+            movie: Movie,
+            isFavorite: Boolean,
+        ) {
+            val localMovie = movieDao.getMovieById(movie.id)
+
+            if (localMovie == null) {
+                // Like a movie not in db
+                movieDao.insertMovie(
+                    movie.toEntity(
+                        isFavorite = isFavorite,
+                        isPopular = false,
+                    ),
+                )
+            } else {
+                // Update favorite status of existing movie in db
+                movieDao.updateFavoriteStatus(movie.id, isFavorite)
+            }
+        }
+
+        override fun getFavoriteMovies(): Flow<List<Movie>> =
+            movieDao
+                .getFavoriteMoviesFlow()
+                .map { entities ->
+                    entities.map { it.toDomain() }
+                }.flowOn(Dispatchers.IO)
+
+        override suspend fun getMovieActors(movieId: Int): Result<List<Actor>> =
+            try {
+                val response = apiService.getMovieCredits(movieId, BuildConfig.TMDB_API_KEY)
+
+                val actors =
+                    response.cast.take(15).map { dto ->
+                        Actor(
+                            id = dto.id,
+                            name = dto.name,
+                            character = dto.character,
+                            profileUrl =
+                                if (dto.profilePath != null) {
+                                    "https://image.tmdb.org/t/p/w185${dto.profilePath}"
+                                } else {
+                                    ""
+                                },
+                        )
+                    }
+                Result.success(actors)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+
+        override suspend fun syncPopularMoviesCache() {
+            try {
+                val response =
+                    apiService.getPopularMovies(
+                        apiKey = BuildConfig.TMDB_API_KEY,
+                        page = 1,
+                    )
+
+                val remoteEntities =
+                    response.movies.map { dto ->
+                        dto.toEntity(
+                            isFavorite = false,
+                            isPopular = true,
+                            isSearchResult = false,
+                            pageOrder = -1,
+                        )
+                    }
+
+                movieDao.insertOrIgnore(remoteEntities)
+
+                remoteEntities.forEach { entity ->
+                    movieDao.markAsPopular(entity.id)
+                }
+            } catch (e: Exception) {
+                Log.e("SyncWorker", "Échec de la synchronisation en arrière-plan", e)
+                throw e
+            }
         }
     }
-
-    override suspend fun syncPopularMoviesCache() {
-        try {
-            val response = apiService.getPopularMovies(
-                apiKey = BuildConfig.TMDB_API_KEY,
-                page = 1
-            )
-
-            val remoteEntities = response.movies.map { dto ->
-                dto.toEntity(
-                    isFavorite = false,
-                    isPopular = true,
-                    isSearchResult = false,
-                    pageOrder = -1
-                )
-            }
-
-            movieDao.insertOrIgnore(remoteEntities)
-
-            remoteEntities.forEach { entity ->
-                movieDao.markAsPopular(entity.id)
-            }
-        } catch (e: Exception) {
-            Log.e("SyncWorker", "Échec de la synchronisation en arrière-plan", e)
-            throw e
-        }
-    }
-}

@@ -14,22 +14,19 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
-
     @Provides
     @Singleton
     fun provideDatabase(
-        @ApplicationContext context: Context
-    ): MovieDatabase {
-        return Room.databaseBuilder(
-            context,
-            MovieDatabase::class.java,
-            "movie_hub_db"
-        ).build()
-    }
+        @ApplicationContext context: Context,
+    ): MovieDatabase =
+        Room
+            .databaseBuilder(
+                context,
+                MovieDatabase::class.java,
+                "movie_hub_db",
+            ).build()
 
     @Provides
     @Singleton
-    fun provideMovieDao(db: MovieDatabase): MovieDao {
-        return db.movieDao()
-    }
+    fun provideMovieDao(db: MovieDatabase): MovieDao = db.movieDao()
 }

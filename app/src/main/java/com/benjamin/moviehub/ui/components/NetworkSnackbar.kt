@@ -13,9 +13,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -25,7 +25,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun NetworkStatusBar(
     status: ConnectivityStatus,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     // Composable only visible if we're losing connectivity
     val isOffline = status == ConnectivityStatus.LOST || status == ConnectivityStatus.UNAVAILABLE
@@ -49,19 +49,20 @@ fun NetworkStatusBar(
         visible = isOffline,
         enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
         exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Snackbar(
-            modifier = Modifier
-                .padding(16.dp)
-                .padding(bottom = 80.dp)
-                .fillMaxWidth(),
+            modifier =
+                Modifier
+                    .padding(16.dp)
+                    .padding(bottom = 80.dp)
+                    .fillMaxWidth(),
             containerColor = MaterialTheme.colorScheme.error,
-            contentColor = MaterialTheme.colorScheme.onError
+            contentColor = MaterialTheme.colorScheme.onError,
         ) {
             Text(
                 text = "Pas de connexion internet",
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
     }
@@ -70,15 +71,16 @@ fun NetworkStatusBar(
         visible = showSuccess,
         enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
         exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Snackbar(
-            modifier = Modifier
-                .padding(16.dp)
-                .padding(bottom = 80.dp)
-                .fillMaxWidth(),
+            modifier =
+                Modifier
+                    .padding(16.dp)
+                    .padding(bottom = 80.dp)
+                    .fillMaxWidth(),
             containerColor = Color(0xFF4CAF50),
-            contentColor = Color.White
+            contentColor = Color.White,
         ) {
             Text(text = "Connexion rétablie", style = MaterialTheme.typography.bodyMedium)
         }

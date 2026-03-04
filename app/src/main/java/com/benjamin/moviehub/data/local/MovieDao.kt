@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface MovieDao {
-
     // --- FILMS : ACTIONS UNITAIRES ---
     @Query("SELECT * FROM movies WHERE id = :movieId")
     suspend fun getMovieById(movieId: Int): MovieEntity?
@@ -18,7 +17,10 @@ interface MovieDao {
     suspend fun insertMovie(movie: MovieEntity) // Pour ton toggleFavorite
 
     @Query("UPDATE movies SET isFavorite = :isFavorite WHERE id = :movieId")
-    suspend fun updateFavoriteStatus(movieId: Int, isFavorite: Boolean)
+    suspend fun updateFavoriteStatus(
+        movieId: Int,
+        isFavorite: Boolean,
+    )
 
     // --- FILMS : LISTES & FLOWS ---
     @Query("SELECT id FROM movies WHERE isFavorite = 1")
@@ -52,7 +54,10 @@ interface MovieDao {
     suspend fun insertAllKeys(remoteKey: List<MovieRemoteKey>)
 
     @Query("SELECT * FROM remote_keys WHERE movieId = :movieId AND type = :type")
-    suspend fun getRemoteKeysForMovieId(movieId: Int, type: String): MovieRemoteKey?
+    suspend fun getRemoteKeysForMovieId(
+        movieId: Int,
+        type: String,
+    ): MovieRemoteKey?
 
     @Query("SELECT COUNT(*) FROM remote_keys WHERE type = :type")
     suspend fun getRemoteKeysCountByType(type: String): Int

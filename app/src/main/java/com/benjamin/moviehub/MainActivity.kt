@@ -30,52 +30,54 @@ import java.util.concurrent.TimeUnit
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
     private val mainViewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.UNMETERED)
-            .setRequiresBatteryNotLow(true)
-            .build()
+        val constraints =
+            Constraints
+                .Builder()
+                .setRequiredNetworkType(NetworkType.UNMETERED)
+                .setRequiresBatteryNotLow(true)
+                .build()
 
-        val syncWorkRequest = PeriodicWorkRequestBuilder<SyncMoviesWorker>(
-            1, TimeUnit.DAYS
-        )
-            .setConstraints(constraints)
-            .build()
+        val syncWorkRequest =
+            PeriodicWorkRequestBuilder<SyncMoviesWorker>(
+                1,
+                TimeUnit.DAYS,
+            ).setConstraints(constraints)
+                .build()
 
         WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
             "daily_movie_sync",
             ExistingPeriodicWorkPolicy.KEEP,
-            syncWorkRequest
+            syncWorkRequest,
         )
 
         setContent {
-
             val appTheme by mainViewModel.theme.collectAsStateWithLifecycle()
             val networkStatus by mainViewModel.networkStatus.collectAsStateWithLifecycle()
 
-            val useDarkTheme = when (appTheme) {
-                AppTheme.LIGHT -> false
-                AppTheme.DARK -> true
-                AppTheme.SYSTEM -> isSystemInDarkTheme()
-            }
+            val useDarkTheme =
+                when (appTheme) {
+                    AppTheme.LIGHT -> false
+                    AppTheme.DARK -> true
+                    AppTheme.SYSTEM -> isSystemInDarkTheme()
+                }
 
             MovieHubTheme(darkTheme = useDarkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = MaterialTheme.colorScheme.background,
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         NavigationRoot()
 
                         NetworkStatusBar(
                             status = networkStatus,
-                            modifier = Modifier.align(Alignment.BottomCenter)
+                            modifier = Modifier.align(Alignment.BottomCenter),
                         )
                     }
                 }

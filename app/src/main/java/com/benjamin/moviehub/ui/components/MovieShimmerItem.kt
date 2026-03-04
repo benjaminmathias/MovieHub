@@ -28,59 +28,68 @@ import com.valentinilk.shimmer.shimmer
 @Composable
 fun MovieShimmerItem() {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(180.dp)
-                .shimmer()
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .shimmer(),
         ) {
             Box(
-                modifier = Modifier
-                    .width(120.dp)
-                    .fillMaxHeight()
-                    .background(Color.LightGray)
+                modifier =
+                    Modifier
+                        .width(120.dp)
+                        .fillMaxHeight()
+                        .background(Color.LightGray),
             )
 
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.8f)
-                        .height(24.dp)
-                        .background(Color.LightGray, RoundedCornerShape(4.dp))
+                    modifier =
+                        Modifier
+                            .fillMaxWidth(0.8f)
+                            .height(24.dp)
+                            .background(Color.LightGray, RoundedCornerShape(4.dp)),
                 )
 
                 Box(
-                    modifier = Modifier
-                        .width(60.dp)
-                        .height(18.dp)
-                        .background(Color.LightGray, RoundedCornerShape(4.dp))
+                    modifier =
+                        Modifier
+                            .width(60.dp)
+                            .height(18.dp)
+                            .background(Color.LightGray, RoundedCornerShape(4.dp)),
                 )
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        modifier = Modifier
-                            .width(40.dp)
-                            .height(20.dp)
-                            .background(Color.LightGray, RoundedCornerShape(4.dp))
+                        modifier =
+                            Modifier
+                                .width(40.dp)
+                                .height(20.dp)
+                                .background(Color.LightGray, RoundedCornerShape(4.dp)),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Box(
-                        modifier = Modifier
-                            .size(18.dp)
-                            .background(Color.LightGray, CircleShape)
+                        modifier =
+                            Modifier
+                                .size(18.dp)
+                                .background(Color.LightGray, CircleShape),
                     )
                 }
             }

@@ -12,20 +12,23 @@ import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 @HiltViewModel
-class MainViewModel @Inject constructor(
-    userPreferencesRepository: UserPreferenceRepository,
-    connectivityObserver: ConnectivityObserver
-) : ViewModel() {
+class MainViewModel
+    @Inject
+    constructor(
+        userPreferencesRepository: UserPreferenceRepository,
+        connectivityObserver: ConnectivityObserver,
+    ) : ViewModel() {
+        val theme =
+            userPreferencesRepository.theme.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = AppTheme.SYSTEM,
+            )
 
-    val theme = userPreferencesRepository.theme.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = AppTheme.SYSTEM
-    )
-
-    val networkStatus = connectivityObserver.observe().stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = ConnectivityStatus.AVAILABLE
-    )
-}
+        val networkStatus =
+            connectivityObserver.observe().stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = ConnectivityStatus.AVAILABLE,
+            )
+    }

@@ -43,7 +43,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     onBackClick: () -> Unit,
-    viewModel: SettingsViewModel = hiltViewModel()
+    viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val currentTheme by viewModel.currentTheme.collectAsState()
     val snackbarHostState = androidx.compose.runtime.remember { SnackbarHostState() }
@@ -57,27 +57,28 @@ fun SettingsScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Retour"
+                            contentDescription = "Retour",
                         )
                     }
-                }
+                },
             )
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             // Section Apparence
             SettingsSection(title = "Apparence") {
                 ThemeSelector(
                     currentTheme = currentTheme,
-                    onThemeSelected = viewModel::updateTheme
+                    onThemeSelected = viewModel::updateTheme,
                 )
             }
 
@@ -94,7 +95,7 @@ fun SettingsScreen(
                         scope.launch {
                             snackbarHostState.showSnackbar("Cache vidé avec succès")
                         }
-                    }
+                    },
                 )
             }
 
@@ -103,12 +104,12 @@ fun SettingsScreen(
             // Section À propos
             Box(
                 modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = "MovieHub v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -118,14 +119,14 @@ fun SettingsScreen(
 @Composable
 fun SettingsSection(
     title: String,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
         )
         content()
     }
@@ -134,23 +135,23 @@ fun SettingsSection(
 @Composable
 fun ThemeSelector(
     currentTheme: AppTheme,
-    onThemeSelected: (AppTheme) -> Unit
+    onThemeSelected: (AppTheme) -> Unit,
 ) {
     Column {
         ThemeRadioButton(
             selected = currentTheme == AppTheme.SYSTEM,
             text = "Système (Défaut)",
-            onClick = { onThemeSelected(AppTheme.SYSTEM) }
+            onClick = { onThemeSelected(AppTheme.SYSTEM) },
         )
         ThemeRadioButton(
             selected = currentTheme == AppTheme.LIGHT,
             text = "Clair",
-            onClick = { onThemeSelected(AppTheme.LIGHT) }
+            onClick = { onThemeSelected(AppTheme.LIGHT) },
         )
         ThemeRadioButton(
             selected = currentTheme == AppTheme.DARK,
             text = "Sombre",
-            onClick = { onThemeSelected(AppTheme.DARK) }
+            onClick = { onThemeSelected(AppTheme.DARK) },
         )
     }
 }
@@ -159,18 +160,19 @@ fun ThemeSelector(
 fun ThemeRadioButton(
     selected: Boolean,
     text: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         RadioButton(
             selected = selected,
-            onClick = onClick
+            onClick = onClick,
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(text = text, style = MaterialTheme.typography.bodyLarge)
@@ -182,19 +184,20 @@ fun SettingsItem(
     title: String,
     subtitle: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(modifier = Modifier.width(16.dp))
         Column {
@@ -202,7 +205,7 @@ fun SettingsItem(
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

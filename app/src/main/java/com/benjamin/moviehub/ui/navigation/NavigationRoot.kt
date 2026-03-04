@@ -28,20 +28,20 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import com.benjamin.moviehub.ui.movie_detail.MovieDetailScreen
-import com.benjamin.moviehub.ui.movie_detail.MovieDetailViewModel
-import com.benjamin.moviehub.ui.movie_favorite_list.FavoriteScreen
-import com.benjamin.moviehub.ui.movie_favorite_list.FavoriteViewModel
-import com.benjamin.moviehub.ui.movie_list.MovieListScreen
-import com.benjamin.moviehub.ui.movie_list.MovieListViewModel
+import com.benjamin.moviehub.ui.detail.MovieDetailScreen
+import com.benjamin.moviehub.ui.detail.MovieDetailViewModel
+import com.benjamin.moviehub.ui.favorites.FavoriteScreen
+import com.benjamin.moviehub.ui.favorites.FavoriteViewModel
+import com.benjamin.moviehub.ui.list.MovieListScreen
+import com.benjamin.moviehub.ui.list.MovieListViewModel
 import com.benjamin.moviehub.ui.settings.SettingsScreen
 
 @Composable
-fun NavigationRoot(
-) {
-    val backStack = rememberNavBackStack(
-        Route.List
-    )
+fun NavigationRoot() {
+    val backStack =
+        rememberNavBackStack(
+            Route.List,
+        )
 
     val currentRoute = backStack.lastOrNull()
 
@@ -50,10 +50,11 @@ fun NavigationRoot(
         bottomBar = {
             if (currentRoute is Route.List || currentRoute is Route.FavoriteList) {
                 NavigationBar {
-                    val items = listOf(
-                        BottomNavItem.Home,
-                        BottomNavItem.Favorite
-                    )
+                    val items =
+                        listOf(
+                            BottomNavItem.Home,
+                            BottomNavItem.Favorite,
+                        )
                     items.forEach { item ->
                         NavigationBarItem(
                             selected = currentRoute == item.route,
@@ -64,106 +65,107 @@ fun NavigationRoot(
                                 }
                             },
                             icon = { Icon(item.icon, contentDescription = null) },
-                            label = { Text(stringResource(item.labelRes)) }
+                            label = { Text(stringResource(item.labelRes)) },
                         )
                     }
                 }
             }
-        }
-
+        },
     ) { paddingValues ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .consumeWindowInsets(paddingValues)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .consumeWindowInsets(paddingValues),
         ) {
             NavDisplay(
                 backStack = backStack,
                 onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
                 transitionSpec = {
-                    (slideInHorizontally(
-                        initialOffsetX = { fullWidth -> fullWidth },
-                        animationSpec = tween(400)
-                    ) + fadeIn(animationSpec = tween(400))).togetherWith(
+                    (
+                        slideInHorizontally(
+                            initialOffsetX = { fullWidth -> fullWidth },
+                            animationSpec = tween(400),
+                        ) + fadeIn(animationSpec = tween(400))
+                    ).togetherWith(
                         slideOutHorizontally(
                             targetOffsetX = { fullWidth -> -fullWidth },
-                            animationSpec = tween(400)
-                        ) + fadeOut(animationSpec = tween(400))
+                            animationSpec = tween(400),
+                        ) + fadeOut(animationSpec = tween(400)),
                     )
                 },
-
                 popTransitionSpec = {
-                    (slideInHorizontally(
-                        initialOffsetX = { fullWidth -> -fullWidth },
-                        animationSpec = tween(400)
-                    ) + fadeIn(animationSpec = tween(400))).togetherWith(
+                    (
+                        slideInHorizontally(
+                            initialOffsetX = { fullWidth -> -fullWidth },
+                            animationSpec = tween(400),
+                        ) + fadeIn(animationSpec = tween(400))
+                    ).togetherWith(
                         slideOutHorizontally(
                             targetOffsetX = { fullWidth -> fullWidth },
-                            animationSpec = tween(400)
-                        ) + fadeOut(animationSpec = tween(400))
+                            animationSpec = tween(400),
+                        ) + fadeOut(animationSpec = tween(400)),
                     )
                 },
-                entryProvider = entryProvider {
+                entryProvider =
+                    entryProvider {
+                        entry<Route.List> {
+                            val viewModel: MovieListViewModel = hiltViewModel()
+                            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                            val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
-                    entry<Route.List> {
-                        val viewModel: MovieListViewModel = hiltViewModel()
-                        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-                        val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
-
-                        MovieListScreen(
-                            uiState = uiState,
-                            searchQuery = searchQuery,
-                            onSearchChanged = viewModel::onSearchQueryChanged,
-                            onMovieClick = { id -> backStack.add(Route.Detail(id)) },
-                            retryGlobal = viewModel::retryGlobal,
-                            onSettingsClick = { backStack.add(Route.Settings) }
-                        )
-                    }
-
-                    entry<Route.Detail> { key ->
-                        val viewModel: MovieDetailViewModel = hiltViewModel()
-                        val detailsUiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-                        LaunchedEffect(key.movieId) {
-                            viewModel.loadMovieDetails(key.movieId)
+                            MovieListScreen(
+                                uiState = uiState,
+                                searchQuery = searchQuery,
+                                onSearchChanged = viewModel::onSearchQueryChanged,
+                                onMovieClick = { id -> backStack.add(Route.Detail(id)) },
+                                retryGlobal = viewModel::retryGlobal,
+                                onSettingsClick = { backStack.add(Route.Settings) },
+                            )
                         }
 
-                        MovieDetailScreen(
-                            uiState = detailsUiState,
-                            onBackClick = { backStack.removeLastOrNull() },
-                            onToggleFavorite = { movie -> viewModel.toggleFavorite(movie) }
-                        )
-                    }
+                        entry<Route.Detail> { key ->
+                            val viewModel: MovieDetailViewModel = hiltViewModel()
+                            val detailsUiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-                    entry<Route.FavoriteList> {
-                        val viewModel: FavoriteViewModel = hiltViewModel()
-                        val favoriteUiState by viewModel.uiState.collectAsStateWithLifecycle()
+                            LaunchedEffect(key.movieId) {
+                                viewModel.loadMovieDetails(key.movieId)
+                            }
 
-                        FavoriteScreen(
-                            state = favoriteUiState,
-                            onMovieClick = { id ->
-                                backStack.add(Route.Detail(id))
-                            },
-                            onRemoveFavorite = { movie -> viewModel.onToggleFavorite(movie) },
-                            onRefresh = { viewModel.refreshFavorite() }
-                        )
-                    }
+                            MovieDetailScreen(
+                                uiState = detailsUiState,
+                                onBackClick = { backStack.removeLastOrNull() },
+                                onToggleFavorite = { movie -> viewModel.toggleFavorite(movie) },
+                            )
+                        }
 
-                    entry<Route.Settings> {
-                        SettingsScreen(
-                            onBackClick = { backStack.removeLastOrNull() }
-                        )
-                    }
-                },
-                entryDecorators = listOf(
-                    rememberSaveableStateHolderNavEntryDecorator(),
-                    rememberViewModelStoreNavEntryDecorator()
-                )
+                        entry<Route.FavoriteList> {
+                            val viewModel: FavoriteViewModel = hiltViewModel()
+                            val favoriteUiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+                            FavoriteScreen(
+                                state = favoriteUiState,
+                                onMovieClick = { id ->
+                                    backStack.add(Route.Detail(id))
+                                },
+                                onRemoveFavorite = { movie -> viewModel.onToggleFavorite(movie) },
+                                onRefresh = { viewModel.refreshFavorite() },
+                            )
+                        }
+
+                        entry<Route.Settings> {
+                            SettingsScreen(
+                                onBackClick = { backStack.removeLastOrNull() },
+                            )
+                        }
+                    },
+                entryDecorators =
+                    listOf(
+                        rememberSaveableStateHolderNavEntryDecorator(),
+                        rememberViewModelStoreNavEntryDecorator(),
+                    ),
             )
         }
     }
 }
-
-
-

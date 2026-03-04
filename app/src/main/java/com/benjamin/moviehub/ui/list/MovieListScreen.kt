@@ -1,4 +1,4 @@
-package com.benjamin.moviehub.ui.movie_list
+package com.benjamin.moviehub.ui.list
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -44,9 +44,8 @@ fun MovieListScreen(
     onSearchChanged: (String) -> Unit,
     onMovieClick: (Int) -> Unit,
     retryGlobal: () -> Unit,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
 ) {
-
     val refreshState = rememberPullToRefreshState()
 
     Scaffold(
@@ -55,31 +54,36 @@ fun MovieListScreen(
             CenterAlignedTopAppBar(
                 {
                     Text(
-                        if (searchQuery.isEmpty()) stringResource(R.string.movie_hub_popular) else stringResource(
-                            R.string.search
-                        )
+                        if (searchQuery.isEmpty()) {
+                            stringResource(R.string.movie_hub_popular)
+                        } else {
+                            stringResource(
+                                R.string.search,
+                            )
+                        },
                     )
                 },
                 actions = {
                     IconButton(onClick = onSettingsClick) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = "Paramètres"
+                            contentDescription = "Paramètres",
                         )
                     }
-                }
+                },
             )
-        }
+        },
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
         ) {
             MovieSearchBar(
                 query = searchQuery,
                 onQueryChanged =
-                    onSearchChanged
+                onSearchChanged,
             )
 
             Spacer(modifier = Modifier.size(4.dp))
@@ -108,27 +112,29 @@ fun MovieListScreen(
 
                     // Shimmer on if loading and empty list
                     val isInitialLoading =
-                        (refreshLoadState is LoadState.Loading || isMediatorLoadingOrNull)
-                                && pagedMovies.itemCount == 0
+                        (refreshLoadState is LoadState.Loading || isMediatorLoadingOrNull) &&
+                            pagedMovies.itemCount == 0
 
                     // Checking that pagination is completed
                     val isAppendEndOfPagination =
                         (combinedLoadStates.append as? LoadState.NotLoading)?.endOfPaginationReached == true
 
                     // Empty state if : not loading, end of pagination and no items
-                    val isEmpty = refreshLoadState is LoadState.NotLoading
-                            && isAppendEndOfPagination
-                            && pagedMovies.itemCount == 0
+                    val isEmpty =
+                        refreshLoadState is LoadState.NotLoading &&
+                            isAppendEndOfPagination &&
+                            pagedMovies.itemCount == 0
 
                     val isError =
-                        (refreshLoadState is LoadState.Error || mediatorLoadState is LoadState.Error)
-                                && pagedMovies.itemCount == 0
+                        (refreshLoadState is LoadState.Error || mediatorLoadState is LoadState.Error) &&
+                            pagedMovies.itemCount == 0
 
                     PullToRefreshBox(
                         state = refreshState,
-                        isRefreshing = !isInitialLoading && (refreshLoadState is LoadState.Loading || mediatorLoadState is LoadState.Loading),
+                        isRefreshing =
+                            !isInitialLoading && (refreshLoadState is LoadState.Loading || mediatorLoadState is LoadState.Loading),
                         onRefresh = { pagedMovies.refresh() },
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     ) {
                         when {
                             isInitialLoading -> {
@@ -136,13 +142,15 @@ fun MovieListScreen(
                             }
 
                             isError -> {
-                                val errorState = (mediatorLoadState as? LoadState.Error)
-                                    ?: (refreshLoadState as? LoadState.Error)
+                                val errorState =
+                                    (mediatorLoadState as? LoadState.Error)
+                                        ?: (refreshLoadState as? LoadState.Error)
                                 EmptyStateView(
-                                    message = errorState?.error?.localizedMessage
-                                        ?: stringResource(R.string.error_loading_movies),
+                                    message =
+                                        errorState?.error?.localizedMessage
+                                            ?: stringResource(R.string.error_loading_movies),
                                     icon = Icons.Default.CloudOff,
-                                    onRetry = { pagedMovies.retry() }
+                                    onRetry = { pagedMovies.retry() },
                                 )
                             }
 
@@ -150,19 +158,20 @@ fun MovieListScreen(
                                 if (searchQuery.isNotEmpty()) {
                                     // Search without result
                                     EmptyStateView(
-                                        message = stringResource(
-                                            R.string.empty_search_results,
-                                            searchQuery
-                                        ),
+                                        message =
+                                            stringResource(
+                                                R.string.empty_search_results,
+                                                searchQuery,
+                                            ),
                                         icon = Icons.Default.SearchOff,
-                                        onRetry = null
+                                        onRetry = null,
                                     )
                                 } else {
                                     // Empty popular list
                                     EmptyStateView(
                                         message = stringResource(R.string.no_movie_available),
                                         icon = Icons.Default.Movie,
-                                        onRetry = { pagedMovies.refresh() }
+                                        onRetry = { pagedMovies.refresh() },
                                     )
                                 }
                             }
@@ -170,16 +179,16 @@ fun MovieListScreen(
                             // Show data
                             else -> {
                                 LazyColumn(
-                                    modifier = Modifier.fillMaxSize()
+                                    modifier = Modifier.fillMaxSize(),
                                 ) {
                                     items(
                                         count = pagedMovies.itemCount,
-                                        key = pagedMovies.itemKey { it.id }
+                                        key = pagedMovies.itemKey { it.id },
                                     ) { index ->
                                         pagedMovies[index]?.let { movie ->
                                             MovieItem(
                                                 movie = movie,
-                                                onMovieClick = onMovieClick
+                                                onMovieClick = onMovieClick,
                                             )
                                         }
                                     }
@@ -189,9 +198,10 @@ fun MovieListScreen(
                                     if (appendState is LoadState.Error) {
                                         item {
                                             ErrorRetryItem(
-                                                message = appendState.error.localizedMessage
-                                                    ?: stringResource(R.string.error_loading_movies),
-                                                onRetry = { pagedMovies.retry() }
+                                                message =
+                                                    appendState.error.localizedMessage
+                                                        ?: stringResource(R.string.error_loading_movies),
+                                                onRetry = { pagedMovies.retry() },
                                             )
                                         }
                                     }
@@ -206,17 +216,16 @@ fun MovieListScreen(
                 }
 
                 is MovieListUiState.Error -> {
-                    val errorMessage = state.errorMessage?.asString()
-                        ?: stringResource(R.string.error_loading_movies)
+                    val errorMessage =
+                        state.errorMessage?.asString()
+                            ?: stringResource(R.string.error_loading_movies)
                     EmptyStateView(
                         message = stringResource(R.string.error_prefix, errorMessage),
                         icon = Icons.Default.Error,
-                        onRetry = retryGlobal
+                        onRetry = retryGlobal,
                     )
                 }
             }
         }
     }
 }
-
-

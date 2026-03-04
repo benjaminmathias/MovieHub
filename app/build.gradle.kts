@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.jetbrains.kotlin.serialization)
+    id("org.jlleitschuh.gradle.ktlint")
 }
 
 android {
@@ -29,7 +30,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        //testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunner = "com.benjamin.moviehub.HiltTestRunner"
 
         val properties = Properties()
@@ -49,7 +50,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -70,6 +71,11 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    ktlint {
+        android.set(true)
+        outputToConsole.set(true)
     }
 }
 
@@ -120,8 +126,6 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
-
-
 
     // Navigation 3
     implementation(libs.androidx.navigation.compose)

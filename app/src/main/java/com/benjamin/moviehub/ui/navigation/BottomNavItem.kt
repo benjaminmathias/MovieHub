@@ -9,8 +9,9 @@ import com.benjamin.moviehub.R
 sealed class BottomNavItem(
     val route: Route,
     val icon: ImageVector,
-    val labelRes: Int
+    val labelRes: Int,
 ) {
     data object Home : BottomNavItem(Route.List, Icons.Default.Home, R.string.home_tab)
+
     data object Favorite : BottomNavItem(Route.FavoriteList, Icons.Default.Favorite, R.string.favorite_tab)
 }

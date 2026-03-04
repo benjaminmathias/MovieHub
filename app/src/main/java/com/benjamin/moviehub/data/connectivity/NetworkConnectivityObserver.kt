@@ -14,46 +14,52 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-class NetworkConnectivityObserver @Inject constructor(
-    @param:ApplicationContext private val context: Context
-) : ConnectivityObserver {
+class NetworkConnectivityObserver
+    @Inject
+    constructor(
+        @param:ApplicationContext private val context: Context,
+    ) : ConnectivityObserver {
+        private val connectivityManager =
+            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
-    private val connectivityManager =
-        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        override fun observe(): Flow<ConnectivityStatus> =
+            callbackFlow {
+                val callback =
+                    object : ConnectivityManager.NetworkCallback() {
+                        override fun onAvailable(network: Network) {
+                            super.onAvailable(network)
+                            launch { send(ConnectivityStatus.AVAILABLE) }
+                        }
 
-    override fun observe(): Flow<ConnectivityStatus> {
-        return callbackFlow {
-            val callback = object : ConnectivityManager.NetworkCallback() {
-                override fun onAvailable(network: Network) {
-                    super.onAvailable(network)
-                    launch { send(ConnectivityStatus.AVAILABLE) }
+                        override fun onLosing(
+                            network: Network,
+                            maxMsToLive: Int,
+                        ) {
+                            super.onLosing(network, maxMsToLive)
+                            launch { send(ConnectivityStatus.LOSING) }
+                        }
+
+                        override fun onLost(network: Network) {
+                            super.onLost(network)
+                            launch { send(ConnectivityStatus.LOST) }
+                        }
+
+                        override fun onUnavailable() {
+                            super.onUnavailable()
+                            launch { send(ConnectivityStatus.UNAVAILABLE) }
+                        }
+                    }
+
+                val request =
+                    NetworkRequest
+                        .Builder()
+                        .addCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                        .build()
+
+                connectivityManager.registerNetworkCallback(request, callback)
+
+                awaitClose {
+                    connectivityManager.unregisterNetworkCallback(callback)
                 }
-
-                override fun onLosing(network: Network, maxMsToLive: Int) {
-                    super.onLosing(network, maxMsToLive)
-                    launch { send(ConnectivityStatus.LOSING) }
-                }
-
-                override fun onLost(network: Network) {
-                    super.onLost(network)
-                    launch { send(ConnectivityStatus.LOST) }
-                }
-
-                override fun onUnavailable() {
-                    super.onUnavailable()
-                    launch { send(ConnectivityStatus.UNAVAILABLE) }
-                }
-            }
-
-            val request = NetworkRequest.Builder()
-                .addCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                .build()
-
-            connectivityManager.registerNetworkCallback(request, callback)
-
-            awaitClose {
-                connectivityManager.unregisterNetworkCallback(callback)
-            }
-        }.distinctUntilChanged()
+            }.distinctUntilChanged()
     }
-}

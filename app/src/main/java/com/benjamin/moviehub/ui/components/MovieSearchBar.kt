@@ -26,15 +26,15 @@ fun MovieSearchBar(
     onQueryChanged: (String) -> Unit,
     modifier: Modifier = Modifier.Companion,
 ) {
-
     val keyboardController = LocalSoftwareKeyboardController.current
 
     OutlinedTextField(
         value = query,
         onValueChange = onQueryChanged,
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
         placeholder = { Text("Rechercher un film ...") },
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
         trailingIcon = {
@@ -46,18 +46,21 @@ fun MovieSearchBar(
         },
         singleLine = true,
         shape = RoundedCornerShape(12.dp),
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = MaterialTheme.colorScheme.surface,
-            unfocusedContainerColor = MaterialTheme.colorScheme.surface
-        ),
-        keyboardOptions = KeyboardOptions(
-            imeAction = ImeAction.Companion.Search
-        ),
-        keyboardActions = KeyboardActions(
-            onSearch = {
-                onQueryChanged(query)
-                keyboardController?.hide()
-            }
-        )
+        colors =
+            TextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+            ),
+        keyboardOptions =
+            KeyboardOptions(
+                imeAction = ImeAction.Companion.Search,
+            ),
+        keyboardActions =
+            KeyboardActions(
+                onSearch = {
+                    onQueryChanged(query)
+                    keyboardController?.hide()
+                },
+            ),
     )
 }

@@ -27,17 +27,18 @@ import com.benjamin.moviehub.domain.model.Actor
 fun ActorItem(actor: Actor) {
     Column(
         modifier = Modifier.width(90.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         AsyncImage(
             model = actor.profileUrl,
             contentDescription = actor.name,
             placeholder = painterResource(R.drawable.ic_launcher_foreground),
             error = painterResource(R.drawable.ic_launcher_foreground),
-            modifier = Modifier
-                .size(80.dp)
-                .clip(CircleShape),
-            contentScale = ContentScale.Crop
+            modifier =
+                Modifier
+                    .size(80.dp)
+                    .clip(CircleShape),
+            contentScale = ContentScale.Crop,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -49,7 +50,7 @@ fun ActorItem(actor: Actor) {
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
 
         Text(
@@ -58,20 +59,20 @@ fun ActorItem(actor: Actor) {
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.secondary
+            color = MaterialTheme.colorScheme.secondary,
         )
     }
 }
 
-
 @Preview(showBackground = true)
 @Composable
 fun ActorItemPreview() {
-    val fakeActor = Actor(
-        id = 1,
-        name = "Tom Hanks",
-        character = "Forrest Gump",
-        profileUrl = ""
-    )
+    val fakeActor =
+        Actor(
+            id = 1,
+            name = "Tom Hanks",
+            character = "Forrest Gump",
+            profileUrl = "",
+        )
     ActorItem(actor = fakeActor)
 }

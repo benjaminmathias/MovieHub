@@ -14,7 +14,6 @@ import org.junit.Test
 
 @HiltAndroidTest
 class MovieNavigationTest {
-
     @get:Rule(order = 0)
     val hiltRule = HiltAndroidRule(this)
 
@@ -32,7 +31,8 @@ class MovieNavigationTest {
             composeTestRule.onAllNodesWithTag("movie_item").fetchSemanticsNodes().isNotEmpty()
         }
 
-        composeTestRule.onAllNodesWithTag("movie_item")
+        composeTestRule
+            .onAllNodesWithTag("movie_item")
             .onFirst()
             .performClick()
 

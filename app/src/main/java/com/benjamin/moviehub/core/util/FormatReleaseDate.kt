@@ -5,7 +5,6 @@ import java.util.Date
 import java.util.Locale
 
 fun String?.formatReleaseDate(): String {
-
     if (this.isNullOrBlank()) return "Date inconnue"
 
     return try {
@@ -16,7 +15,6 @@ fun String?.formatReleaseDate(): String {
         val date: Date? = inputFormat.parse(this)
 
         date?.let { outputFormat.format(it) } ?: this
-
     } catch (e: Exception) {
         this.take(4)
     }

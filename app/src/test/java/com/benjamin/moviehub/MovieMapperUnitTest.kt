@@ -8,12 +8,10 @@ import com.benjamin.moviehub.domain.model.GenreObject
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-
 class MovieMapperUnitTest {
-
     private fun createFakeEntity(
         id: Int = 1,
-        isFavorite: Boolean = false
+        isFavorite: Boolean = false,
     ) = MovieEntity(
         id = id,
         title = "Test Movie",
@@ -22,12 +20,12 @@ class MovieMapperUnitTest {
         backdropPath = "",
         voteAverage = 7.5,
         releaseDate = "2024-01-01",
-        isFavorite = isFavorite
+        isFavorite = isFavorite,
     )
 
     private fun createFakeDto(
         id: Int = 1,
-        posterPath: String? = null
+        posterPath: String? = null,
     ) = MovieDto(
         id = id,
         title = "Test Movie",
@@ -35,7 +33,7 @@ class MovieMapperUnitTest {
         posterPath = posterPath,
         backdropPath = "",
         voteAverage = 7.5,
-        releaseDate = "2024-01-01"
+        releaseDate = "2024-01-01",
     )
 
     @Test
@@ -91,20 +89,22 @@ class MovieMapperUnitTest {
 
     @Test
     fun `toEntity should extract genre IDs from genre objects when genreIds is null`() {
-        val detailDto = MovieDto(
-            id = 1,
-            title = "Test Movie",
-            description = "Desc",
-            posterPath = null,
-            backdropPath = null,
-            voteAverage = 8.0,
-            releaseDate = "2025-01-01",
-            genreIds = null,
-            genres = listOf(
-                GenreObject(id = 28, name = "Action"),
-                GenreObject(id = 12, name = "Aventure")
+        val detailDto =
+            MovieDto(
+                id = 1,
+                title = "Test Movie",
+                description = "Desc",
+                posterPath = null,
+                backdropPath = null,
+                voteAverage = 8.0,
+                releaseDate = "2025-01-01",
+                genreIds = null,
+                genres =
+                    listOf(
+                        GenreObject(id = 28, name = "Action"),
+                        GenreObject(id = 12, name = "Aventure"),
+                    ),
             )
-        )
 
         val entity = detailDto.toEntity()
 
@@ -114,17 +114,18 @@ class MovieMapperUnitTest {
 
     @Test
     fun `toEntity should prioritize genreIds if available`() {
-        val listDto = MovieDto(
-            id = 1,
-            title = "Test Movie",
-            description = "Desc",
-            posterPath = null,
-            backdropPath = null,
-            voteAverage = 8.0,
-            releaseDate = "2025-01-01",
-            genreIds = listOf(99, 100),
-            genres = null
-        )
+        val listDto =
+            MovieDto(
+                id = 1,
+                title = "Test Movie",
+                description = "Desc",
+                posterPath = null,
+                backdropPath = null,
+                voteAverage = 8.0,
+                releaseDate = "2025-01-01",
+                genreIds = listOf(99, 100),
+                genres = null,
+            )
 
         val entity = listDto.toEntity()
 

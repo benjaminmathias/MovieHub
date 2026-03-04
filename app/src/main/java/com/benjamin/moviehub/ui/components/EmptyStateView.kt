@@ -27,18 +27,18 @@ import com.benjamin.moviehub.R
 fun EmptyStateView(
     message: String,
     icon: ImageVector = Icons.Default.Info,
-    onRetry: (() -> Unit)? = null
+    onRetry: (() -> Unit)? = null,
 ) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)
+            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -48,14 +48,14 @@ fun EmptyStateView(
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 32.dp)
+            modifier = Modifier.padding(horizontal = 32.dp),
         )
 
         onRetry?.let {
             Spacer(modifier = Modifier.height(24.dp))
             Button(
                 onClick = it,
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
             ) {
                 Text(text = stringResource(R.string.retry))
             }
