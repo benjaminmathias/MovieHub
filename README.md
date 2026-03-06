@@ -43,9 +43,13 @@ Cela garantit une cohérence totale des données et permet le support hors-ligne
 ### Gestion des États (State Management)
 Chaque écran expose un `UiState` scellé (Loading, Success, Error) via un `StateFlow`, consommé par l'UI de manière réactive.
 
-## 🧪 Tests
+## ⚙️ Installation Locale (Prérequis)
 
-Le projet inclut des tests unitaires sur les ViewModels critiques, vérifiant notamment :
-* Le mécanisme de *Debounce* de la recherche.
-* La logique de *Retry*.
-* Le mapping des données.
+L'application utilise The Movie Database (TMDB) comme source de données. Pour des raisons de sécurité, la clé API n'est pas versionnée. Pour compiler le projet localement :
+
+1. Clonez ce dépôt.
+2. Créez un compte gratuit sur [TMDB](https://www.themoviedb.org/settings/api) pour générer une clé API (API Read Access Token / v3 auth).
+3. À la racine du projet, ouvrez ou créez le fichier `local.properties`.
+4. Ajoutez la ligne suivante en remplaçant par votre clé :
+   `API_KEY=votre_cle_api_ici`
+5. Synchronisez Gradle et exécutez le projet.
