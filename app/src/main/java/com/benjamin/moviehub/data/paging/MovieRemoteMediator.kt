@@ -55,6 +55,7 @@ class MovieRemoteMediator(
 
             database.withTransaction {
                 if (loadType == LoadType.REFRESH) {
+                    movieDao.clearRemoteKeysByType("POPULAR")
                     movieDao.clearPopularMovies()
                 }
 
@@ -88,6 +89,8 @@ class MovieRemoteMediator(
                 movieDao.upsertMovies(movieEntities)
             }
             MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             MediatorResult.Error(e)
         } finally {

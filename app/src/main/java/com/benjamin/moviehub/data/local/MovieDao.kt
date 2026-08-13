@@ -33,8 +33,15 @@ interface MovieDao {
     @Query("SELECT * FROM movies WHERE isPopular = 1 ORDER BY pageOrder ASC")
     fun getPopularMoviesPaging(): PagingSource<Int, MovieEntity>
 
-    @Query("SELECT * FROM movies WHERE isSearchResult = 1 ORDER BY pageOrder ASC")
-    fun searchMoviesPaging(): PagingSource<Int, MovieEntity>
+    @Query(
+        """
+        SELECT movies.* FROM movies
+        INNER JOIN movie_search_results ON movies.id = movie_search_results.movieId
+        WHERE movie_search_results.queryKey = :queryKey
+        ORDER BY movie_search_results.pageOrder ASC
+        """,
+    )
+    fun searchMoviesPaging(queryKey: String): PagingSource<Int, MovieEntity>
 
     // --- LOGIQUE DE SYNCHRONISATION (UPSERT) ---
     @Insert(onConflict = OnConflictStrategy.IGNORE)
@@ -65,6 +72,15 @@ interface MovieDao {
     // --- MAINTENANCE ---
     @Query("DELETE FROM remote_keys WHERE type = :type")
     suspend fun clearRemoteKeysByType(type: String)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSearchResults(results: List<MovieSearchResultEntity>)
+
+    @Query("DELETE FROM movie_search_results WHERE queryKey = :queryKey")
+    suspend fun clearSearchResults(queryKey: String)
+
+    @Query("SELECT movieId FROM movie_search_results WHERE queryKey = :queryKey ORDER BY pageOrder ASC")
+    suspend fun getSearchResultMovieIds(queryKey: String): List<Int>
 
     @Query("UPDATE movies SET isPopular = 0, pageOrder = -1 WHERE isPopular = 1")
     suspend fun clearPopularMovies()

@@ -9,6 +9,8 @@ import com.benjamin.moviehub.BuildConfig
 import com.benjamin.moviehub.data.local.MovieDatabase
 import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.local.MovieRemoteKey
+import com.benjamin.moviehub.data.local.MovieSearchResultEntity
+import com.benjamin.moviehub.data.local.SearchQueryKey
 import com.benjamin.moviehub.data.mapper.toEntity
 import com.benjamin.moviehub.data.remote.MovieApiService
 
@@ -19,6 +21,8 @@ class SearchMovieRemoteMediator(
     private val query: String,
 ) : RemoteMediator<Int, MovieEntity>() {
     private val movieDao = database.movieDao()
+    private val queryKey = SearchQueryKey.normalize(query)
+    private val remoteKeyType = SearchQueryKey.remoteKeyType(query)
 
     private var isFetching = false
 
@@ -58,8 +62,8 @@ class SearchMovieRemoteMediator(
 
             database.withTransaction {
                 if (loadType == LoadType.REFRESH) {
-                    movieDao.clearRemoteKeysByType("SEARCH")
-                    movieDao.clearSearchResults()
+                    movieDao.clearRemoteKeysByType(remoteKeyType)
+                    movieDao.clearSearchResults(queryKey)
                 }
 
                 val prevKey = if (page == 1) null else page - 1
@@ -71,7 +75,7 @@ class SearchMovieRemoteMediator(
                             movieId = it.id,
                             prevKey = prevKey,
                             nextKey = nextKey,
-                            type = "SEARCH",
+                            type = remoteKeyType,
                         )
                     }
 
@@ -88,10 +92,21 @@ class SearchMovieRemoteMediator(
                             pageOrder = position,
                         )
                     }
+                val searchResults =
+                    movies.mapIndexed { index, dto ->
+                        MovieSearchResultEntity(
+                            queryKey = queryKey,
+                            movieId = dto.id,
+                            pageOrder = ((page - 1) * state.config.pageSize) + index,
+                        )
+                    }
                 movieDao.insertAllKeys(keys)
+                movieDao.insertSearchResults(searchResults)
                 movieDao.upsertMovies(movieEntities)
             }
             MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             MediatorResult.Error(e)
         } finally {
@@ -105,7 +120,7 @@ class SearchMovieRemoteMediator(
             ?.data
             ?.lastOrNull()
             ?.let { movie ->
-                movieDao.getRemoteKeysForMovieId(movie.id, "SEARCH")
+                movieDao.getRemoteKeysForMovieId(movie.id, remoteKeyType)
             }
 
     override suspend fun initialize(): InitializeAction = InitializeAction.LAUNCH_INITIAL_REFRESH

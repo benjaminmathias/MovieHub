@@ -65,8 +65,22 @@ class MovieMapperUnitTest {
         val dto = createFakeDto(posterPath = null)
         val entity = dto.toEntity(isFavorite = true)
 
-        assertEquals("", entity.posterPath)
+        assertEquals(null, entity.posterPath)
         assertEquals(true, entity.isFavorite)
+    }
+
+    @Test
+    fun `toEntity stores relative paths when dto contains a complete TMDB url`() {
+        val dto = createFakeDto(posterPath = "https://image.tmdb.org/t/p/w500/pic.jpg")
+
+        assertEquals("/pic.jpg", dto.toEntity().posterPath)
+    }
+
+    @Test
+    fun `toDomain does not duplicate an already complete image url`() {
+        val dto = createFakeDto(posterPath = "https://image.tmdb.org/t/p/w500/pic.jpg")
+
+        assertEquals("https://image.tmdb.org/t/p/w500/pic.jpg", dto.toDomain().posterPath)
     }
 
     @Test

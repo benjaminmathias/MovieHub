@@ -9,6 +9,7 @@ import androidx.paging.map
 import com.benjamin.moviehub.BuildConfig
 import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.local.MovieDatabase
+import com.benjamin.moviehub.data.local.SearchQueryKey
 import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.mapper.toEntity
 import com.benjamin.moviehub.data.paging.MovieRemoteMediator
@@ -33,6 +34,7 @@ class MovieRepositoryImpl
         @OptIn(ExperimentalPagingApi::class)
         override fun getPagedMovies(query: String?): Flow<PagingData<Movie>> {
             val isSearch = !query.isNullOrBlank()
+            val queryKey = query?.let(SearchQueryKey::normalize)
 
             return Pager(
                 config =
@@ -50,7 +52,7 @@ class MovieRepositoryImpl
                     },
                 pagingSourceFactory = {
                     if (isSearch) {
-                        movieDao.searchMoviesPaging()
+                        movieDao.searchMoviesPaging(requireNotNull(queryKey))
                     } else {
                         movieDao.getPopularMoviesPaging()
                     }
@@ -87,6 +89,8 @@ class MovieRepositoryImpl
                 movieDao.insertMovie(remoteMovieEntity)
 
                 remoteMovieEntity.toDomain()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 localMovie?.toDomain() ?: throw e
             }
@@ -138,6 +142,8 @@ class MovieRepositoryImpl
                         )
                     }
                 Result.success(actors)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -165,6 +171,8 @@ class MovieRepositoryImpl
                 remoteEntities.forEach { entity ->
                     movieDao.markAsPopular(entity.id)
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e("SyncWorker", "Échec de la synchronisation en arrière-plan", e)
                 throw e

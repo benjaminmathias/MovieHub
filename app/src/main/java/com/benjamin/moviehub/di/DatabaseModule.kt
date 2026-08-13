@@ -24,7 +24,8 @@ object DatabaseModule {
                 context,
                 MovieDatabase::class.java,
                 "movie_hub_db",
-            ).build()
+            ).addMigrations(MovieDatabase.MIGRATION_2_3, MovieDatabase.MIGRATION_3_4)
+            .build()
 
     @Provides
     @Singleton

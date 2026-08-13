@@ -1,6 +1,8 @@
 package com.benjamin.moviehub.data.mapper
 
 import com.benjamin.moviehub.core.util.GenreUtils
+import com.benjamin.moviehub.core.util.normalizeImagePath
+import com.benjamin.moviehub.core.util.toTmdbImageUrl
 import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.remote.MovieDto
 import com.benjamin.moviehub.domain.model.Movie
@@ -23,8 +25,8 @@ fun MovieDto.toEntity(
         id = this.id,
         title = this.title,
         overview = this.description,
-        posterPath = this.posterPath ?: "",
-        backdropPath = this.backdropPath ?: "",
+        posterPath = normalizeImagePath(this.posterPath),
+        backdropPath = normalizeImagePath(this.backdropPath),
         voteAverage = this.voteAverage,
         releaseDate = this.releaseDate ?: "",
         genreIds = finalGenreIds,
@@ -43,8 +45,8 @@ fun MovieEntity.toDomain(): Movie =
         id = id,
         title = title,
         overview = overview,
-        posterPath = "https://image.tmdb.org/t/p/w500$posterPath",
-        backdropPath = "https://image.tmdb.org/t/p/w780$backdropPath",
+        posterPath = toTmdbImageUrl(posterPath, "w500"),
+        backdropPath = toTmdbImageUrl(backdropPath, "w780"),
         voteAverage = voteAverage,
         releaseDate = releaseDate,
         webUrl = "https://www.themoviedb.org/movie/$id",
@@ -61,8 +63,8 @@ fun MovieDto.toDomain(): Movie =
         id = this.id,
         title = this.title,
         overview = this.description,
-        posterPath = if (this.posterPath != null) "https://image.tmdb.org/t/p/w500${this.posterPath}" else "",
-        backdropPath = if (this.backdropPath != null) "https://image.tmdb.org/t/p/w780${this.backdropPath}" else "",
+        posterPath = toTmdbImageUrl(this.posterPath, "w500"),
+        backdropPath = toTmdbImageUrl(this.backdropPath, "w780"),
         voteAverage = this.voteAverage,
         releaseDate = this.releaseDate ?: "",
         webUrl = "https://www.themoviedb.org/movie/${this.id}",
@@ -82,8 +84,8 @@ fun Movie.toEntity(
         id = this.id,
         title = this.title,
         overview = this.overview,
-        posterPath = this.posterPath,
-        backdropPath = this.backdropPath,
+        posterPath = normalizeImagePath(this.posterPath),
+        backdropPath = normalizeImagePath(this.backdropPath),
         releaseDate = this.releaseDate,
         voteAverage = this.voteAverage,
         genreIds = this.genreIds,
