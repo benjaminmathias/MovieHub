@@ -3,9 +3,9 @@ package com.benjamin.moviehub
 import android.app.Application
 import android.content.Context
 import androidx.test.runner.AndroidJUnitRunner
-import dagger.hilt.android.testing.HiltTestApplication
 import androidx.work.Configuration
 import androidx.work.WorkManager
+import dagger.hilt.android.testing.HiltTestApplication
 
 class HiltTestRunner : AndroidJUnitRunner() {
     override fun newApplication(
