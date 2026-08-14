@@ -26,6 +26,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -100,18 +101,13 @@ fun FavoriteScreen(
                                     items(state.movies, key = { it.id }) { movie ->
 
                                         val haptic = LocalHapticFeedback.current
-                                        val dismissState =
-                                            rememberSwipeToDismissBoxState(
-                                                confirmValueChange = { value ->
-                                                    if (value == SwipeToDismissBoxValue.EndToStart) {
-                                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                        onRemoveFavorite(movie)
-                                                        true
-                                                    } else {
-                                                        false
-                                                    }
-                                                },
-                                            )
+                                        val dismissState = rememberSwipeToDismissBoxState()
+                                        LaunchedEffect(dismissState.currentValue) {
+                                            if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                onRemoveFavorite(movie)
+                                            }
+                                        }
                                         Box(
                                             modifier =
                                                 Modifier
