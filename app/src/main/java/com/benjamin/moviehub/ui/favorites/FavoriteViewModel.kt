@@ -7,14 +7,20 @@ import com.benjamin.moviehub.core.util.UiText
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
+@OptIn(ExperimentalCoroutinesApi::class)
 class FavoriteViewModel
     @Inject
     constructor(
@@ -24,21 +30,32 @@ class FavoriteViewModel
             MutableStateFlow<MovieFavoriteListUiState>(MovieFavoriteListUiState.Loading)
         val uiState: StateFlow<MovieFavoriteListUiState> = _uiState.asStateFlow()
 
-        init {
-            loadFavoriteMovies()
-        }
+        private val refreshTrigger =
+            MutableSharedFlow<Unit>(replay = 1).apply {
+                tryEmit(Unit)
+            }
 
-        private fun loadFavoriteMovies() {
+        init {
             viewModelScope.launch {
-                repository
-                    .getFavoriteMovies()
-                    .catch { e ->
-                        _uiState.value =
-                            MovieFavoriteListUiState.Error(UiText.StringResource(R.string.error_loading_movies))
-                    }.collect { movies ->
-                        val emptyMsg =
-                            if (movies.isEmpty()) UiText.StringResource(R.string.no_favorite_added) else null
-                        _uiState.value = MovieFavoriteListUiState.Success(movies, emptyMsg)
+                refreshTrigger
+                    .flatMapLatest {
+                        repository
+                            .getFavoriteMovies()
+                            .map { Result.success(it) }
+                            .catch { error ->
+                                if (error is CancellationException) throw error
+                                emit(Result.failure(error))
+                            }
+                    }.collect { result ->
+                        result
+                            .onSuccess { movies ->
+                                val emptyMsg =
+                                    if (movies.isEmpty()) UiText.StringResource(R.string.no_favorite_added) else null
+                                _uiState.value = MovieFavoriteListUiState.Success(movies, emptyMsg)
+                            }.onFailure {
+                                _uiState.value =
+                                    MovieFavoriteListUiState.Error(UiText.StringResource(R.string.error_loading_movies))
+                            }
                     }
             }
         }
@@ -50,6 +67,7 @@ class FavoriteViewModel
         }
 
         fun refreshFavorite() {
-            loadFavoriteMovies()
+            _uiState.value = MovieFavoriteListUiState.Loading
+            refreshTrigger.tryEmit(Unit)
         }
     }

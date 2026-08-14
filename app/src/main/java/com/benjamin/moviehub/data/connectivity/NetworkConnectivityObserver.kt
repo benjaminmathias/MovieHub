@@ -11,7 +11,6 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class NetworkConnectivityObserver
@@ -24,11 +23,12 @@ class NetworkConnectivityObserver
 
         override fun observe(): Flow<ConnectivityStatus> =
             callbackFlow {
+                trySend(currentStatus())
                 val callback =
                     object : ConnectivityManager.NetworkCallback() {
                         override fun onAvailable(network: Network) {
                             super.onAvailable(network)
-                            launch { send(ConnectivityStatus.AVAILABLE) }
+                            trySend(ConnectivityStatus.AVAILABLE)
                         }
 
                         override fun onLosing(
@@ -36,17 +36,17 @@ class NetworkConnectivityObserver
                             maxMsToLive: Int,
                         ) {
                             super.onLosing(network, maxMsToLive)
-                            launch { send(ConnectivityStatus.LOSING) }
+                            trySend(ConnectivityStatus.LOSING)
                         }
 
                         override fun onLost(network: Network) {
                             super.onLost(network)
-                            launch { send(ConnectivityStatus.LOST) }
+                            trySend(ConnectivityStatus.LOST)
                         }
 
                         override fun onUnavailable() {
                             super.onUnavailable()
-                            launch { send(ConnectivityStatus.UNAVAILABLE) }
+                            trySend(ConnectivityStatus.UNAVAILABLE)
                         }
                     }
 
@@ -62,4 +62,14 @@ class NetworkConnectivityObserver
                     connectivityManager.unregisterNetworkCallback(callback)
                 }
             }.distinctUntilChanged()
+
+        private fun currentStatus(): ConnectivityStatus {
+            val network = connectivityManager.activeNetwork ?: return ConnectivityStatus.UNAVAILABLE
+            val capabilities = connectivityManager.getNetworkCapabilities(network)
+            return if (capabilities?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true) {
+                ConnectivityStatus.AVAILABLE
+            } else {
+                ConnectivityStatus.UNAVAILABLE
+            }
+        }
     }

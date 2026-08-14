@@ -13,8 +13,4 @@ sealed class MovieListUiState {
         val searchQuery: String = "",
         val emptyMessage: UiText? = null,
     ) : MovieListUiState()
-
-    data class Error(
-        val errorMessage: UiText? = null,
-    ) : MovieListUiState()
 }

@@ -29,6 +29,6 @@ class MainViewModel
             connectivityObserver.observe().stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = ConnectivityStatus.AVAILABLE,
+                initialValue = ConnectivityStatus.UNKNOWN,
             )
     }

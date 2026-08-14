@@ -10,7 +10,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Settings
@@ -213,17 +212,6 @@ fun MovieListScreen(
                             }
                         }
                     }
-                }
-
-                is MovieListUiState.Error -> {
-                    val errorMessage =
-                        state.errorMessage?.asString()
-                            ?: stringResource(R.string.error_loading_movies)
-                    EmptyStateView(
-                        message = stringResource(R.string.error_prefix, errorMessage),
-                        icon = Icons.Default.Error,
-                        onRetry = retryGlobal,
-                    )
                 }
             }
         }

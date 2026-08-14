@@ -67,8 +67,6 @@ class MovieRepositoryImpl
             // Try to get cached movie
             val localMovie = movieDao.getMovieById(movieId)
 
-            Log.d("localMovie GenreId", localMovie?.genreIds.toString())
-
             return try {
                 // API call
                 val dto =

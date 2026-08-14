@@ -1,6 +1,5 @@
 package com.benjamin.moviehub.ui.detail
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benjamin.moviehub.R
@@ -8,6 +7,7 @@ import com.benjamin.moviehub.core.util.UiText
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,9 +40,9 @@ class MovieDetailViewModel
                     val movie = movieDeferred.await()
                     val actors = actorsDeferred.await().getOrDefault(emptyList())
 
-                    Log.d("Genres", movie.genres.toString())
-
                     _uiState.value = MovieDetailUiState.Success(movie, actors)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     _uiState.value =
                         MovieDetailUiState.Error(UiText.StringResource(R.string.error_loading_movie_detail))
@@ -62,6 +62,8 @@ class MovieDetailViewModel
 
                 try {
                     repository.toggleFavorite(movie, newStatus)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     _uiState.value = currentState
                 }
