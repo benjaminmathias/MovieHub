@@ -49,7 +49,10 @@ fun MovieDetailScreen(
                 },
                 navigationIcon = {
                     IconButton(onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back),
+                        )
                     }
                 },
                 actions = {
@@ -57,7 +60,10 @@ fun MovieDetailScreen(
                         IconButton(onClick = {
                             shareMovie(context, uiState.movie)
                         }) {
-                            Icon(Icons.Outlined.Share, contentDescription = "Partager")
+                            Icon(
+                                Icons.Outlined.Share,
+                                contentDescription = stringResource(R.string.share),
+                            )
                         }
                     }
                 },
@@ -83,7 +89,7 @@ fun MovieDetailScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "Chargement des détails...",
+                                text = stringResource(R.string.loading_movie_details),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color.Gray,
                             )

@@ -66,7 +66,7 @@ fun MovieListScreen(
                     IconButton(onClick = onSettingsClick) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = "Paramètres",
+                            contentDescription = stringResource(R.string.settings_title),
                         )
                     }
                 },

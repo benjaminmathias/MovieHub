@@ -28,11 +28,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.Movie
 
 @Composable
@@ -65,7 +67,7 @@ fun MovieItem(
                     model = movie.posterPath,
                     // placeholder = painterResource(R.drawable.placeholder_loading),
                     // error = painterResource(R.drawable.placeholder_error),
-                    contentDescription = "Poster of ${movie.title}",
+                    contentDescription = stringResource(R.string.poster_description, movie.title),
                     modifier =
                         Modifier
                             .width(120.dp)
@@ -104,7 +106,7 @@ fun MovieItem(
 
                 val releaseYear = movie.releaseDate.take(4)
                 Text(
-                    text = releaseYear.ifBlank { "N/A" },
+                    text = releaseYear.ifBlank { stringResource(R.string.not_available) },
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.secondary,
                 )
@@ -123,7 +125,7 @@ fun MovieItem(
                     Spacer(modifier = Modifier.width(4.dp))
                     Icon(
                         imageVector = Icons.Default.Star,
-                        contentDescription = "Rating",
+                        contentDescription = stringResource(R.string.rating),
                         modifier = Modifier.size(18.dp),
                         tint = Color(0xFFFFD700),
                     )

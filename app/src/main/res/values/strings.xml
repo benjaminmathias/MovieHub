@@ -21,7 +21,31 @@
     <string name="rating_label">Note : %1$.1f/10</string>
     <string name="share_movie_text">Regarde ce film : %1$s \nPlus d\'infos ici : %2$s</string>
     <string name="favorite">Ajouter aux favoris</string>
+    <string name="remove_favorite">Retirer des favoris</string>
     <string name="favorite_removed">Retiré des favoris</string>
+
+    <string name="settings_title">Paramètres</string>
+    <string name="back">Retour</string>
+    <string name="appearance_section">Apparence</string>
+    <string name="storage_section">Stockage</string>
+    <string name="clear_image_cache">Vider le cache des images</string>
+    <string name="clear_image_cache_description">Supprime uniquement les images en cache. Les favoris et les données locales sont conservés.</string>
+    <string name="image_cache_cleared">Cache des images vidé avec succès</string>
+    <string name="image_cache_clear_failed">Impossible de vider le cache des images</string>
+    <string name="about_version">MovieHub v%1$s (%2$d)</string>
+    <string name="theme_system">Système (Défaut)</string>
+    <string name="theme_light">Clair</string>
+    <string name="theme_dark">Sombre</string>
+    <string name="share">Partager</string>
+    <string name="loading_movie_details">Chargement des détails…</string>
+    <string name="not_available">N/A</string>
+    <string name="cast">Casting</string>
+    <string name="cast_unavailable">Informations de casting indisponibles</string>
+    <string name="no_internet_connection">Pas de connexion internet</string>
+    <string name="connection_restored">Connexion rétablie</string>
+    <string name="remove_favorite_accessibility">Retirer des favoris</string>
+    <string name="poster_description">Affiche de %1$s</string>
+    <string name="rating">Note</string>
 
     <string name="no_favorite_added">Aucun film favori n\'a été ajouté !</string>
 </resources>

@@ -29,9 +29,6 @@ class MovieListViewModel
         private val _searchQuery = MutableStateFlow("")
         val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-        private val _selectedGenres = MutableStateFlow<Set<String>>(emptySet())
-        val selectedGenres = _selectedGenres.asStateFlow()
-
         private val refreshTrigger =
             MutableSharedFlow<Unit>(replay = 1).apply {
                 tryEmit(Unit)
@@ -66,15 +63,5 @@ class MovieListViewModel
 
         fun retryGlobal() {
             refreshTrigger.tryEmit(Unit)
-        }
-
-        fun toggleGenre(genre: String) {
-            val currentSet = _selectedGenres.value
-            if (currentSet.contains(genre)) {
-                _selectedGenres.value = currentSet - genre
-            } else {
-                _selectedGenres.value = currentSet + genre
-            }
-            println("Genres sélectionnés : ${_selectedGenres.value}")
         }
     }

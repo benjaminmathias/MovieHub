@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -27,17 +28,18 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.benjamin.moviehub.BuildConfig
+import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.util.AppTheme
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,18 +48,20 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val currentTheme by viewModel.currentTheme.collectAsState()
+    val imageCacheState by viewModel.imageCacheState.collectAsState()
     val snackbarHostState = androidx.compose.runtime.remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+    val imageCacheClearedMessage = stringResource(R.string.image_cache_cleared)
+    val imageCacheClearFailedMessage = stringResource(R.string.image_cache_clear_failed)
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Paramètres") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Retour",
+                            contentDescription = stringResource(R.string.back),
                         )
                     }
                 },
@@ -74,8 +78,7 @@ fun SettingsScreen(
                     .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            // Section Apparence
-            SettingsSection(title = "Apparence") {
+            SettingsSection(title = stringResource(R.string.appearance_section)) {
                 ThemeSelector(
                     currentTheme = currentTheme,
                     onThemeSelected = viewModel::updateTheme,
@@ -84,34 +87,50 @@ fun SettingsScreen(
 
             HorizontalDivider()
 
-            // Section Stockage
-            SettingsSection(title = "Stockage") {
+            SettingsSection(title = stringResource(R.string.storage_section)) {
                 SettingsItem(
-                    title = "Vider le cache",
-                    subtitle = "Supprime les données locales et les images",
+                    title = stringResource(R.string.clear_image_cache),
+                    subtitle = stringResource(R.string.clear_image_cache_description),
                     icon = Icons.Default.Delete,
                     onClick = {
-                        viewModel.clearCache()
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Cache vidé avec succès")
-                        }
+                        viewModel.clearImageCache()
                     },
                 )
             }
 
             HorizontalDivider()
 
-            // Section À propos
             Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "MovieHub v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                    text =
+                        stringResource(
+                            R.string.about_version,
+                            BuildConfig.VERSION_NAME,
+                            BuildConfig.VERSION_CODE,
+                        ),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+    }
+
+    LaunchedEffect(imageCacheState) {
+        when (imageCacheState) {
+            ImageCacheState.Success -> {
+                snackbarHostState.showSnackbar(imageCacheClearedMessage)
+                viewModel.resetImageCacheState()
+            }
+
+            ImageCacheState.Error -> {
+                snackbarHostState.showSnackbar(imageCacheClearFailedMessage)
+                viewModel.resetImageCacheState()
+            }
+
+            ImageCacheState.Idle, ImageCacheState.Loading -> Unit
         }
     }
 }
@@ -140,17 +159,17 @@ fun ThemeSelector(
     Column {
         ThemeRadioButton(
             selected = currentTheme == AppTheme.SYSTEM,
-            text = "Système (Défaut)",
+            text = stringResource(R.string.theme_system),
             onClick = { onThemeSelected(AppTheme.SYSTEM) },
         )
         ThemeRadioButton(
             selected = currentTheme == AppTheme.LIGHT,
-            text = "Clair",
+            text = stringResource(R.string.theme_light),
             onClick = { onThemeSelected(AppTheme.LIGHT) },
         )
         ThemeRadioButton(
             selected = currentTheme == AppTheme.DARK,
-            text = "Sombre",
+            text = stringResource(R.string.theme_dark),
             onClick = { onThemeSelected(AppTheme.DARK) },
         )
     }
@@ -167,6 +186,7 @@ fun ThemeRadioButton(
             Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
+                .heightIn(min = 48.dp)
                 .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -190,6 +210,7 @@ fun SettingsItem(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .heightIn(min = 48.dp)
                 .clickable(onClick = onClick)
                 .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,

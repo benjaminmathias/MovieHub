@@ -18,7 +18,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.connectivity.ConnectivityStatus
 import kotlinx.coroutines.delay
 
@@ -61,7 +63,7 @@ fun NetworkStatusBar(
             contentColor = MaterialTheme.colorScheme.onError,
         ) {
             Text(
-                text = "Pas de connexion internet",
+                text = stringResource(R.string.no_internet_connection),
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -82,7 +84,7 @@ fun NetworkStatusBar(
             containerColor = Color(0xFF4CAF50),
             contentColor = Color.White,
         ) {
-            Text(text = "Connexion rétablie", style = MaterialTheme.typography.bodyMedium)
+            Text(text = stringResource(R.string.connection_restored), style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

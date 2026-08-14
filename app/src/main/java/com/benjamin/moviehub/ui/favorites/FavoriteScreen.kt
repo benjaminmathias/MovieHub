@@ -31,6 +31,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.DeleteBackground
@@ -101,6 +104,8 @@ fun FavoriteScreen(
                                     items(state.movies, key = { it.id }) { movie ->
 
                                         val haptic = LocalHapticFeedback.current
+                                        val removeFavoriteLabel =
+                                            stringResource(R.string.remove_favorite_accessibility)
                                         val dismissState = rememberSwipeToDismissBoxState()
                                         LaunchedEffect(dismissState.currentValue) {
                                             if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
@@ -116,6 +121,19 @@ fun FavoriteScreen(
                                         ) {
                                             SwipeToDismissBox(
                                                 state = dismissState,
+                                                modifier =
+                                                    Modifier.semantics {
+                                                        customActions =
+                                                            listOf(
+                                                                CustomAccessibilityAction(
+                                                                    label = removeFavoriteLabel,
+                                                                    action = {
+                                                                        onRemoveFavorite(movie)
+                                                                        true
+                                                                    },
+                                                                ),
+                                                            )
+                                                    },
                                                 enableDismissFromStartToEnd = false,
                                                 backgroundContent = {
                                                     val isVisible = dismissState.progress > 0f

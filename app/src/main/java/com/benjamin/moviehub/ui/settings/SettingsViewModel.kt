@@ -1,30 +1,40 @@
 package com.benjamin.moviehub.ui.settings
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import coil.annotation.ExperimentalCoilApi
-import coil.imageLoader
 import com.benjamin.moviehub.core.util.AppTheme
-import com.benjamin.moviehub.data.local.MovieDatabase
 import com.benjamin.moviehub.data.repository.UserPreferenceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+sealed interface ImageCacheState {
+    data object Idle : ImageCacheState
+
+    data object Loading : ImageCacheState
+
+    data object Success : ImageCacheState
+
+    data object Error : ImageCacheState
+}
 
 @HiltViewModel
 class SettingsViewModel
     @Inject
     constructor(
         private val userPreferenceRepository: UserPreferenceRepository,
-        private val database: MovieDatabase,
-        @param:ApplicationContext private val context: Context,
+        private val imageCacheManager: ImageCacheManager,
     ) : ViewModel() {
+        private val _imageCacheState = MutableStateFlow<ImageCacheState>(ImageCacheState.Idle)
+        val imageCacheState: StateFlow<ImageCacheState> = _imageCacheState.asStateFlow()
+
         val currentTheme: StateFlow<AppTheme> =
             userPreferenceRepository.theme
                 .stateIn(
@@ -39,16 +49,25 @@ class SettingsViewModel
             }
         }
 
-        @OptIn(ExperimentalCoilApi::class)
-        fun clearCache() {
+        fun clearImageCache() {
             viewModelScope.launch(Dispatchers.IO) {
-                try {
-                    database.clearAllTables()
-                    context.imageLoader.memoryCache?.clear()
-                    context.imageLoader.diskCache?.clear()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                clearImageCacheNow()
             }
+        }
+
+        internal suspend fun clearImageCacheNow() {
+            _imageCacheState.value = ImageCacheState.Loading
+            try {
+                imageCacheManager.clear()
+                _imageCacheState.value = ImageCacheState.Success
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _imageCacheState.value = ImageCacheState.Error
+            }
+        }
+
+        fun resetImageCacheState() {
+            _imageCacheState.value = ImageCacheState.Idle
         }
     }

@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -115,7 +116,7 @@ fun MovieDetailContent(
                 ) {
                     Icon(
                         Icons.Default.Star,
-                        contentDescription = "Liked",
+                        contentDescription = null,
                         tint = Color(0xFFFFD700),
                         modifier = Modifier.size(16.dp),
                     )
@@ -127,7 +128,7 @@ fun MovieDetailContent(
                             if (movie.voteAverage > 0) {
                                 "%.1f".format(movie.voteAverage)
                             } else {
-                                "N/A"
+                                stringResource(R.string.not_available)
                             },
                         style = MaterialTheme.typography.labelLarge,
                         color = Color.White,
@@ -146,7 +147,10 @@ fun MovieDetailContent(
             ) {
                 Icon(
                     imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = "Ajouter aux favoris",
+                    contentDescription =
+                        stringResource(
+                            if (movie.isFavorite) R.string.remove_favorite else R.string.favorite,
+                        ),
                     tint = if (movie.isFavorite) Color.Red else Color.Gray,
                     modifier = Modifier.scale(scale),
                 )
@@ -202,7 +206,7 @@ fun MovieDetailContent(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Text(
-                    text = "Casting",
+                    text = stringResource(R.string.cast),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary,
@@ -221,7 +225,7 @@ fun MovieDetailContent(
                 }
             } else {
                 Text(
-                    text = "Informations de casting indisponible",
+                    text = stringResource(R.string.cast_unavailable),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline,
                     modifier = Modifier.padding(top = 8.dp),
