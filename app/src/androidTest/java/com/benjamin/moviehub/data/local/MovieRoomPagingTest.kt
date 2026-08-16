@@ -1,14 +1,11 @@
 package com.benjamin.moviehub.data.local
 
-import android.content.Context
 import androidx.paging.ExperimentalPagingApi
 import androidx.paging.LoadType
 import androidx.paging.PagingConfig
 import androidx.paging.PagingSource.LoadResult
 import androidx.paging.PagingState
 import androidx.room.Room
-import androidx.sqlite.db.SupportSQLiteOpenHelper
-import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.benjamin.moviehub.data.paging.MovieRemoteMediator
@@ -74,87 +71,6 @@ class MovieRoomPagingTest {
             assertEquals(2, dao.getRemoteKeysForMovieId(42, "POPULAR")?.nextKey)
             assertEquals(3, dao.getRemoteKeysForMovieId(42, "SEARCH")?.nextKey)
         }
-
-    @Test
-    fun migration2To3_preservesKeysAndAllowsCompositeIdentity() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val databaseName = "movie-room-migration-test"
-        context.deleteDatabase(databaseName)
-
-        val helper =
-            FrameworkSQLiteOpenHelperFactory().create(
-                SupportSQLiteOpenHelper.Configuration
-                    .builder(context)
-                    .name(databaseName)
-                    .callback(
-                        object : SupportSQLiteOpenHelper.Callback(2) {
-                            override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                                db.execSQL(
-                                    "CREATE TABLE remote_keys (movieId INTEGER NOT NULL PRIMARY KEY, prevKey INTEGER, nextKey INTEGER, type TEXT NOT NULL)",
-                                )
-                                db.execSQL("INSERT INTO remote_keys VALUES (42, NULL, 2, 'POPULAR')")
-                            }
-
-                            override fun onUpgrade(
-                                db: androidx.sqlite.db.SupportSQLiteDatabase,
-                                oldVersion: Int,
-                                newVersion: Int,
-                            ) = Unit
-                        },
-                    ).build(),
-            )
-
-        try {
-            val supportDatabase = helper.writableDatabase
-            MovieDatabase.MIGRATION_2_3.migrate(supportDatabase)
-            supportDatabase.execSQL("INSERT INTO remote_keys VALUES (42, NULL, 3, 'SEARCH')")
-
-            supportDatabase.query("SELECT COUNT(*) FROM remote_keys").use { cursor ->
-                assertTrue(cursor.moveToFirst())
-                assertEquals(2, cursor.getInt(0))
-            }
-        } finally {
-            helper.close()
-            context.deleteDatabase(databaseName)
-        }
-    }
-
-    @Test
-    fun migration3To4_createsSearchResultIsolationTable() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val databaseName = "movie-room-search-migration-test"
-        context.deleteDatabase(databaseName)
-        val helper =
-            FrameworkSQLiteOpenHelperFactory().create(
-                SupportSQLiteOpenHelper.Configuration
-                    .builder(context)
-                    .name(databaseName)
-                    .callback(
-                        object : SupportSQLiteOpenHelper.Callback(3) {
-                            override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) = Unit
-
-                            override fun onUpgrade(
-                                db: androidx.sqlite.db.SupportSQLiteDatabase,
-                                oldVersion: Int,
-                                newVersion: Int,
-                            ) = Unit
-                        },
-                    ).build(),
-            )
-
-        try {
-            MovieDatabase.MIGRATION_3_4.migrate(helper.writableDatabase)
-            helper.writableDatabase.execSQL("INSERT INTO movie_search_results VALUES ('alpha', 1, 0)")
-            helper.writableDatabase.execSQL("INSERT INTO movie_search_results VALUES ('beta', 1, 0)")
-            helper.writableDatabase.query("SELECT COUNT(*) FROM movie_search_results").use { cursor ->
-                assertTrue(cursor.moveToFirst())
-                assertEquals(2, cursor.getInt(0))
-            }
-        } finally {
-            helper.close()
-            context.deleteDatabase(databaseName)
-        }
-    }
 
     @Test
     fun differentSearchQueries_doNotShareCachedResults() =
