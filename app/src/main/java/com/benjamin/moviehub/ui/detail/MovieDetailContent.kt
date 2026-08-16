@@ -172,7 +172,7 @@ fun MovieDetailContent(
             )
 
             Text(
-                text = movie.releaseDate.formatReleaseDate(),
+                text = movie.releaseDate.formatReleaseDate(stringResource(R.string.release_date_unknown)),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.secondary,
             )

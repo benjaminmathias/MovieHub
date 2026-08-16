@@ -2,6 +2,7 @@ package com.benjamin.moviehub.core.util
 
 import android.content.Context
 import android.content.Intent
+import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.Movie
 
 /**
@@ -16,11 +17,15 @@ fun shareMovie(
             action = Intent.ACTION_SEND
             putExtra(
                 Intent.EXTRA_TEXT,
-                "Hey, regarde ce film sur MovieHub: ${movie.title} \n ${movie.webUrl}",
+                context.getString(
+                    R.string.share_movie_text,
+                    movie.title,
+                    movie.webUrl ?: "",
+                ),
             )
             type = "text/plain"
         }
 
-    val shareIntent = Intent.createChooser(sendIntent, "Partager via")
+    val shareIntent = Intent.createChooser(sendIntent, context.getString(R.string.share_chooser))
     context.startActivity(shareIntent)
 }

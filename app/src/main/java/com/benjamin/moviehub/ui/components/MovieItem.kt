@@ -117,7 +117,7 @@ fun MovieItem(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = movie.voteAverage.toString().take(3),
+                        text = "%.1f".format(movie.voteAverage),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,

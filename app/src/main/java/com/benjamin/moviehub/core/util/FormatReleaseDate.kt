@@ -4,8 +4,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-fun String?.formatReleaseDate(): String {
-    if (this.isNullOrBlank()) return "Date inconnue"
+fun String?.formatReleaseDate(unknownLabel: String): String {
+    if (this.isNullOrBlank()) return unknownLabel
 
     return try {
         val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)

@@ -9,6 +9,7 @@
     <string name="favorite_tab">Favoris</string>
 
     <string name="search_placeholder">Rechercher un film…</string>
+    <string name="clear_search">Effacer</string>
     <string name="error_loading_movies">Impossible de charger les films.</string>
     <string name="no_movie_available">Aucun film disponible</string>
     <string name="no_result_found">Aucun résultat trouvé</string>
@@ -37,6 +38,7 @@
     <string name="theme_light">Clair</string>
     <string name="theme_dark">Sombre</string>
     <string name="share">Partager</string>
+    <string name="share_chooser">Partager via</string>
     <string name="loading_movie_details">Chargement des détails…</string>
     <string name="not_available">N/A</string>
     <string name="cast">Casting</string>
