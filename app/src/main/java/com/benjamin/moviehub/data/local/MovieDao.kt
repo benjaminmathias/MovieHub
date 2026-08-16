@@ -13,6 +13,9 @@ interface MovieDao {
     @Query("SELECT * FROM movies WHERE id = :movieId")
     suspend fun getMovieById(movieId: Int): MovieEntity?
 
+    @Query("SELECT * FROM movies WHERE id IN (:ids)")
+    suspend fun getMoviesByIds(ids: List<Int>): List<MovieEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovie(movie: MovieEntity) // Pour ton toggleFavorite
 
@@ -47,11 +50,8 @@ interface MovieDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertOrIgnore(movies: List<MovieEntity>): List<Long>
 
-    @Query("UPDATE movies SET isPopular = 1 WHERE id = :movieId")
-    suspend fun markAsPopular(movieId: Int)
-
-    @Query("UPDATE movies SET isSearchResult = 1 WHERE id = :movieId")
-    suspend fun markAsSearchResult(movieId: Int)
+    @Query("UPDATE movies SET isPopular = 1 WHERE id IN (:ids)")
+    suspend fun markAsPopularBatch(ids: List<Int>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertMovies(movies: List<MovieEntity>)
@@ -84,10 +84,4 @@ interface MovieDao {
 
     @Query("UPDATE movies SET isPopular = 0, pageOrder = -1 WHERE isPopular = 1")
     suspend fun clearPopularMovies()
-
-    @Query("UPDATE movies SET isSearchResult = 0")
-    suspend fun clearSearchResults()
-
-    @Query("UPDATE movies SET pageOrder = -1 WHERE isPopular = 1")
-    suspend fun resetPopularPageOrders()
 }

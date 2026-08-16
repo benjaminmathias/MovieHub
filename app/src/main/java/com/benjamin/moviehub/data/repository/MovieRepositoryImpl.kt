@@ -165,10 +165,7 @@ class MovieRepositoryImpl
                     }
 
                 movieDao.insertOrIgnore(remoteEntities)
-
-                remoteEntities.forEach { entity ->
-                    movieDao.markAsPopular(entity.id)
-                }
+                movieDao.markAsPopularBatch(remoteEntities.map { it.id })
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {

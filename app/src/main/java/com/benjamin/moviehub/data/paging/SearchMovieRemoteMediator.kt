@@ -24,8 +24,6 @@ class SearchMovieRemoteMediator(
     private val queryKey = SearchQueryKey.normalize(query)
     private val remoteKeyType = SearchQueryKey.remoteKeyType(query)
 
-    private var isFetching = false
-
     override suspend fun load(
         loadType: LoadType,
         state: PagingState<Int, MovieEntity>,
@@ -44,12 +42,7 @@ class SearchMovieRemoteMediator(
                 }
             }
 
-        if (isFetching && loadType == LoadType.APPEND) {
-            return MediatorResult.Success(endOfPaginationReached = false)
-        }
-
         return try {
-            isFetching = true
             val response =
                 apiService.searchMovies(
                     BuildConfig.TMDB_API_KEY,
@@ -79,11 +72,14 @@ class SearchMovieRemoteMediator(
                         )
                     }
 
+                val localMovies =
+                    movieDao.getMoviesByIds(movies.map { it.id }).associateBy { it.id }
+
                 val movieEntities =
                     movies.mapIndexed { index, dto ->
                         val position = ((page - 1) * state.config.pageSize) + index
 
-                        val localMovie = movieDao.getMovieById(dto.id)
+                        val localMovie = localMovies[dto.id]
 
                         dto.toEntity(
                             isFavorite = localMovie?.isFavorite ?: false,
@@ -109,8 +105,6 @@ class SearchMovieRemoteMediator(
             throw e
         } catch (e: Exception) {
             MediatorResult.Error(e)
-        } finally {
-            isFetching = false
         }
     }
 
