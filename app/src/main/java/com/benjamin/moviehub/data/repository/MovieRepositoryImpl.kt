@@ -6,9 +6,11 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
+import androidx.room.withTransaction
 import com.benjamin.moviehub.BuildConfig
 import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.local.MovieDatabase
+import com.benjamin.moviehub.data.local.MovieRemoteKey
 import com.benjamin.moviehub.data.local.SearchQueryKey
 import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.mapper.toEntity
@@ -154,18 +156,42 @@ class MovieRepositoryImpl
                         page = 1,
                     )
 
-                val remoteEntities =
-                    response.movies.map { dto ->
-                        dto.toEntity(
-                            isFavorite = false,
-                            isPopular = true,
-                            isSearchResult = false,
-                            pageOrder = -1,
-                        )
-                    }
+                database.withTransaction {
+                    val movieIds = response.movies.map { it.id }
+                    val localMovies =
+                        if (movieIds.isEmpty()) {
+                            emptyMap()
+                        } else {
+                            movieDao.getMoviesByIds(movieIds).associateBy { it.id }
+                        }
 
-                movieDao.insertOrIgnore(remoteEntities)
-                movieDao.markAsPopularBatch(remoteEntities.map { it.id })
+                    movieDao.clearRemoteKeysByType("POPULAR")
+                    movieDao.clearPopularMovies()
+
+                    val remoteEntities =
+                        response.movies.mapIndexed { index, dto ->
+                            val localMovie = localMovies[dto.id]
+
+                            dto.toEntity(
+                                isFavorite = localMovie?.isFavorite ?: false,
+                                isPopular = true,
+                                isSearchResult = localMovie?.isSearchResult ?: false,
+                                pageOrder = index,
+                            )
+                        }
+                    val remoteKeys =
+                        response.movies.map { dto ->
+                            MovieRemoteKey(
+                                movieId = dto.id,
+                                prevKey = null,
+                                nextKey = if (response.movies.size < 20) null else 2,
+                                type = "POPULAR",
+                            )
+                        }
+
+                    movieDao.insertAllKeys(remoteKeys)
+                    movieDao.upsertMovies(remoteEntities)
+                }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {

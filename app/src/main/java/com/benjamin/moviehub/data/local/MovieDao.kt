@@ -46,13 +46,6 @@ interface MovieDao {
     )
     fun searchMoviesPaging(queryKey: String): PagingSource<Int, MovieEntity>
 
-    // --- LOGIQUE DE SYNCHRONISATION (UPSERT) ---
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertOrIgnore(movies: List<MovieEntity>): List<Long>
-
-    @Query("UPDATE movies SET isPopular = 1 WHERE id IN (:ids)")
-    suspend fun markAsPopularBatch(ids: List<Int>)
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertMovies(movies: List<MovieEntity>)
 
