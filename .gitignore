@@ -1,6 +1,9 @@
 *.iml
 .gradle
+.kotlin
 /local.properties
+/capture-nettetee.png
+/screenshots/
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml
