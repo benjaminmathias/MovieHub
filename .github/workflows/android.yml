@@ -28,3 +28,9 @@ jobs:
 
       - name: Vérification du code (Ktlint)
         run: ./gradlew ktlintCheck
+
+      - name: Tests unitaires
+        run: ./gradlew testDebugUnitTest
+
+      - name: Build
+        run: ./gradlew assembleDebug
