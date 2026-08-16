@@ -51,5 +51,5 @@ L'application utilise The Movie Database (TMDB) comme source de données. Pour d
 2. Créez un compte gratuit sur [TMDB](https://www.themoviedb.org/settings/api) pour générer une clé API (API Read Access Token / v3 auth).
 3. À la racine du projet, ouvrez ou créez le fichier `local.properties`.
 4. Ajoutez la ligne suivante en remplaçant par votre clé :
-   `API_KEY=votre_cle_api_ici`
+   `TMDB_API_KEY=votre_cle_api_ici`
 5. Synchronisez Gradle et exécutez le projet.
