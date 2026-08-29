@@ -14,7 +14,11 @@ import com.benjamin.moviehub.data.local.MovieRemoteKey
 import com.benjamin.moviehub.data.local.SearchQueryKey
 import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.mapper.toEntity
+import com.benjamin.moviehub.data.paging.INITIAL_LOAD_SIZE
 import com.benjamin.moviehub.data.paging.MovieRemoteMediator
+import com.benjamin.moviehub.data.paging.PAGE_SIZE
+import com.benjamin.moviehub.data.paging.POPULAR_REMOTE_KEY_TYPE
+import com.benjamin.moviehub.data.paging.PREFETCH_DISTANCE
 import com.benjamin.moviehub.data.paging.SearchMovieRemoteMediator
 import com.benjamin.moviehub.data.remote.MovieApiService
 import com.benjamin.moviehub.domain.model.Actor
@@ -41,9 +45,9 @@ class MovieRepositoryImpl
             return Pager(
                 config =
                     PagingConfig(
-                        pageSize = 20,
-                        prefetchDistance = 5,
-                        initialLoadSize = 20,
+                        pageSize = PAGE_SIZE,
+                        prefetchDistance = PREFETCH_DISTANCE,
+                        initialLoadSize = INITIAL_LOAD_SIZE,
                         enablePlaceholders = false,
                     ),
                 remoteMediator =
@@ -129,17 +133,7 @@ class MovieRepositoryImpl
 
                 val actors =
                     response.cast.take(15).map { dto ->
-                        Actor(
-                            id = dto.id,
-                            name = dto.name,
-                            character = dto.character,
-                            profileUrl =
-                                if (dto.profilePath != null) {
-                                    "https://image.tmdb.org/t/p/w185${dto.profilePath}"
-                                } else {
-                                    ""
-                                },
-                        )
+                        dto.toDomain()
                     }
                 Result.success(actors)
             } catch (e: kotlinx.coroutines.CancellationException) {
@@ -165,7 +159,7 @@ class MovieRepositoryImpl
                             movieDao.getMoviesByIds(movieIds).associateBy { it.id }
                         }
 
-                    movieDao.clearRemoteKeysByType("POPULAR")
+                    movieDao.clearRemoteKeysByType(POPULAR_REMOTE_KEY_TYPE)
                     movieDao.clearPopularMovies()
 
                     val remoteEntities =
@@ -184,8 +178,8 @@ class MovieRepositoryImpl
                             MovieRemoteKey(
                                 movieId = dto.id,
                                 prevKey = null,
-                                nextKey = if (response.movies.size < 20) null else 2,
-                                type = "POPULAR",
+                                nextKey = if (response.movies.size < PAGE_SIZE) null else 2,
+                                type = POPULAR_REMOTE_KEY_TYPE,
                             )
                         }
 

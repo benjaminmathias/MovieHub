@@ -49,7 +49,7 @@ class MovieRemoteMediator(
 
             database.withTransaction {
                 if (loadType == LoadType.REFRESH) {
-                    movieDao.clearRemoteKeysByType("POPULAR")
+                    movieDao.clearRemoteKeysByType(POPULAR_REMOTE_KEY_TYPE)
                     movieDao.clearPopularMovies()
                 }
 
@@ -62,7 +62,7 @@ class MovieRemoteMediator(
                             movieId = it.id,
                             prevKey = prevKey,
                             nextKey = nextKey,
-                            type = "POPULAR",
+                            type = POPULAR_REMOTE_KEY_TYPE,
                         )
                     }
 
@@ -99,11 +99,11 @@ class MovieRemoteMediator(
             ?.data
             ?.lastOrNull()
             ?.let { movie ->
-                movieDao.getRemoteKeysForMovieId(movie.id, "POPULAR")
+                movieDao.getRemoteKeysForMovieId(movie.id, POPULAR_REMOTE_KEY_TYPE)
             }
 
     override suspend fun initialize(): InitializeAction =
-        if (database.withTransaction { movieDao.getRemoteKeysCountByType("POPULAR") == 0 }) {
+        if (database.withTransaction { movieDao.getRemoteKeysCountByType(POPULAR_REMOTE_KEY_TYPE) == 0 }) {
             InitializeAction.LAUNCH_INITIAL_REFRESH
         } else {
             InitializeAction.SKIP_INITIAL_REFRESH

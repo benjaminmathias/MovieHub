@@ -3,12 +3,28 @@ package com.benjamin.moviehub
 import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.mapper.toEntity
+import com.benjamin.moviehub.data.remote.ActorDto
 import com.benjamin.moviehub.data.remote.MovieDto
 import com.benjamin.moviehub.domain.model.GenreObject
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class MovieMapperUnitTest {
+    @Test
+    fun `actor dto maps fields and profile url`() {
+        val actor = ActorDto(7, "Name", "Role", "/profile.jpg").toDomain()
+
+        assertEquals(7, actor.id)
+        assertEquals("Name", actor.name)
+        assertEquals("Role", actor.character)
+        assertEquals("https://image.tmdb.org/t/p/w185/profile.jpg", actor.profileUrl)
+    }
+
+    @Test
+    fun `actor dto maps null profile path to empty url`() {
+        assertEquals("", ActorDto(7, "Name", "Role", null).toDomain().profileUrl)
+    }
+
     private fun createFakeEntity(
         id: Int = 1,
         isFavorite: Boolean = false,

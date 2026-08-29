@@ -4,7 +4,9 @@ import com.benjamin.moviehub.core.util.GenreUtils
 import com.benjamin.moviehub.core.util.normalizeImagePath
 import com.benjamin.moviehub.core.util.toTmdbImageUrl
 import com.benjamin.moviehub.data.local.MovieEntity
+import com.benjamin.moviehub.data.remote.ActorDto
 import com.benjamin.moviehub.data.remote.MovieDto
+import com.benjamin.moviehub.domain.model.Actor
 import com.benjamin.moviehub.domain.model.Movie
 
 /**
@@ -36,6 +38,8 @@ fun MovieDto.toEntity(
         pageOrder = pageOrder,
     )
 }
+
+fun ActorDto.toDomain(): Actor = Actor(id, name, character, toTmdbImageUrl(profilePath, "w185"))
 
 /**
  * Convert a MovieEntity (DB entity) to a Movie (Domain model)

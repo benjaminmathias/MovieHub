@@ -4,6 +4,8 @@ import android.content.Context
 import coil.annotation.ExperimentalCoilApi
 import coil.imageLoader
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class ImageCacheManager
@@ -12,8 +14,9 @@ class ImageCacheManager
         @param:ApplicationContext private val context: Context,
     ) {
         @OptIn(ExperimentalCoilApi::class)
-        fun clear() {
-            context.imageLoader.memoryCache?.clear()
-            context.imageLoader.diskCache?.clear()
-        }
+        suspend fun clear() =
+            withContext(Dispatchers.IO) {
+                context.imageLoader.memoryCache?.clear()
+                context.imageLoader.diskCache?.clear()
+            }
     }

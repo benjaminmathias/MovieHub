@@ -12,7 +12,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
-import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -37,24 +37,38 @@ class SettingsViewModelTest {
     @Test
     fun `clearing image cache reports success and only calls image cache manager`() =
         runTest {
-            every { imageCacheManager.clear() } just runs
+            coEvery { imageCacheManager.clear() } coAnswers { Unit }
             val viewModel = SettingsViewModel(preferences, imageCacheManager)
 
             viewModel.clearImageCacheNow()
 
             assertEquals(ImageCacheState.Success, viewModel.imageCacheState.value)
-            verify(exactly = 1) { imageCacheManager.clear() }
+            coVerify(exactly = 1) { imageCacheManager.clear() }
         }
 
     @Test
     fun `clearing image cache exposes error when image cache fails`() =
         runTest {
-            every { imageCacheManager.clear() } throws IllegalStateException("cache failure")
+            coEvery { imageCacheManager.clear() } throws IllegalStateException("cache failure")
             val viewModel = SettingsViewModel(preferences, imageCacheManager)
 
             viewModel.clearImageCacheNow()
 
             assertEquals(ImageCacheState.Error, viewModel.imageCacheState.value)
+        }
+
+    @Test
+    fun `clearing image cache propagates cancellation`() =
+        runTest {
+            val cancellation = CancellationException("cancelled")
+            coEvery { imageCacheManager.clear() } throws cancellation
+            val viewModel = SettingsViewModel(preferences, imageCacheManager)
+            try {
+                viewModel.clearImageCacheNow()
+                error("Expected cancellation")
+            } catch (error: CancellationException) {
+                assertEquals(cancellation, error)
+            }
         }
 
     @Test

@@ -3,7 +3,6 @@ package com.benjamin.moviehub.viewmodel
 import androidx.paging.PagingData
 import app.cash.turbine.test
 import com.benjamin.moviehub.domain.repository.MovieRepository
-import com.benjamin.moviehub.ui.list.MovieListUiState
 import com.benjamin.moviehub.ui.list.MovieListViewModel
 import com.benjamin.moviehub.util.MainDispatcherRule
 import io.mockk.coEvery
@@ -36,6 +35,14 @@ class MovieListViewModelTest {
     }
 
     @Test
+    fun `search query is initially empty and updates immediately`() =
+        runTest {
+            assert(viewModel.searchQuery.value.isEmpty())
+            viewModel.onSearchQueryChanged("Batman")
+            assert(viewModel.searchQuery.value == "Batman")
+        }
+
+    @Test
     fun `search query should be debounced`() =
         runTest {
             val job =
@@ -65,42 +72,23 @@ class MovieListViewModelTest {
         }
 
     @Test
-    fun `retryGlobal should trigger repository reload without changing query`() =
+    fun `identical query is not reloaded`() =
         runTest {
             val job = launch { viewModel.pagedMovies.collect() }
-
-            // État initial (debounce passé)
+            viewModel.onSearchQueryChanged("Ava")
             advanceTimeBy(600)
-
-            // Le repo a dû être appelé une première fois avec la query vide ""
-            coVerify(exactly = 1) { repository.getPagedMovies("") }
-
-            // ACTION : On simule le clic sur Retry
-            viewModel.retryGlobal()
-
-            // On laisse un tout petit peu de temps pour que le combine/flatMapLatest réagisse
-            advanceTimeBy(100)
-
-            // VERIFICATION : Le repo doit avoir été appelé une DEUXIÈME fois
-            coVerify(exactly = 2) { repository.getPagedMovies("") }
-
+            viewModel.onSearchQueryChanged("Ava")
+            advanceTimeBy(600)
+            coVerify(exactly = 1) { repository.getPagedMovies("Ava") }
             job.cancel()
         }
 
     @Test
-    fun `uiState should update search query immediately`() =
+    fun `paged flow is collected from repository for latest query`() =
         runTest {
-            viewModel.uiState.test {
-                // État initial
-                val initialState = awaitItem() as MovieListUiState.Success
-                assert(initialState.searchQuery == "")
-
-                // Action
-                viewModel.onSearchQueryChanged("Batman")
-
-                // Vérification immédiate (pas besoin d'advanceTimeBy ici car le uiState.map n'a pas de debounce)
-                val updatedState = awaitItem() as MovieListUiState.Success
-                assert(updatedState.searchQuery == "Batman")
-            }
+            val job = launch { viewModel.pagedMovies.test { awaitItem() } }
+            advanceTimeBy(600)
+            coVerify(exactly = 1) { repository.getPagedMovies("") }
+            job.cancel()
         }
 }

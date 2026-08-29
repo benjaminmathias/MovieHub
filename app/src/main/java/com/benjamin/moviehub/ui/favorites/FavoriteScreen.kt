@@ -22,8 +22,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,11 +45,7 @@ fun FavoriteScreen(
     state: MovieFavoriteListUiState,
     onRemoveFavorite: (Movie) -> Unit,
     onMovieClick: (Int) -> Unit,
-    onRefresh: () -> Unit,
 ) {
-    val refreshState = rememberPullToRefreshState()
-    val isRefreshing = state is MovieFavoriteListUiState.Loading
-
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(title = { Text(stringResource(R.string.favorite_tab)) })
@@ -63,12 +57,7 @@ fun FavoriteScreen(
                     .fillMaxSize()
                     .padding(paddingValues),
         ) {
-            PullToRefreshBox(
-                state = refreshState,
-                isRefreshing = isRefreshing,
-                onRefresh = onRefresh,
-                modifier = Modifier.weight(1f),
-            ) {
+            Box(modifier = Modifier.weight(1f)) {
                 AnimatedContent(
                     targetState = state,
                     transitionSpec = {

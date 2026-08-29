@@ -112,15 +112,13 @@ fun NavigationRoot() {
                     entryProvider {
                         entry<Route.List> {
                             val viewModel: MovieListViewModel = hiltViewModel()
-                            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                             val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
                             MovieListScreen(
-                                uiState = uiState,
+                                pagedMovies = viewModel.pagedMovies,
                                 searchQuery = searchQuery,
                                 onSearchChanged = viewModel::onSearchQueryChanged,
                                 onMovieClick = { id -> backStack.add(Route.Detail(id)) },
-                                retryGlobal = viewModel::retryGlobal,
                                 onSettingsClick = { backStack.add(Route.Settings) },
                             )
                         }
@@ -150,7 +148,6 @@ fun NavigationRoot() {
                                     backStack.add(Route.Detail(id))
                                 },
                                 onRemoveFavorite = { movie -> viewModel.onToggleFavorite(movie) },
-                                onRefresh = { viewModel.refreshFavorite() },
                             )
                         }
 

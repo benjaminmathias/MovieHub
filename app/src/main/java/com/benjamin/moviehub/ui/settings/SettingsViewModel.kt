@@ -6,7 +6,6 @@ import com.benjamin.moviehub.core.util.AppTheme
 import com.benjamin.moviehub.data.repository.UserPreferenceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -50,7 +49,7 @@ class SettingsViewModel
         }
 
         fun clearImageCache() {
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch {
                 clearImageCacheNow()
             }
         }
