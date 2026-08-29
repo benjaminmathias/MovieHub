@@ -2,10 +2,20 @@ package com.benjamin.moviehub.core.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+val MovieHubBackground = Color(0xFF14181C)
+val MovieHubSurface = Color(0xFF181D21)
+val MovieHubSurfaceLow = Color(0xFF1D2428)
+val MovieHubSurfaceContainer = Color(0xFF232B30)
+val MovieHubSurfaceHigh = Color(0xFF2B353B)
+val MovieHubPrimary = Color(0xFF00E054)
+val MovieHubSecondary = Color(0xFF40BCF4)
+val MovieHubRating = Color(0xFFFF8000)
+val MovieHubOnSurface = Color(0xFFF2F5F3)
+val MovieHubOnSurfaceVariant = Color(0xFFB9C2BF)
+val MovieHubOutline = Color(0xFF7D8A85)
+val MovieHubOutlineVariant = Color(0xFF3B4542)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val MovieHubLightBackground = Color(0xFFF7FAF8)
+val MovieHubLightSurface = Color(0xFFF0F4F2)
+val MovieHubLightPrimary = Color(0xFF006B2A)
+val MovieHubLightSecondary = Color(0xFF00658A)

@@ -135,6 +135,7 @@ fun FavoriteScreen(
                                                     MovieItem(
                                                         movie = movie,
                                                         onMovieClick = onMovieClick,
+                                                        compact = true,
                                                     )
                                                 },
                                             )

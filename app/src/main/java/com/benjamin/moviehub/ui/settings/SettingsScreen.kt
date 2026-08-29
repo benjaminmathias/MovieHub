@@ -1,6 +1,7 @@
 package com.benjamin.moviehub.ui.settings
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -79,23 +82,41 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             SettingsSection(title = stringResource(R.string.appearance_section)) {
-                ThemeSelector(
-                    currentTheme = currentTheme,
-                    onThemeSelected = viewModel::updateTheme,
-                )
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        ThemeSelector(
+                            currentTheme = currentTheme,
+                            onThemeSelected = viewModel::updateTheme,
+                        )
+                    }
+                }
             }
 
             HorizontalDivider()
 
             SettingsSection(title = stringResource(R.string.storage_section)) {
-                SettingsItem(
-                    title = stringResource(R.string.clear_image_cache),
-                    subtitle = stringResource(R.string.clear_image_cache_description),
-                    icon = Icons.Default.Delete,
-                    onClick = {
-                        viewModel.clearImageCache()
-                    },
-                )
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        SettingsItem(
+                            title = stringResource(R.string.clear_image_cache),
+                            subtitle = stringResource(R.string.clear_image_cache_description),
+                            icon = Icons.Default.Delete,
+                            onClick = viewModel::clearImageCache,
+                        )
+                    }
+                }
             }
 
             HorizontalDivider()
@@ -144,7 +165,7 @@ fun SettingsSection(
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.SemiBold,
         )
         content()

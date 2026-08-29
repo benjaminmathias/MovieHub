@@ -53,13 +53,8 @@ fun MovieListScreen(
             CenterAlignedTopAppBar(
                 {
                     Text(
-                        if (searchQuery.isEmpty()) {
-                            stringResource(R.string.movie_hub_popular)
-                        } else {
-                            stringResource(
-                                R.string.search,
-                            )
-                        },
+                        stringResource(R.string.app_name),
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.primary,
                     )
                 },
                 actions = {
@@ -79,6 +74,13 @@ fun MovieListScreen(
                     .fillMaxSize()
                     .padding(paddingValues),
         ) {
+            if (searchQuery.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.movie_hub_popular),
+                    style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
             MovieSearchBar(
                 query = searchQuery,
                 onQueryChanged =
@@ -167,6 +169,7 @@ fun MovieListScreen(
                                     MovieItem(
                                         movie = movie,
                                         onMovieClick = onMovieClick,
+                                        compact = searchQuery.isNotEmpty(),
                                     )
                                 }
                             }

@@ -3,6 +3,8 @@ package com.benjamin.moviehub.ui.components
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -12,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -26,7 +29,7 @@ import com.benjamin.moviehub.domain.model.Actor
 @Composable
 fun ActorItem(actor: Actor) {
     Column(
-        modifier = Modifier.width(90.dp),
+        modifier = Modifier.width(90.dp).clipToBounds(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         AsyncImage(
@@ -45,8 +48,9 @@ fun ActorItem(actor: Actor) {
 
         Text(
             text = actor.name,
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
@@ -56,6 +60,7 @@ fun ActorItem(actor: Actor) {
         Text(
             text = actor.character,
             style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,

@@ -11,7 +11,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -30,7 +30,7 @@ fun MovieSearchBar(
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    OutlinedTextField(
+    TextField(
         value = query,
         onValueChange = onQueryChanged,
         modifier =
@@ -50,8 +50,10 @@ fun MovieSearchBar(
         shape = RoundedCornerShape(12.dp),
         colors =
             TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
             ),
         keyboardOptions =
             KeyboardOptions(

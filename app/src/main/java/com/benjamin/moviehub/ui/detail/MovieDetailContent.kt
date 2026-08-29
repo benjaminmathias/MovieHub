@@ -79,7 +79,7 @@ fun MovieDetailContent(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(300.dp),
+                    .height(460.dp),
         ) {
             AsyncImage(
                 model = movie.backdropPath,
@@ -96,7 +96,11 @@ fun MovieDetailContent(
                         .fillMaxSize()
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, MaterialTheme.colorScheme.surface),
+                                colors =
+                                    listOf(
+                                        Color.Transparent,
+                                        MaterialTheme.colorScheme.background,
+                                    ),
                                 startY = 400f,
                             ),
                         ),
@@ -105,9 +109,9 @@ fun MovieDetailContent(
             Surface(
                 modifier =
                     Modifier
-                        .padding(16.dp)
+                        .padding(top = 72.dp, end = 16.dp)
                         .align(Alignment.TopEnd),
-                color = Color.Black.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
                 shape = RoundedCornerShape(12.dp),
             ) {
                 Row(
@@ -117,7 +121,7 @@ fun MovieDetailContent(
                     Icon(
                         Icons.Default.Star,
                         contentDescription = null,
-                        tint = Color(0xFFFFD700),
+                        tint = MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.size(16.dp),
                     )
 
@@ -131,7 +135,7 @@ fun MovieDetailContent(
                                 stringResource(R.string.not_available)
                             },
                         style = MaterialTheme.typography.labelLarge,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold,
                     )
                 }
@@ -151,7 +155,7 @@ fun MovieDetailContent(
                         stringResource(
                             if (movie.isFavorite) R.string.remove_favorite else R.string.favorite,
                         ),
-                    tint = if (movie.isFavorite) Color.Red else Color.Gray,
+                    tint = if (movie.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.scale(scale),
                 )
             }
@@ -167,6 +171,7 @@ fun MovieDetailContent(
                 text = movie.title,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.primary,
                 lineHeight = 34.sp,
                 modifier = Modifier.padding(end = 52.dp),
             )

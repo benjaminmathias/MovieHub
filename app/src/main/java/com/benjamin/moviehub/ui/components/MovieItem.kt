@@ -4,7 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -17,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -25,7 +25,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -41,28 +40,34 @@ import com.benjamin.moviehub.domain.model.Movie
 fun MovieItem(
     movie: Movie,
     onMovieClick: (Int) -> Unit,
+    compact: Boolean = false,
 ) {
+    val posterWidth = if (compact) 64.dp else 80.dp
+    val posterHeight = if (compact) 96.dp else 112.dp
+    val rowHeight = posterHeight + 16.dp
+
     Card(
         modifier =
             Modifier
                 .testTag("movie_item")
                 .fillMaxWidth()
-                .padding(8.dp)
+                .padding(horizontal = 16.dp, vertical = 4.dp)
                 .clickable { onMovieClick(movie.id) },
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = RoundedCornerShape(if (compact) 12.dp else 8.dp),
         colors =
             CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
             ),
     ) {
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(IntrinsicSize.Max),
+                    .height(rowHeight)
+                    .padding(8.dp),
         ) {
-            Box(modifier = Modifier.size(width = 100.dp, height = 150.dp)) {
+            Box(modifier = Modifier.size(width = posterWidth, height = posterHeight)) {
                 AsyncImage(
                     model = movie.posterPath,
                     // placeholder = painterResource(R.drawable.placeholder_loading),
@@ -70,23 +75,10 @@ fun MovieItem(
                     contentDescription = stringResource(R.string.poster_description, movie.title),
                     modifier =
                         Modifier
-                            .width(120.dp)
+                            .width(posterWidth)
                             .fillMaxHeight(),
                     contentScale = ContentScale.Crop,
                 )
-
-                if (movie.isFavorite) {
-                    Icon(
-                        imageVector = Icons.Filled.Favorite,
-                        contentDescription = null,
-                        tint = Color.Red,
-                        modifier =
-                            Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(4.dp)
-                                .size(24.dp),
-                    )
-                }
             }
             Column(
                 modifier =
@@ -94,11 +86,11 @@ fun MovieItem(
                         .fillMaxHeight()
                         .padding(8.dp)
                         .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
                     text = movie.title,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -120,16 +112,32 @@ fun MovieItem(
                         text = "%.1f".format(movie.voteAverage),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = MaterialTheme.colorScheme.tertiary,
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Icon(
                         imageVector = Icons.Default.Star,
                         contentDescription = stringResource(R.string.rating),
                         modifier = Modifier.size(18.dp),
-                        tint = Color(0xFFFFD700),
+                        tint = MaterialTheme.colorScheme.tertiary,
                     )
                 }
+            }
+
+            Box(
+                modifier = Modifier.width(48.dp).fillMaxHeight(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = null,
+                    tint = if (movie.isFavorite) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    modifier = Modifier.size(24.dp),
+                )
             }
         }
     }
