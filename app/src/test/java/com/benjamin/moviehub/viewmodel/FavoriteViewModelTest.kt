@@ -12,6 +12,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -61,9 +62,15 @@ class FavoriteViewModelTest {
     @Test
     fun `favorite errors become error state`() =
         runTest {
-            every { repository.getFavoriteMovies() } returns flow { throw IllegalStateException() }
+            val source = MutableSharedFlow<Unit>(replay = 0)
+            every { repository.getFavoriteMovies() } returns flow {
+                source.first()
+                throw IllegalStateException()
+            }
             val viewModel = FavoriteViewModel(repository)
             viewModel.uiState.test {
+                assert(awaitItem() is MovieFavoriteListUiState.Loading)
+                source.emit(Unit)
                 assert(awaitItem() is MovieFavoriteListUiState.Error)
             }
         }
