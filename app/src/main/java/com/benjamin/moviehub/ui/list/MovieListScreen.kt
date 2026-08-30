@@ -1,10 +1,9 @@
 package com.benjamin.moviehub.ui.list
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
@@ -15,6 +14,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -50,44 +50,44 @@ fun MovieListScreen(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            CenterAlignedTopAppBar(
-                {
-                    Text(
-                        stringResource(R.string.app_name),
-                        color = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-                    )
-                },
-                actions = {
-                    IconButton(onClick = onSettingsClick) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.settings_title),
+            Column {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Text(
+                            text = stringResource(R.string.app_name),
+                            color = MaterialTheme.colorScheme.primary,
                         )
-                    }
-                },
-            )
+                    },
+                    actions = {
+                        IconButton(onClick = onSettingsClick) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = stringResource(R.string.settings_title),
+                            )
+                        }
+                    },
+                )
+                MovieSearchBar(
+                    query = searchQuery,
+                    onQueryChanged = onSearchChanged,
+                )
+            }
         },
     ) { paddingValues ->
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(paddingValues),
+                    .padding(paddingValues)
+                    .imePadding(),
         ) {
             if (searchQuery.isEmpty()) {
                 Text(
                     text = stringResource(R.string.movie_hub_popular),
-                    style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.headlineLarge,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                 )
             }
-            MovieSearchBar(
-                query = searchQuery,
-                onQueryChanged =
-                onSearchChanged,
-            )
-
-            Spacer(modifier = Modifier.size(4.dp))
 
             val lazyPagingItems = pagedMovies.collectAsLazyPagingItems()
             val combinedLoadStates = lazyPagingItems.loadState
@@ -136,7 +136,6 @@ fun MovieListScreen(
 
                     isEmpty -> {
                         if (searchQuery.isNotEmpty()) {
-                            // Search without result
                             EmptyStateView(
                                 message =
                                     stringResource(
@@ -147,7 +146,6 @@ fun MovieListScreen(
                                 onRetry = null,
                             )
                         } else {
-                            // Empty popular list
                             EmptyStateView(
                                 message = stringResource(R.string.no_movie_available),
                                 icon = Icons.Default.Movie,
@@ -156,11 +154,8 @@ fun MovieListScreen(
                         }
                     }
 
-                    // Show data
                     else -> {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                        ) {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
                             items(
                                 count = lazyPagingItems.itemCount,
                                 key = lazyPagingItems.itemKey { it.id },
@@ -174,7 +169,6 @@ fun MovieListScreen(
                                 }
                             }
 
-                            // Handle feedback if loading pages fails
                             val appendState = lazyPagingItems.loadState.append
                             if (appendState is LoadState.Error) {
                                 item {
@@ -187,7 +181,7 @@ fun MovieListScreen(
                                 }
                             }
 
-                            if (lazyPagingItems.loadState.append is LoadState.Loading) {
+                            if (appendState is LoadState.Loading) {
                                 item { MovieShimmerItem() }
                             }
                         }

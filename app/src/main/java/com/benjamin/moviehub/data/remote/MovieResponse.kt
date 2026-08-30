@@ -15,6 +15,7 @@ data class MovieDto(
     @SerializedName("backdrop_path") val backdropPath: String?,
     @SerializedName("vote_average") val voteAverage: Double,
     @SerializedName("release_date") val releaseDate: String? = "",
+    @SerializedName("runtime") val runtimeMinutes: Int? = null,
     // Format utilisé par la Liste (/popular)
     @SerializedName("genre_ids")
     val genreIds: List<Int>? = null,

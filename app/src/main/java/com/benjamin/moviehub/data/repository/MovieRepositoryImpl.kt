@@ -92,7 +92,9 @@ class MovieRepositoryImpl
                 // Save to DB
                 movieDao.insertMovie(remoteMovieEntity)
 
-                remoteMovieEntity.toDomain()
+                remoteMovieEntity.toDomain().copy(
+                    runtimeMinutes = dto.runtimeMinutes,
+                )
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {

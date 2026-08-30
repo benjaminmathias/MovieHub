@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -54,10 +55,10 @@ fun MovieItem(
                 .padding(horizontal = 16.dp, vertical = 4.dp)
                 .clickable { onMovieClick(movie.id) },
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = RoundedCornerShape(if (compact) 12.dp else 8.dp),
+        shape = MaterialTheme.shapes.medium,
         colors =
             CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
             ),
     ) {
         Row(
@@ -67,7 +68,12 @@ fun MovieItem(
                     .height(rowHeight)
                     .padding(8.dp),
         ) {
-            Box(modifier = Modifier.size(width = posterWidth, height = posterHeight)) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(width = posterWidth, height = posterHeight)
+                        .clip(RoundedCornerShape(4.dp)),
+            ) {
                 AsyncImage(
                     model = movie.posterPath,
                     // placeholder = painterResource(R.drawable.placeholder_loading),
@@ -108,18 +114,18 @@ fun MovieItem(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = "%.1f".format(movie.voteAverage),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.tertiary,
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
                     Icon(
                         imageVector = Icons.Default.Star,
-                        contentDescription = stringResource(R.string.rating),
+                        contentDescription = null,
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.tertiary,
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "%.1f".format(movie.voteAverage),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.tertiary,
                     )
                 }
             }

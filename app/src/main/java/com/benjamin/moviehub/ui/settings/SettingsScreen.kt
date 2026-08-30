@@ -27,6 +27,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -98,8 +99,6 @@ fun SettingsScreen(
                 }
             }
 
-            HorizontalDivider()
-
             SettingsSection(title = stringResource(R.string.storage_section)) {
                 Card(
                     colors = CardDefaults.cardColors(
@@ -113,13 +112,26 @@ fun SettingsScreen(
                             title = stringResource(R.string.clear_image_cache),
                             subtitle = stringResource(R.string.clear_image_cache_description),
                             icon = Icons.Default.Delete,
+                            enabled = imageCacheState !is ImageCacheState.Loading,
                             onClick = viewModel::clearImageCache,
                         )
+                        if (imageCacheState is ImageCacheState.Loading) {
+                            Row(
+                                modifier = Modifier.padding(top = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.heightIn(min = 18.dp).width(18.dp), strokeWidth = 2.dp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.image_cache_clearing),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
                     }
                 }
             }
-
-            HorizontalDivider()
 
             Box(
                 modifier = Modifier.fillMaxWidth(),
@@ -183,11 +195,13 @@ fun ThemeSelector(
             text = stringResource(R.string.theme_system),
             onClick = { onThemeSelected(AppTheme.SYSTEM) },
         )
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         ThemeRadioButton(
             selected = currentTheme == AppTheme.LIGHT,
             text = stringResource(R.string.theme_light),
             onClick = { onThemeSelected(AppTheme.LIGHT) },
         )
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         ThemeRadioButton(
             selected = currentTheme == AppTheme.DARK,
             text = stringResource(R.string.theme_dark),
@@ -211,12 +225,8 @@ fun ThemeRadioButton(
                 .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RadioButton(
-            selected = selected,
-            onClick = onClick,
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(text = text, style = MaterialTheme.typography.bodyLarge)
+        Text(text = text, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        RadioButton(selected = selected, onClick = onClick)
     }
 }
 
@@ -225,6 +235,7 @@ fun SettingsItem(
     title: String,
     subtitle: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
+    enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
     Row(
@@ -232,7 +243,7 @@ fun SettingsItem(
             Modifier
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
-                .clickable(onClick = onClick)
+                .clickable(enabled = enabled, onClick = onClick)
                 .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -242,7 +253,7 @@ fun SettingsItem(
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(modifier = Modifier.width(16.dp))
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(text = title, style = MaterialTheme.typography.bodyLarge)
             Text(
                 text = subtitle,

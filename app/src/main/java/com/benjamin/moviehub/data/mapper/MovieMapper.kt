@@ -75,6 +75,7 @@ fun MovieDto.toDomain(): Movie =
         isFavorite = false,
         genreIds = genreIds ?: emptyList(),
         genres = genreIds?.mapNotNull { GenreUtils.idToNameMap[it] } ?: emptyList(),
+        runtimeMinutes = runtimeMinutes,
     )
 
 /**

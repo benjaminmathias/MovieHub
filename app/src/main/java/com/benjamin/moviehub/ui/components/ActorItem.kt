@@ -29,7 +29,7 @@ import com.benjamin.moviehub.domain.model.Actor
 @Composable
 fun ActorItem(actor: Actor) {
     Column(
-        modifier = Modifier.width(90.dp).clipToBounds(),
+        modifier = Modifier.width(90.dp).height(144.dp).clipToBounds(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         AsyncImage(
@@ -48,9 +48,9 @@ fun ActorItem(actor: Actor) {
 
         Text(
             text = actor.name,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+            modifier = Modifier.fillMaxWidth().height(40.dp).padding(horizontal = 4.dp),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
@@ -60,7 +60,7 @@ fun ActorItem(actor: Actor) {
         Text(
             text = actor.character,
             style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+            modifier = Modifier.fillMaxWidth().height(16.dp).padding(horizontal = 4.dp),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,

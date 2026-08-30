@@ -19,6 +19,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,7 +48,6 @@ fun NavigationRoot() {
         )
 
     val currentRoute = backStack.lastOrNull()
-
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
@@ -80,7 +80,7 @@ fun NavigationRoot() {
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = MaterialTheme.colorScheme.primary,
                                 selectedTextColor = MaterialTheme.colorScheme.primary,
-                                indicatorColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                indicatorColor = Color.Transparent,
                                 unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                 unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             ),
@@ -99,7 +99,16 @@ fun NavigationRoot() {
         ) {
             NavDisplay(
                 backStack = backStack,
-                onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
+                onBack = {
+                    when {
+                        currentRoute is Route.FavoriteList -> {
+                            backStack.clear()
+                            backStack.add(Route.List)
+                        }
+
+                        backStack.size > 1 -> backStack.removeLastOrNull()
+                    }
+                },
                 transitionSpec = {
                     (
                         slideInHorizontally(
@@ -162,6 +171,11 @@ fun NavigationRoot() {
 
                             FavoriteScreen(
                                 state = favoriteUiState,
+                                onBackClick = {
+                                    backStack.clear()
+                                    backStack.add(Route.List)
+                                },
+                                onSettingsClick = { backStack.add(Route.Settings) },
                                 onMovieClick = { id ->
                                     backStack.add(Route.Detail(id))
                                 },

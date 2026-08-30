@@ -15,6 +15,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -22,6 +24,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,10 +49,24 @@ fun FavoriteScreen(
     state: MovieFavoriteListUiState,
     onRemoveFavorite: (Movie) -> Unit,
     onMovieClick: (Int) -> Unit,
+    onBackClick: () -> Unit,
+    onSettingsClick: () -> Unit,
 ) {
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(title = { Text(stringResource(R.string.favorite_tab)) })
+            CenterAlignedTopAppBar(
+                title = { Text(stringResource(R.string.favorite_tab)) },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(Icons.Default.Settings, stringResource(R.string.settings_title))
+                    }
+                },
+            )
         },
     ) { paddingValues ->
         Column(
@@ -125,7 +143,9 @@ fun FavoriteScreen(
                                                     },
                                                 enableDismissFromStartToEnd = false,
                                                 backgroundContent = {
-                                                    val isVisible = dismissState.progress > 0f
+                                                    val isVisible =
+                                                        dismissState.currentValue != SwipeToDismissBoxValue.Settled ||
+                                                            dismissState.targetValue != SwipeToDismissBoxValue.Settled
 
                                                     if (isVisible) {
                                                         DeleteBackground()

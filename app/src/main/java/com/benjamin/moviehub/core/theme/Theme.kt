@@ -11,8 +11,12 @@ private val DarkColorScheme =
     darkColorScheme(
         primary = MovieHubPrimary,
         onPrimary = Color(0xFF00390F),
+        primaryContainer = MovieHubPrimary,
+        onPrimaryContainer = Color(0xFF00390F),
         secondary = MovieHubSecondary,
+        onSecondary = Color(0xFF003549),
         tertiary = MovieHubRating,
+        onTertiary = Color(0xFF502400),
         background = MovieHubBackground,
         onBackground = MovieHubOnSurface,
         surface = MovieHubSurface,
@@ -29,16 +33,24 @@ private val DarkColorScheme =
 private val LightColorScheme =
     lightColorScheme(
         primary = MovieHubLightPrimary,
+        onPrimary = Color.White,
+        primaryContainer = Color(0xFFB4F5C2),
+        onPrimaryContainer = Color(0xFF002109),
         secondary = MovieHubLightSecondary,
-        tertiary = MovieHubRating,
+        onSecondary = Color.White,
+        tertiary = MovieHubLightRating,
+        onTertiary = Color.White,
         background = MovieHubLightBackground,
+        onBackground = MovieHubLightOnSurface,
         surface = MovieHubLightSurface,
-        surfaceContainerLow = Color(0xFFEAF0ED),
-        surfaceContainer = Color(0xFFE5EBE8),
-        surfaceContainerHigh = Color(0xFFDDE5E1),
-        surfaceVariant = Color(0xFFE5EBE8),
-        outline = Color(0xFF68736F),
-        outlineVariant = Color(0xFFC5CEC9),
+        onSurface = MovieHubLightOnSurface,
+        surfaceContainerLow = MovieHubLightSurfaceLow,
+        surfaceContainer = MovieHubLightSurfaceContainer,
+        surfaceContainerHigh = MovieHubLightSurfaceHigh,
+        surfaceVariant = MovieHubLightSurfaceContainer,
+        onSurfaceVariant = MovieHubLightOnSurfaceVariant,
+        outline = MovieHubLightOutline,
+        outlineVariant = MovieHubLightOutlineVariant,
     )
 
 @Composable
@@ -46,14 +58,8 @@ fun MovieHubTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    val colorScheme =
-        when {
-            darkTheme -> DarkColorScheme
-            else -> LightColorScheme
-        }
-
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
         typography = Typography,
         content = content,
     )

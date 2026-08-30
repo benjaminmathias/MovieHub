@@ -12,4 +12,5 @@ data class Movie(
     val isFavorite: Boolean,
     val genreIds: List<Int>,
     val genres: List<String>,
+    val runtimeMinutes: Int? = null,
 )

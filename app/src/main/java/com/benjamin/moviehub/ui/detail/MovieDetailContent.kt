@@ -6,6 +6,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,7 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -41,11 +42,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.benjamin.moviehub.R
-import com.benjamin.moviehub.core.util.formatReleaseDate
 import com.benjamin.moviehub.domain.model.Actor
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.ActorItem
@@ -58,9 +58,8 @@ fun MovieDetailContent(
     onToggleFavorite: (Movie) -> Unit,
 ) {
     val scrollState = rememberScrollState()
-
-    val scale by animateFloatAsState(
-        targetValue = if (movie.isFavorite) 1.3f else 1f,
+    val favoriteScale by animateFloatAsState(
+        targetValue = if (movie.isFavorite) 1.2f else 1f,
         animationSpec =
             spring(
                 dampingRatio = Spring.DampingRatioHighBouncy,
@@ -73,160 +72,159 @@ fun MovieDetailContent(
         modifier =
             Modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState),
+                .verticalScroll(scrollState)
+                .navigationBarsPadding(),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(460.dp),
-        ) {
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val heroHeight = maxWidth * 0.72f
+
             AsyncImage(
                 model = movie.backdropPath,
                 placeholder = painterResource(R.drawable.ic_launcher_foreground),
                 error = painterResource(R.drawable.ic_launcher_foreground),
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxWidth().height(heroHeight),
                 contentScale = ContentScale.Crop,
             )
 
             Box(
                 modifier =
                     Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
+                        .height(heroHeight)
                         .background(
                             Brush.verticalGradient(
                                 colors =
                                     listOf(
                                         Color.Transparent,
+                                        MaterialTheme.colorScheme.background.copy(alpha = 0.2f),
                                         MaterialTheme.colorScheme.background,
                                     ),
-                                startY = 400f,
                             ),
                         ),
             )
 
-            Surface(
+            Column(
                 modifier =
                     Modifier
-                        .padding(top = 72.dp, end = 16.dp)
-                        .align(Alignment.TopEnd),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                shape = RoundedCornerShape(12.dp),
+                        .align(Alignment.BottomStart)
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                if (movie.genres.isNotEmpty()) {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        items(movie.genres) { genre -> MovieGenreTag(name = genre) }
+                    }
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = movie.title,
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+
+                    Surface(
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                        shape = MaterialTheme.shapes.medium,
+                    ) {
+                        IconButton(onClick = { onToggleFavorite(movie) }) {
+                            Icon(
+                                imageVector =
+                                    if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                                contentDescription =
+                                    stringResource(
+                                        if (movie.isFavorite) R.string.remove_favorite else R.string.favorite,
+                                    ),
+                                tint =
+                                    if (movie.isFavorite) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                                modifier = Modifier.scale(favoriteScale),
+                            )
+                        }
+                    }
+                }
+
                 Row(
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Icon(
-                        Icons.Default.Star,
+                        imageVector = Icons.Default.Star,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.size(16.dp),
                     )
-
-                    Spacer(modifier = Modifier.size(4.dp))
-
                     Text(
-                        text =
-                            if (movie.voteAverage > 0) {
-                                "%.1f".format(movie.voteAverage)
-                            } else {
-                                stringResource(R.string.not_available)
-                            },
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        text = stringResource(R.string.rating_value, movie.voteAverage),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                     )
+                    Text("•", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        text = movie.releaseDate.take(4).ifBlank { stringResource(R.string.not_available) },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    movie.runtimeMinutes?.takeIf { it > 0 }?.let { runtime ->
+                        Text("•", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            text = stringResource(R.string.runtime_format, runtime / 60, runtime % 60),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-            }
-
-            IconButton(
-                onClick = { onToggleFavorite(movie) },
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = 16.dp)
-                        .offset(y = 28.dp),
-            ) {
-                Icon(
-                    imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription =
-                        stringResource(
-                            if (movie.isFavorite) R.string.remove_favorite else R.string.favorite,
-                        ),
-                    tint = if (movie.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.scale(scale),
-                )
             }
         }
 
         Column(
-            modifier =
-                Modifier
-                    .padding(horizontal = 20.dp)
-                    .offset(y = ((-20).dp)),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
         ) {
             Text(
-                text = movie.title,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.ExtraBold,
+                text = stringResource(R.string.synopsis),
+                style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.primary,
-                lineHeight = 34.sp,
-                modifier = Modifier.padding(end = 52.dp),
             )
-
-            Text(
-                text = movie.releaseDate.formatReleaseDate(stringResource(R.string.release_date_unknown)),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-
             Spacer(modifier = Modifier.height(8.dp))
-
-            if (movie.genres.isNotEmpty()) {
-                LazyRow(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    items(movie.genres.size) { index ->
-                        MovieGenreTag(name = movie.genres[index])
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
             Text(
                 text = movie.overview,
                 style = MaterialTheme.typography.bodyLarge,
-                lineHeight = 26.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
+            Spacer(modifier = Modifier.height(24.dp))
             if (actors.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Text(
-                    text = stringResource(R.string.cast),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                LazyRow(
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(bottom = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    items(actors) { actor ->
-                        ActorItem(actor)
-                    }
+                    Text(
+                        text = stringResource(R.string.cast_principal),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = stringResource(R.string.see_all),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 8.dp),
+                ) {
+                    items(actors) { actor -> ActorItem(actor) }
                 }
             } else {
                 Text(
@@ -236,7 +234,6 @@ fun MovieDetailContent(
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }

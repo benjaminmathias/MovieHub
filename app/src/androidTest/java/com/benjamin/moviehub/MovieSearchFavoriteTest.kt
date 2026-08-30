@@ -5,7 +5,7 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -44,7 +44,7 @@ class MovieSearchFavoriteTest {
 
         composeTestRule
             .onAllNodesWithText("Interstellar")
-            .onLast()
+            .onFirst()
             .performClick()
 
         composeTestRule.waitUntil(timeoutMillis = 10_000) {
