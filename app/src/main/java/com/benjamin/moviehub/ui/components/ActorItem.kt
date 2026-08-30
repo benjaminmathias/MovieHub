@@ -62,8 +62,8 @@ fun ActorItem(actor: Actor) {
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.secondary,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-            maxLines = 2,
-            overflow = TextOverflow.Visible,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
         )
     }

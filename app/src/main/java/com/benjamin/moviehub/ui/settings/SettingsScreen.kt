@@ -1,6 +1,8 @@
 package com.benjamin.moviehub.ui.settings
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,11 +35,12 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -51,8 +54,8 @@ fun SettingsScreen(
     onBackClick: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
-    val currentTheme by viewModel.currentTheme.collectAsState()
-    val imageCacheState by viewModel.imageCacheState.collectAsState()
+    val currentTheme by viewModel.currentTheme.collectAsStateWithLifecycle()
+    val imageCacheState by viewModel.imageCacheState.collectAsStateWithLifecycle()
     val snackbarHostState = androidx.compose.runtime.remember { SnackbarHostState() }
     val imageCacheClearedMessage = stringResource(R.string.image_cache_cleared)
     val imageCacheClearFailedMessage = stringResource(R.string.image_cache_clear_failed)
@@ -189,7 +192,7 @@ fun ThemeSelector(
     currentTheme: AppTheme,
     onThemeSelected: (AppTheme) -> Unit,
 ) {
-    Column {
+    Column(modifier = Modifier.selectableGroup()) {
         ThemeRadioButton(
             selected = currentTheme == AppTheme.SYSTEM,
             text = stringResource(R.string.theme_system),
@@ -220,13 +223,13 @@ fun ThemeRadioButton(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
+                .selectable(selected = selected, onClick = onClick, role = Role.RadioButton)
                 .heightIn(min = 48.dp)
                 .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(text = text, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        RadioButton(selected = selected, onClick = onClick)
+        RadioButton(selected = selected, onClick = null)
     }
 }
 

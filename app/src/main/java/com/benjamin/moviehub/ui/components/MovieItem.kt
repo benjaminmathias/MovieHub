@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -65,7 +66,7 @@ fun MovieItem(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(rowHeight)
+                    .heightIn(min = rowHeight)
                     .padding(8.dp),
         ) {
             Box(
@@ -89,10 +90,10 @@ fun MovieItem(
             Column(
                 modifier =
                     Modifier
-                        .fillMaxHeight()
-                        .padding(8.dp)
-                        .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                        .weight(1f)
+                        .heightIn(min = posterHeight)
+                        .padding(8.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
                     text = movie.title,
@@ -105,11 +106,9 @@ fun MovieItem(
                 val releaseYear = movie.releaseDate.take(4)
                 Text(
                     text = releaseYear.ifBlank { stringResource(R.string.not_available) },
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.secondary,
                 )
-
-                Spacer(modifier = Modifier.weight(1f))
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

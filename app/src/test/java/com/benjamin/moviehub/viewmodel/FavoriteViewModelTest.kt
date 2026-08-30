@@ -10,6 +10,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
@@ -72,6 +73,35 @@ class FavoriteViewModelTest {
                 assert(awaitItem() is MovieFavoriteListUiState.Loading)
                 source.emit(Unit)
                 assert(awaitItem() is MovieFavoriteListUiState.Error)
+            }
+        }
+
+    @Test
+    fun `favorite list retries after error`() =
+        runTest {
+            val firstAttemptStarted = CompletableDeferred<Unit>()
+            val releaseFirstAttempt = CompletableDeferred<Unit>()
+            var attempts = 0
+            every { repository.getFavoriteMovies() } answers {
+                if (attempts++ == 0) {
+                    flow {
+                        firstAttemptStarted.complete(Unit)
+                        releaseFirstAttempt.await()
+                        throw IllegalStateException()
+                    }
+                } else {
+                    flowOf(listOf(movie))
+                }
+            }
+            val viewModel = FavoriteViewModel(repository)
+
+            viewModel.uiState.test {
+                assert(awaitItem() is MovieFavoriteListUiState.Loading)
+                firstAttemptStarted.await()
+                releaseFirstAttempt.complete(Unit)
+                assert(awaitItem() is MovieFavoriteListUiState.Error)
+                viewModel.onRetry()
+                assertEquals(listOf(movie), (awaitItem() as MovieFavoriteListUiState.Success).movies)
             }
         }
 

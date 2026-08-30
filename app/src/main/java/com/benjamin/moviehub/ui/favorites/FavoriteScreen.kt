@@ -51,6 +51,7 @@ fun FavoriteScreen(
     onMovieClick: (Int) -> Unit,
     onBackClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    onRetry: () -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -172,6 +173,7 @@ fun FavoriteScreen(
                             EmptyStateView(
                                 message = stringResource(R.string.error_prefix, errorMessage),
                                 icon = Icons.Default.ErrorOutline,
+                                onRetry = onRetry,
                             )
                         }
                     }

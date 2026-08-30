@@ -8,11 +8,13 @@ import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import javax.inject.Inject
 
 @HiltViewModel
@@ -23,6 +25,7 @@ class MovieDetailViewModel
     ) : ViewModel() {
         private val _uiState = MutableStateFlow<MovieDetailUiState>(MovieDetailUiState.Loading)
         val uiState: StateFlow<MovieDetailUiState> = _uiState.asStateFlow()
+        private var loadJob: Job? = null
 
         fun loadMovieDetails(movieId: Int) {
             val currentState = _uiState.value
@@ -30,17 +33,20 @@ class MovieDetailViewModel
                 return
             }
 
-            viewModelScope.launch {
+            loadJob?.cancel()
+            loadJob = viewModelScope.launch {
                 _uiState.value = MovieDetailUiState.Loading
 
                 try {
-                    val movieDeferred = async { repository.getMovieDetails(movieId) }
-                    val actorsDeferred = async { repository.getMovieActors(movieId) }
+                    supervisorScope {
+                        val movieDeferred = async { repository.getMovieDetails(movieId) }
+                        val actorsDeferred = async { repository.getMovieActors(movieId) }
 
-                    val movie = movieDeferred.await()
-                    val actors = actorsDeferred.await().getOrDefault(emptyList())
+                        val movie = movieDeferred.await()
+                        val actors = actorsDeferred.await().getOrDefault(emptyList())
 
-                    _uiState.value = MovieDetailUiState.Success(movie, actors)
+                        _uiState.value = MovieDetailUiState.Success(movie, actors)
+                    }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {

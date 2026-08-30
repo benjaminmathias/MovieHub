@@ -24,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.util.shareMovie
 import com.benjamin.moviehub.domain.model.Movie
+import com.benjamin.moviehub.ui.components.EmptyStateView
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,6 +32,7 @@ fun MovieDetailScreen(
     uiState: MovieDetailUiState,
     onBackClick: () -> Unit,
     onToggleFavorite: (Movie) -> Unit,
+    onRetry: () -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -100,9 +102,9 @@ fun MovieDetailScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
                 ) {
-                    Text(
-                        text = uiState.errorMessage.asString(),
-                        color = MaterialTheme.colorScheme.error,
+                    EmptyStateView(
+                        message = uiState.errorMessage.asString(),
+                        onRetry = onRetry,
                     )
                 }
             }

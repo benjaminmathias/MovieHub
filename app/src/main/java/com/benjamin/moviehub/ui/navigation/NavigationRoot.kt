@@ -162,6 +162,7 @@ fun NavigationRoot() {
                                 uiState = detailsUiState,
                                 onBackClick = { backStack.removeLastOrNull() },
                                 onToggleFavorite = { movie -> viewModel.toggleFavorite(movie) },
+                                onRetry = { viewModel.loadMovieDetails(key.movieId) },
                             )
                         }
 
@@ -180,6 +181,7 @@ fun NavigationRoot() {
                                     backStack.add(Route.Detail(id))
                                 },
                                 onRemoveFavorite = { movie -> viewModel.onToggleFavorite(movie) },
+                                onRetry = viewModel::onRetry,
                             )
                         }
 

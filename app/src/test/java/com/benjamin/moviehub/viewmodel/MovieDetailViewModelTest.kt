@@ -55,6 +55,27 @@ class MovieDetailViewModelTest {
         }
 
     @Test
+    fun `details retry succeeds after loading error`() =
+        runTest {
+            var detailsCalls = 0
+            coEvery { repository.getMovieDetails(1) } coAnswers {
+                if (detailsCalls++ == 0) throw IllegalStateException()
+                movie
+            }
+            coEvery { repository.getMovieActors(1) } returns Result.success(emptyList())
+            val viewModel = MovieDetailViewModel(repository)
+
+            viewModel.loadMovieDetails(1)
+            advanceUntilIdle()
+            assert(viewModel.uiState.value is MovieDetailUiState.Error)
+
+            viewModel.loadMovieDetails(1)
+            advanceUntilIdle()
+
+            assertEquals(MovieDetailUiState.Success(movie, emptyList()), viewModel.uiState.value)
+        }
+
+    @Test
     fun `favorite update restores previous state when repository fails`() =
         runTest {
             coEvery { repository.getMovieDetails(1) } returns movie
