@@ -51,6 +51,7 @@ import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.ActorItem
 import com.benjamin.moviehub.ui.components.MovieGenreTag
 
+
 @Composable
 fun MovieDetailContent(
     movie: Movie,
@@ -112,11 +113,6 @@ fun MovieDetailContent(
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                if (movie.genres.isNotEmpty()) {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        items(movie.genres) { genre -> MovieGenreTag(name = genre) }
-                    }
-                }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -181,6 +177,12 @@ fun MovieDetailContent(
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
+                }
+
+                if (movie.genres.isNotEmpty()) {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        items(movie.genres) { genre -> MovieGenreTag(name = genre) }
                     }
                 }
             }

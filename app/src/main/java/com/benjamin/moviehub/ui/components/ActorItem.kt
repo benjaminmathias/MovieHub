@@ -44,13 +44,13 @@ fun ActorItem(actor: Actor) {
             contentScale = ContentScale.Crop,
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         Text(
             text = actor.name,
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.fillMaxWidth().height(40.dp).padding(horizontal = 4.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
@@ -60,11 +60,11 @@ fun ActorItem(actor: Actor) {
         Text(
             text = actor.character,
             style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.fillMaxWidth().height(16.dp).padding(horizontal = 4.dp),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+            maxLines = 2,
+            overflow = TextOverflow.Visible,
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -75,8 +75,8 @@ fun ActorItemPreview() {
     val fakeActor =
         Actor(
             id = 1,
-            name = "Tom Hanks",
-            character = "Forrest Gump",
+            name = "Reese Witherspoon",
+            character = "Forrest Gump / Peter Parker",
             profileUrl = "",
         )
     ActorItem(actor = fakeActor)
