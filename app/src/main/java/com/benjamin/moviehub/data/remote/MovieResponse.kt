@@ -1,10 +1,14 @@
 package com.benjamin.moviehub.data.remote
 
-import com.benjamin.moviehub.domain.model.GenreObject
 import com.google.gson.annotations.SerializedName
 
 data class MovieResponse(
     @SerializedName("results") val movies: List<MovieDto>,
+)
+
+data class GenreDto(
+    val id: Int,
+    val name: String,
 )
 
 data class MovieDto(
@@ -21,7 +25,7 @@ data class MovieDto(
     val genreIds: List<Int>? = null,
     // Format utilisé par le Détail (/movie/{id})
     @SerializedName("genres")
-    val genres: List<GenreObject>? = null,
+    val genres: List<GenreDto>? = null,
 )
 
 data class MovieCreditsDto(

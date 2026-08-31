@@ -1,4 +1,4 @@
-package com.benjamin.moviehub.ui.settings
+package com.benjamin.moviehub.data.cache
 
 import android.content.Context
 import coil.annotation.ExperimentalCoilApi

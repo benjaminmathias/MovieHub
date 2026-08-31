@@ -1,4 +1,4 @@
-package com.benjamin.moviehub.domain.worker
+package com.benjamin.moviehub.data.worker
 
 import android.content.Context
 import android.util.Log
@@ -43,4 +43,4 @@ class SyncMoviesWorker
                 Result.failure()
             }
         }
-}
+    }

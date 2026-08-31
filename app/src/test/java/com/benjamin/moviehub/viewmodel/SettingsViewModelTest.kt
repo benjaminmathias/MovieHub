@@ -1,8 +1,8 @@
 package com.benjamin.moviehub.viewmodel
 
 import com.benjamin.moviehub.core.util.AppTheme
+import com.benjamin.moviehub.data.cache.ImageCacheManager
 import com.benjamin.moviehub.domain.repository.UserPreferencesRepository
-import com.benjamin.moviehub.ui.settings.ImageCacheManager
 import com.benjamin.moviehub.ui.settings.ImageCacheState
 import com.benjamin.moviehub.ui.settings.SettingsViewModel
 import com.benjamin.moviehub.util.MainDispatcherRule

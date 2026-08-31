@@ -3,6 +3,7 @@ package com.benjamin.moviehub.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benjamin.moviehub.core.util.AppTheme
+import com.benjamin.moviehub.data.cache.ImageCacheManager
 import com.benjamin.moviehub.domain.repository.UserPreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException

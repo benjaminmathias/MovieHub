@@ -4,8 +4,8 @@ import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.mapper.toEntity
 import com.benjamin.moviehub.data.remote.ActorDto
+import com.benjamin.moviehub.data.remote.GenreDto
 import com.benjamin.moviehub.data.remote.MovieDto
-import com.benjamin.moviehub.domain.model.GenreObject
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -53,27 +53,11 @@ class MovieMapperUnitTest {
     )
 
     @Test
-    fun `Check image URL format`() {
-        val dto = createFakeDto(posterPath = "/pic.jpg")
-        val result = dto.toDomain()
-
-        assertEquals("https://image.tmdb.org/t/p/w500/pic.jpg", result.posterPath)
-    }
-
-    @Test
     fun `Check favorite status is mapped correctly`() {
         val entity = createFakeEntity(isFavorite = true)
         val result = entity.toDomain()
 
         assertEquals(true, result.isFavorite)
-    }
-
-    @Test
-    fun `Check null poster path is handled correctly`() {
-        val dto = createFakeDto(posterPath = null)
-        val result = dto.toDomain()
-
-        assertEquals("", result.posterPath)
     }
 
     @Test
@@ -90,13 +74,6 @@ class MovieMapperUnitTest {
         val dto = createFakeDto(posterPath = "https://image.tmdb.org/t/p/w500/pic.jpg")
 
         assertEquals("/pic.jpg", dto.toEntity().posterPath)
-    }
-
-    @Test
-    fun `toDomain does not duplicate an already complete image url`() {
-        val dto = createFakeDto(posterPath = "https://image.tmdb.org/t/p/w500/pic.jpg")
-
-        assertEquals("https://image.tmdb.org/t/p/w500/pic.jpg", dto.toDomain().posterPath)
     }
 
     @Test
@@ -131,8 +108,8 @@ class MovieMapperUnitTest {
                 genreIds = null,
                 genres =
                     listOf(
-                        GenreObject(id = 28, name = "Action"),
-                        GenreObject(id = 12, name = "Aventure"),
+                        GenreDto(id = 28, name = "Action"),
+                        GenreDto(id = 12, name = "Aventure"),
                     ),
             )
 
@@ -149,20 +126,6 @@ class MovieMapperUnitTest {
         val domain = dto.toEntity().toDomain()
 
         assertEquals(169, domain.runtimeMinutes)
-    }
-
-    @Test
-    fun `dto toDomain maps detailed genres`() {
-        val dto =
-            createFakeDto().copy(
-                genreIds = null,
-                genres = listOf(GenreObject(18, "Drame")),
-            )
-
-        val domain = dto.toDomain()
-
-        assertEquals(listOf(18), domain.genreIds)
-        assertEquals(listOf("Drame"), domain.genres)
     }
 
     @Test

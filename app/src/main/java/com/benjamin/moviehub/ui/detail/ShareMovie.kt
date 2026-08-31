@@ -1,4 +1,4 @@
-package com.benjamin.moviehub.core.util
+package com.benjamin.moviehub.ui.detail
 
 import android.content.Context
 import android.content.Intent
@@ -12,7 +12,7 @@ fun shareMovie(
     context: Context,
     movie: Movie,
 ) {
-    val sendIntent: Intent =
+    val sendIntent =
         Intent().apply {
             action = Intent.ACTION_SEND
             putExtra(

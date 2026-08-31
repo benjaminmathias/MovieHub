@@ -22,7 +22,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import com.benjamin.moviehub.R
-import com.benjamin.moviehub.core.util.shareMovie
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.EmptyStateView
 

@@ -26,9 +26,6 @@ interface MovieDao {
     )
 
     // --- FILMS : LISTES & FLOWS ---
-    @Query("SELECT id FROM movies WHERE isFavorite = 1")
-    suspend fun getFavoriteMovieIds(): List<Int>
-
     @Query("SELECT * FROM movies WHERE isFavorite = 1")
     fun getFavoriteMoviesFlow(): Flow<List<MovieEntity>>
 
