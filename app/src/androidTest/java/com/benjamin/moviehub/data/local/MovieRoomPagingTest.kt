@@ -73,7 +73,7 @@ class MovieRoomPagingTest {
         }
 
     @Test
-    fun differentSearchQueries_doNotShareCachedResults() =
+    fun refreshingSearch_replacesPreviousQueryCache() =
         runBlocking {
             val api =
                 FakeMovieApiService(
@@ -88,7 +88,7 @@ class MovieRoomPagingTest {
             SearchMovieRemoteMediator(api, database, " alpha ").load(LoadType.REFRESH, emptyPagingState())
             SearchMovieRemoteMediator(api, database, "beta").load(LoadType.REFRESH, emptyPagingState())
 
-            assertEquals(listOf(100), database.movieDao().getSearchResultMovieIds("alpha"))
+            assertTrue(database.movieDao().getSearchResultMovieIds("alpha").isEmpty())
             assertEquals(listOf(200), database.movieDao().getSearchResultMovieIds("beta"))
         }
 

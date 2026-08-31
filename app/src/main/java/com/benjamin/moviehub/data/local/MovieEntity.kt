@@ -17,4 +17,5 @@ data class MovieEntity(
     val isPopular: Boolean = false,
     val isSearchResult: Boolean = false,
     val pageOrder: Int = 0,
+    val runtimeMinutes: Int? = null,
 )

@@ -66,8 +66,11 @@ fun NavigationRoot() {
                             selected = currentRoute == item.route,
                             onClick = {
                                 if (currentRoute != item.route) {
-                                    backStack.clear()
-                                    backStack.add(item.route)
+                                    if (item.route == Route.List && currentRoute is Route.FavoriteList) {
+                                        backStack.removeLastOrNull()
+                                    } else {
+                                        backStack.add(item.route)
+                                    }
                                 }
                             },
                             icon = {
@@ -102,8 +105,7 @@ fun NavigationRoot() {
                 onBack = {
                     when {
                         currentRoute is Route.FavoriteList -> {
-                            backStack.clear()
-                            backStack.add(Route.List)
+                            backStack.removeLastOrNull()
                         }
 
                         backStack.size > 1 -> backStack.removeLastOrNull()
@@ -173,8 +175,7 @@ fun NavigationRoot() {
                             FavoriteScreen(
                                 state = favoriteUiState,
                                 onBackClick = {
-                                    backStack.clear()
-                                    backStack.add(Route.List)
+                                    backStack.removeLastOrNull()
                                 },
                                 onSettingsClick = { backStack.add(Route.Settings) },
                                 onMovieClick = { id ->
@@ -182,6 +183,7 @@ fun NavigationRoot() {
                                 },
                                 onRemoveFavorite = { movie -> viewModel.onToggleFavorite(movie) },
                                 onRetry = viewModel::onRetry,
+                                favoriteActionErrors = viewModel.favoriteActionErrors,
                             )
                         }
 

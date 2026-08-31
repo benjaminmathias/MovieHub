@@ -28,6 +28,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import java.io.IOException
+import retrofit2.HttpException
 import javax.inject.Inject
 
 class MovieRepositoryImpl
@@ -39,8 +41,9 @@ class MovieRepositoryImpl
     ) : MovieRepository {
         @OptIn(ExperimentalPagingApi::class)
         override fun getPagedMovies(query: String?): Flow<PagingData<Movie>> {
-            val isSearch = !query.isNullOrBlank()
-            val queryKey = query?.let(SearchQueryKey::normalize)
+            val effectiveQuery = query?.trim()
+            val isSearch = !effectiveQuery.isNullOrEmpty()
+            val queryKey = effectiveQuery?.let(SearchQueryKey::normalize)
 
             return Pager(
                 config =
@@ -52,7 +55,7 @@ class MovieRepositoryImpl
                     ),
                 remoteMediator =
                     if (isSearch) {
-                        SearchMovieRemoteMediator(apiService, database, query)
+                        SearchMovieRemoteMediator(apiService, database, requireNotNull(effectiveQuery))
                     } else {
                         MovieRemoteMediator(apiService, database)
                     },
@@ -85,20 +88,24 @@ class MovieRepositoryImpl
                     dto.toEntity(
                         isFavorite = localMovie?.isFavorite ?: false,
                         isPopular = localMovie?.isPopular ?: false,
-                        isSearchResult = localMovie?.isSearchResult ?: false,
+                        isSearchResult = false,
                         pageOrder = localMovie?.pageOrder ?: -1,
                     )
 
                 // Save to DB
                 movieDao.insertMovie(remoteMovieEntity)
 
-                remoteMovieEntity.toDomain().copy(
-                    runtimeMinutes = dto.runtimeMinutes,
-                )
+                remoteMovieEntity.toDomain()
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (e: IOException) {
                 localMovie?.toDomain() ?: throw e
+            } catch (e: HttpException) {
+                if (e.code() >= 500 || e.code() == 408 || e.code() == 429) {
+                    localMovie?.toDomain() ?: throw e
+                } else {
+                    throw e
+                }
             }
         }
 

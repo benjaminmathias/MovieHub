@@ -17,6 +17,7 @@ fun MovieDto.toEntity(
     isPopular: Boolean = false,
     isSearchResult: Boolean = false,
     pageOrder: Int = 0,
+    runtimeMinutesOverride: Int? = null,
 ): MovieEntity {
     val finalGenreIds =
         this.genreIds
@@ -36,6 +37,7 @@ fun MovieDto.toEntity(
         isPopular = isPopular,
         isSearchResult = isSearchResult,
         pageOrder = pageOrder,
+        runtimeMinutes = runtimeMinutesOverride ?: runtimeMinutes,
     )
 }
 
@@ -57,6 +59,7 @@ fun MovieEntity.toDomain(): Movie =
         isFavorite = isFavorite,
         genreIds = genreIds,
         genres = genreIds.mapNotNull { GenreUtils.idToNameMap[it] },
+        runtimeMinutes = runtimeMinutes,
     )
 
 /**
@@ -73,8 +76,11 @@ fun MovieDto.toDomain(): Movie =
         releaseDate = this.releaseDate ?: "",
         webUrl = "https://www.themoviedb.org/movie/${this.id}",
         isFavorite = false,
-        genreIds = genreIds ?: emptyList(),
-        genres = genreIds?.mapNotNull { GenreUtils.idToNameMap[it] } ?: emptyList(),
+        genreIds = genreIds ?: genres?.map { it.id } ?: emptyList(),
+        genres =
+            (genres?.map { it.name }
+                ?: genreIds?.mapNotNull { GenreUtils.idToNameMap[it] }
+                ?: emptyList()),
         runtimeMinutes = runtimeMinutes,
     )
 
@@ -96,4 +102,5 @@ fun Movie.toEntity(
         genreIds = this.genreIds,
         isFavorite = isFavorite,
         isPopular = isPopular,
+        runtimeMinutes = runtimeMinutes,
     )

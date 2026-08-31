@@ -54,9 +54,13 @@ class SearchMovieRemoteMediator(
             val endOfPaginationReached = movies.isEmpty() || movies.size < state.config.pageSize
 
             database.withTransaction {
+                val localMovies =
+                    movieDao.getMoviesByIds(movies.map { it.id }).associateBy { it.id }
+
                 if (loadType == LoadType.REFRESH) {
-                    movieDao.clearRemoteKeysByType(remoteKeyType)
-                    movieDao.clearSearchResults(queryKey)
+                    movieDao.clearAllSearchResults()
+                    movieDao.clearAllSearchRemoteKeys()
+                    movieDao.clearOrphanSearchMovies(movies.map { it.id })
                 }
 
                 val prevKey = if (page == 1) null else page - 1
@@ -72,9 +76,6 @@ class SearchMovieRemoteMediator(
                         )
                     }
 
-                val localMovies =
-                    movieDao.getMoviesByIds(movies.map { it.id }).associateBy { it.id }
-
                 val movieEntities =
                     movies.mapIndexed { index, dto ->
                         val position = ((page - 1) * state.config.pageSize) + index
@@ -86,6 +87,7 @@ class SearchMovieRemoteMediator(
                             isPopular = localMovie?.isPopular ?: false,
                             isSearchResult = true,
                             pageOrder = position,
+                            runtimeMinutesOverride = localMovie?.runtimeMinutes,
                         )
                     }
                 val searchResults =

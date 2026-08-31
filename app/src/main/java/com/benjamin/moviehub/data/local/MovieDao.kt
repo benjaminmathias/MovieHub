@@ -69,8 +69,23 @@ interface MovieDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSearchResults(results: List<MovieSearchResultEntity>)
 
-    @Query("DELETE FROM movie_search_results WHERE queryKey = :queryKey")
-    suspend fun clearSearchResults(queryKey: String)
+    @Query("DELETE FROM movie_search_results")
+    suspend fun clearAllSearchResults()
+
+    @Query("DELETE FROM remote_keys WHERE type LIKE 'SEARCH:%'")
+    suspend fun clearAllSearchRemoteKeys()
+
+    @Query(
+        """
+        DELETE FROM movies
+        WHERE isSearchResult = 1
+          AND isFavorite = 0
+          AND isPopular = 0
+          AND id NOT IN (:preserveMovieIds)
+          AND id NOT IN (SELECT movieId FROM movie_search_results)
+        """,
+    )
+    suspend fun clearOrphanSearchMovies(preserveMovieIds: List<Int>)
 
     @Query("SELECT movieId FROM movie_search_results WHERE queryKey = :queryKey ORDER BY pageOrder ASC")
     suspend fun getSearchResultMovieIds(queryKey: String): List<Int>

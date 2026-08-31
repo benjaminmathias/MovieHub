@@ -15,6 +15,7 @@ import io.mockk.slot
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.io.IOException
 
 class MovieRepositoryTest {
     @Test
@@ -38,7 +39,7 @@ class MovieRepositoryTest {
                 )
 
             coEvery { dao.getMovieById(9) } returns localMovie
-            coEvery { apiService.getMovieDetails(9, any()) } throws IllegalStateException("offline")
+            coEvery { apiService.getMovieDetails(9, any()) } throws IOException("offline")
 
             val result = repository.getMovieDetails(9)
 

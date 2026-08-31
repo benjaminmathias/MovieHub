@@ -9,6 +9,8 @@ import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
+import retrofit2.HttpException
+import java.io.IOException
 
 @HiltWorker
 class SyncMoviesWorker
@@ -26,9 +28,19 @@ class SyncMoviesWorker
                 Result.success()
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: IOException) {
+                Log.e("SyncWorker", "Erreur réseau pendant la synchronisation", e)
+                Result.retry()
+            } catch (e: HttpException) {
+                Log.e("SyncWorker", "Erreur HTTP pendant la synchronisation", e)
+                if (e.code() == 408 || e.code() == 429 || e.code() >= 500) {
+                    Result.retry()
+                } else {
+                    Result.failure()
+                }
             } catch (e: Exception) {
                 Log.e("SyncWorker", "Échec de la tâche", e)
-                Result.retry()
+                Result.failure()
             }
         }
-    }
+}

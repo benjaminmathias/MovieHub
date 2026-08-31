@@ -1,7 +1,7 @@
 package com.benjamin.moviehub.viewmodel
 
 import com.benjamin.moviehub.core.util.AppTheme
-import com.benjamin.moviehub.data.repository.UserPreferenceRepository
+import com.benjamin.moviehub.domain.repository.UserPreferencesRepository
 import com.benjamin.moviehub.ui.settings.ImageCacheManager
 import com.benjamin.moviehub.ui.settings.ImageCacheState
 import com.benjamin.moviehub.ui.settings.SettingsViewModel
@@ -26,7 +26,7 @@ class SettingsViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val preferences: UserPreferenceRepository = mockk()
+    private val preferences: UserPreferencesRepository = mockk()
     private val imageCacheManager: ImageCacheManager = mockk()
 
     @Before

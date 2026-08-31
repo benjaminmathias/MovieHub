@@ -115,4 +115,17 @@ class FavoriteViewModelTest {
             advanceUntilIdle()
             coVerify { repository.toggleFavorite(movie, false) }
         }
+
+    @Test
+    fun `toggle favorite exposes action errors`() =
+        runTest {
+            every { repository.getFavoriteMovies() } returns MutableSharedFlow()
+            coEvery { repository.toggleFavorite(movie, false) } throws IllegalStateException()
+            val viewModel = FavoriteViewModel(repository)
+
+            viewModel.favoriteActionErrors.test {
+                viewModel.onToggleFavorite(movie)
+                awaitItem()
+            }
+        }
 }

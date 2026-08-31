@@ -143,6 +143,29 @@ class MovieMapperUnitTest {
     }
 
     @Test
+    fun `toEntity and toDomain preserve runtime`() {
+        val dto = createFakeDto().copy(runtimeMinutes = 169)
+
+        val domain = dto.toEntity().toDomain()
+
+        assertEquals(169, domain.runtimeMinutes)
+    }
+
+    @Test
+    fun `dto toDomain maps detailed genres`() {
+        val dto =
+            createFakeDto().copy(
+                genreIds = null,
+                genres = listOf(GenreObject(18, "Drame")),
+            )
+
+        val domain = dto.toDomain()
+
+        assertEquals(listOf(18), domain.genreIds)
+        assertEquals(listOf("Drame"), domain.genres)
+    }
+
+    @Test
     fun `toEntity should prioritize genreIds if available`() {
         val listDto =
             MovieDto(

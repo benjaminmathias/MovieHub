@@ -91,4 +91,16 @@ class MovieListViewModelTest {
             coVerify(exactly = 1) { repository.getPagedMovies("") }
             job.cancel()
         }
+
+    @Test
+    fun `blank search query is treated as popular movies`() =
+        runTest {
+            val job = launch { viewModel.pagedMovies.collect() }
+
+            viewModel.onSearchQueryChanged("   ")
+            advanceTimeBy(600)
+
+            coVerify(exactly = 1) { repository.getPagedMovies("") }
+            job.cancel()
+        }
 }

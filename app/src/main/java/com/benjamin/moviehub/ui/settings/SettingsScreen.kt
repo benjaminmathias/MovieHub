@@ -59,6 +59,7 @@ fun SettingsScreen(
     val snackbarHostState = androidx.compose.runtime.remember { SnackbarHostState() }
     val imageCacheClearedMessage = stringResource(R.string.image_cache_cleared)
     val imageCacheClearFailedMessage = stringResource(R.string.image_cache_clear_failed)
+    val themeUpdateFailedMessage = stringResource(R.string.theme_update_failed)
 
     Scaffold(
         topBar = {
@@ -167,6 +168,12 @@ fun SettingsScreen(
             }
 
             ImageCacheState.Idle, ImageCacheState.Loading -> Unit
+        }
+    }
+
+    LaunchedEffect(viewModel.themeUpdateErrors) {
+        viewModel.themeUpdateErrors.collect {
+            snackbarHostState.showSnackbar(themeUpdateFailedMessage)
         }
     }
 }

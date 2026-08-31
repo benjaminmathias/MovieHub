@@ -10,8 +10,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -28,6 +30,8 @@ class FavoriteViewModel
         private val repository: MovieRepository,
     ) : ViewModel() {
         private val retryTrigger = MutableStateFlow(0)
+        private val _favoriteActionErrors = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+        val favoriteActionErrors = _favoriteActionErrors.asSharedFlow()
 
         @OptIn(ExperimentalCoroutinesApi::class)
         val uiState: StateFlow<MovieFavoriteListUiState> =
@@ -56,7 +60,13 @@ class FavoriteViewModel
 
         fun onToggleFavorite(movie: Movie) {
             viewModelScope.launch {
-                repository.toggleFavorite(movie, !movie.isFavorite)
+                try {
+                    repository.toggleFavorite(movie, !movie.isFavorite)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    _favoriteActionErrors.tryEmit(Unit)
+                }
             }
         }
     }

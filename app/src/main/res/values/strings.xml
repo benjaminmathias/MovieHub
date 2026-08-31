@@ -28,6 +28,7 @@
     <string name="favorite">Ajouter aux favoris</string>
     <string name="remove_favorite">Retirer des favoris</string>
     <string name="favorite_removed">Retiré des favoris</string>
+    <string name="error_updating_favorite">Impossible de modifier ce favori.</string>
 
     <string name="settings_title">Paramètres</string>
     <string name="back">Retour</string>
@@ -42,6 +43,7 @@
     <string name="theme_system">Système (Défaut)</string>
     <string name="theme_light">Clair</string>
     <string name="theme_dark">Sombre</string>
+    <string name="theme_update_failed">Impossible d\'enregistrer le thème.</string>
     <string name="share">Partager</string>
     <string name="share_chooser">Partager via</string>
     <string name="loading_movie_details">Chargement des détails…</string>

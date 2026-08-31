@@ -21,6 +21,8 @@ import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -29,6 +31,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -42,6 +45,8 @@ import com.benjamin.moviehub.ui.components.DeleteBackground
 import com.benjamin.moviehub.ui.components.EmptyStateView
 import com.benjamin.moviehub.ui.components.MovieItem
 import com.benjamin.moviehub.ui.components.MovieShimmerItem
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,7 +57,17 @@ fun FavoriteScreen(
     onBackClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onRetry: () -> Unit,
+    favoriteActionErrors: Flow<Unit> = emptyFlow(),
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val favoriteErrorMessage = stringResource(R.string.error_updating_favorite)
+
+    LaunchedEffect(favoriteActionErrors) {
+        favoriteActionErrors.collect {
+            snackbarHostState.showSnackbar(favoriteErrorMessage)
+        }
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -69,6 +84,7 @@ fun FavoriteScreen(
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { paddingValues ->
         Column(
             modifier =

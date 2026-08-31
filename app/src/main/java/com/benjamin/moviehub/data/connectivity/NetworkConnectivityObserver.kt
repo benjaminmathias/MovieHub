@@ -3,6 +3,7 @@ package com.benjamin.moviehub.data.connectivity
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
+import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import com.benjamin.moviehub.domain.connectivity.ConnectivityObserver
 import com.benjamin.moviehub.domain.connectivity.ConnectivityStatus
@@ -24,24 +25,43 @@ class NetworkConnectivityObserver
         override fun observe(): Flow<ConnectivityStatus> =
             callbackFlow {
                 trySend(currentStatus())
+                val networks = mutableSetOf<Network>()
+
+                fun emitCurrentStatus() {
+                    val hasValidatedNetwork =
+                        networks.any { network ->
+                            connectivityManager
+                                .getNetworkCapabilities(network)
+                                ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
+                        }
+                    trySend(if (hasValidatedNetwork) ConnectivityStatus.AVAILABLE else ConnectivityStatus.UNAVAILABLE)
+                }
+
                 val callback =
                     object : ConnectivityManager.NetworkCallback() {
                         override fun onAvailable(network: Network) {
                             super.onAvailable(network)
-                            trySend(ConnectivityStatus.AVAILABLE)
+                            networks += network
+                            emitCurrentStatus()
                         }
 
-                        override fun onLosing(
+                        override fun onCapabilitiesChanged(
                             network: Network,
-                            maxMsToLive: Int,
+                            networkCapabilities: NetworkCapabilities,
                         ) {
-                            super.onLosing(network, maxMsToLive)
-                            trySend(ConnectivityStatus.LOSING)
+                            super.onCapabilitiesChanged(network, networkCapabilities)
+                            networks += network
+                            emitCurrentStatus()
                         }
 
                         override fun onLost(network: Network) {
                             super.onLost(network)
-                            trySend(ConnectivityStatus.LOST)
+                            networks -= network
+                            if (networks.isEmpty()) {
+                                trySend(ConnectivityStatus.LOST)
+                            } else {
+                                emitCurrentStatus()
+                            }
                         }
 
                         override fun onUnavailable() {
@@ -53,7 +73,7 @@ class NetworkConnectivityObserver
                 val request =
                     NetworkRequest
                         .Builder()
-                        .addCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                         .build()
 
                 connectivityManager.registerNetworkCallback(request, callback)
@@ -66,7 +86,7 @@ class NetworkConnectivityObserver
         private fun currentStatus(): ConnectivityStatus {
             val network = connectivityManager.activeNetwork ?: return ConnectivityStatus.UNAVAILABLE
             val capabilities = connectivityManager.getNetworkCapabilities(network)
-            return if (capabilities?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) == true) {
+            return if (capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true) {
                 ConnectivityStatus.AVAILABLE
             } else {
                 ConnectivityStatus.UNAVAILABLE

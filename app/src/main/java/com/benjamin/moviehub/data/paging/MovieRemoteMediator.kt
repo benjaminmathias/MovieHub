@@ -80,6 +80,7 @@ class MovieRemoteMediator(
                             isPopular = true,
                             isSearchResult = localMovie?.isSearchResult ?: false,
                             pageOrder = position,
+                            runtimeMinutesOverride = localMovie?.runtimeMinutes,
                         )
                     }
                 movieDao.insertAllKeys(keys)

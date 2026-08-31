@@ -3,9 +3,9 @@ package com.benjamin.moviehub.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benjamin.moviehub.core.util.AppTheme
-import com.benjamin.moviehub.data.repository.UserPreferenceRepository
 import com.benjamin.moviehub.domain.connectivity.ConnectivityObserver
 import com.benjamin.moviehub.domain.connectivity.ConnectivityStatus
+import com.benjamin.moviehub.domain.repository.UserPreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -15,7 +15,7 @@ import javax.inject.Inject
 class MainViewModel
     @Inject
     constructor(
-        userPreferencesRepository: UserPreferenceRepository,
+        userPreferencesRepository: UserPreferencesRepository,
         connectivityObserver: ConnectivityObserver,
     ) : ViewModel() {
         val theme =

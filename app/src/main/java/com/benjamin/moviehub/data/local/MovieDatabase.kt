@@ -9,6 +9,7 @@ import androidx.room.TypeConverters
     version = 1,
     exportSchema = false,
 )
+// runtimeMinutes is intentionally a fresh-install-only schema change for now.
 @TypeConverters(Converters::class)
 abstract class MovieDatabase : RoomDatabase() {
     abstract fun movieDao(): MovieDao

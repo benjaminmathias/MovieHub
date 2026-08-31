@@ -81,7 +81,7 @@ fun MovieListScreen(
                     .padding(paddingValues)
                     .imePadding(),
         ) {
-            if (searchQuery.isEmpty()) {
+            if (searchQuery.isBlank()) {
                 Text(
                     text = stringResource(R.string.movie_hub_popular),
                     style = MaterialTheme.typography.headlineLarge,
@@ -122,25 +122,20 @@ fun MovieListScreen(
                     }
 
                     isError -> {
-                        val errorState =
-                            (mediatorLoadState as? LoadState.Error)
-                                ?: (refreshLoadState as? LoadState.Error)
                         EmptyStateView(
-                            message =
-                                errorState?.error?.localizedMessage
-                                    ?: stringResource(R.string.error_loading_movies),
+                            message = stringResource(R.string.error_loading_movies),
                             icon = Icons.Default.CloudOff,
                             onRetry = { lazyPagingItems.retry() },
                         )
                     }
 
                     isEmpty -> {
-                        if (searchQuery.isNotEmpty()) {
+                        if (searchQuery.isNotBlank()) {
                             EmptyStateView(
                                 message =
                                     stringResource(
                                         R.string.empty_search_results,
-                                        searchQuery,
+                                        searchQuery.trim(),
                                     ),
                                 icon = Icons.Default.SearchOff,
                                 onRetry = null,
@@ -164,7 +159,7 @@ fun MovieListScreen(
                                     MovieItem(
                                         movie = movie,
                                         onMovieClick = onMovieClick,
-                                        compact = searchQuery.isNotEmpty(),
+                                        compact = searchQuery.isNotBlank(),
                                     )
                                 }
                             }
@@ -173,9 +168,7 @@ fun MovieListScreen(
                             if (appendState is LoadState.Error) {
                                 item {
                                     ErrorRetryItem(
-                                        message =
-                                            appendState.error.localizedMessage
-                                                ?: stringResource(R.string.error_loading_movies),
+                                        message = stringResource(R.string.error_loading_movies),
                                         onRetry = { lazyPagingItems.retry() },
                                     )
                                 }
