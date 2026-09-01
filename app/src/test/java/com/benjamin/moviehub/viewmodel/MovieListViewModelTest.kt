@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
@@ -37,9 +38,9 @@ class MovieListViewModelTest {
     @Test
     fun `search query is initially empty and updates immediately`() =
         runTest {
-            assert(viewModel.searchQuery.value.isEmpty())
+            assertEquals("", viewModel.searchQuery.value)
             viewModel.onSearchQueryChanged("Batman")
-            assert(viewModel.searchQuery.value == "Batman")
+            assertEquals("Batman", viewModel.searchQuery.value)
         }
 
     @Test

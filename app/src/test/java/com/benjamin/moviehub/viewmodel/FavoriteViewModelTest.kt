@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -51,9 +52,9 @@ class FavoriteViewModelTest {
             every { repository.getFavoriteMovies() } returns source
             val viewModel = FavoriteViewModel(repository)
             viewModel.uiState.test {
-                assert(awaitItem() is MovieFavoriteListUiState.Loading)
+                assertTrue(awaitItem() is MovieFavoriteListUiState.Loading)
                 source.emit(emptyList())
-                assert(awaitItem() is MovieFavoriteListUiState.Success)
+                assertTrue(awaitItem() is MovieFavoriteListUiState.Success)
                 source.emit(listOf(movie))
                 val state = awaitItem() as MovieFavoriteListUiState.Success
                 assertEquals(listOf(movie), state.movies)
@@ -70,9 +71,9 @@ class FavoriteViewModelTest {
             }
             val viewModel = FavoriteViewModel(repository)
             viewModel.uiState.test {
-                assert(awaitItem() is MovieFavoriteListUiState.Loading)
+                assertTrue(awaitItem() is MovieFavoriteListUiState.Loading)
                 source.emit(Unit)
-                assert(awaitItem() is MovieFavoriteListUiState.Error)
+                assertTrue(awaitItem() is MovieFavoriteListUiState.Error)
             }
         }
 
@@ -96,10 +97,10 @@ class FavoriteViewModelTest {
             val viewModel = FavoriteViewModel(repository)
 
             viewModel.uiState.test {
-                assert(awaitItem() is MovieFavoriteListUiState.Loading)
+                assertTrue(awaitItem() is MovieFavoriteListUiState.Loading)
                 firstAttemptStarted.await()
                 releaseFirstAttempt.complete(Unit)
-                assert(awaitItem() is MovieFavoriteListUiState.Error)
+                assertTrue(awaitItem() is MovieFavoriteListUiState.Error)
                 viewModel.onRetry()
                 assertEquals(listOf(movie), (awaitItem() as MovieFavoriteListUiState.Success).movies)
             }

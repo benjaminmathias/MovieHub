@@ -5,6 +5,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -17,7 +18,19 @@ interface MovieDao {
     suspend fun getMoviesByIds(ids: List<Int>): List<MovieEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMovie(movie: MovieEntity) // Pour ton toggleFavorite
+    suspend fun insertMovie(movie: MovieEntity)
+
+    @Transaction
+    suspend fun setFavorite(
+        movie: MovieEntity,
+        isFavorite: Boolean,
+    ) {
+        if (getMovieById(movie.id) == null) {
+            insertMovie(movie.copy(isFavorite = isFavorite))
+        } else {
+            updateFavoriteStatus(movie.id, isFavorite)
+        }
+    }
 
     @Query("UPDATE movies SET isFavorite = :isFavorite WHERE id = :movieId")
     suspend fun updateFavoriteStatus(

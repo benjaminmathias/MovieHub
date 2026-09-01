@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.data.repository
 
+import android.util.Log
 import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.local.MovieDatabase
 import com.benjamin.moviehub.data.local.MovieEntity
@@ -8,9 +9,13 @@ import com.benjamin.moviehub.data.remote.ActorDto
 import com.benjamin.moviehub.data.remote.CrewMemberDto
 import com.benjamin.moviehub.data.remote.MovieCreditsDto
 import com.benjamin.moviehub.data.remote.MovieApiService
+import com.benjamin.moviehub.data.remote.MovieDto
+import com.benjamin.moviehub.data.remote.MovieResponse
+import androidx.room.withTransaction
 import com.benjamin.moviehub.domain.model.Movie
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
@@ -93,17 +98,50 @@ class MovieRepositoryTest {
                     genres = emptyList(),
                 )
 
-            coEvery { dao.getMovieById(7) } returns null
-            coEvery { dao.insertMovie(capture(entitySlot)) } just runs
+            coEvery { dao.setFavorite(capture(entitySlot), true) } just runs
 
             repository.toggleFavorite(movie, true)
 
-            coVerify(exactly = 1) { dao.insertMovie(any()) }
+            coVerify(exactly = 1) { dao.setFavorite(any(), true) }
             assertEquals(true, entitySlot.captured.isFavorite)
             assertEquals("/poster.jpg", entitySlot.captured.posterPath)
             assertEquals("/backdrop.jpg", entitySlot.captured.backdropPath)
             assertEquals(false, entitySlot.captured.isPopular)
             assertEquals(false, entitySlot.captured.isSearchResult)
             assertEquals(0, entitySlot.captured.pageOrder)
+        }
+
+    @Test
+    fun `popular sync preserves cached runtime`() =
+        runBlocking {
+            val apiService = mockk<MovieApiService>()
+            val database = mockk<MovieDatabase>()
+            val dao = mockk<MovieDao>()
+            val entities = slot<List<MovieEntity>>()
+            val repository = MovieRepositoryImpl(apiService, database, dao)
+            val dto = MovieDto(1, "Movie", "Overview", null, null, 7.0, runtimeMinutes = null)
+
+            coEvery { apiService.getPopularMovies(apiKey = any(), page = 1) } returns MovieResponse(listOf(dto))
+            coEvery { dao.getMoviesByIds(listOf(1)) } returns listOf(
+                MovieEntity(1, "Movie", "Overview", null, null, 7.0, "", runtimeMinutes = 123),
+            )
+            coEvery { dao.clearRemoteKeysByType(any()) } just runs
+            coEvery { dao.clearPopularMovies() } just runs
+            coEvery { dao.insertAllKeys(any()) } just runs
+            coEvery { dao.upsertMovies(capture(entities)) } just runs
+            io.mockk.mockkStatic(Log::class)
+            every { Log.e(any(), any(), any()) } returns 0
+            io.mockk.mockkStatic("androidx.room.RoomDatabaseKt")
+            io.mockk.mockkStatic("androidx.room.RoomDatabaseKt__RoomDatabase_androidKt")
+            coEvery { database.withTransaction(any<suspend () -> Unit>()) } coAnswers {
+                secondArg<suspend () -> Unit>().invoke()
+            }
+
+            repository.syncPopularMoviesCache()
+
+            assertEquals(123, entities.captured.single().runtimeMinutes)
+            io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt")
+            io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt__RoomDatabase_androidKt")
+            io.mockk.unmockkStatic(Log::class)
         }
 }

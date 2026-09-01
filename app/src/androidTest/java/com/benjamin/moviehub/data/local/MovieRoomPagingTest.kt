@@ -73,6 +73,19 @@ class MovieRoomPagingTest {
         }
 
     @Test
+    fun setFavorite_insertsThenUpdatesMovie() =
+        runBlocking {
+            val dao = database.movieDao()
+            val movie = movieEntity(id = 42)
+
+            dao.setFavorite(movie, true)
+            assertEquals(true, dao.getMovieById(42)?.isFavorite)
+
+            dao.setFavorite(movie, false)
+            assertEquals(false, dao.getMovieById(42)?.isFavorite)
+        }
+
+    @Test
     fun refreshingSearch_replacesPreviousQueryCache() =
         runBlocking {
             val api =

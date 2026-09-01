@@ -70,7 +70,7 @@ class MovieDetailViewModelTest {
 
             viewModel.loadMovieDetails(1)
             advanceUntilIdle()
-            assert(viewModel.uiState.value is MovieDetailUiState.Error)
+            assertTrue(viewModel.uiState.value is MovieDetailUiState.Error)
 
             viewModel.loadMovieDetails(1)
             advanceUntilIdle()

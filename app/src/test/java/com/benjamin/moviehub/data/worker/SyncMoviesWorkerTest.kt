@@ -16,6 +16,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.IOException
 import retrofit2.HttpException
 import retrofit2.Response
 
@@ -45,6 +46,23 @@ class SyncMoviesWorkerTest {
 
             try {
                 assertTrue(worker.doWork() is ListenableWorker.Result.Failure)
+            } finally {
+                unmockkStatic(Log::class)
+            }
+        }
+
+    @Test
+    fun `io error retries`() =
+        runTest {
+            mockkStatic(Log::class)
+            every { Log.d(any(), any()) } returns 0
+            every { Log.e(any(), any(), any()) } returns 0
+            val repository = mockk<MovieRepository>()
+            coEvery { repository.syncPopularMoviesCache() } throws IOException("offline")
+            val worker = SyncMoviesWorker(mockk(relaxed = true), mockk(relaxed = true), repository)
+
+            try {
+                assertTrue(worker.doWork() is ListenableWorker.Result.Retry)
             } finally {
                 unmockkStatic(Log::class)
             }

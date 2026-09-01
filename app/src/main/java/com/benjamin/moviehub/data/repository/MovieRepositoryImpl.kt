@@ -112,20 +112,7 @@ class MovieRepositoryImpl
             movie: Movie,
             isFavorite: Boolean,
         ) {
-            val localMovie = movieDao.getMovieById(movie.id)
-
-            if (localMovie == null) {
-                // Like a movie not in db
-                movieDao.insertMovie(
-                    movie.toEntity(
-                        isFavorite = isFavorite,
-                        isPopular = false,
-                    ),
-                )
-            } else {
-                // Update favorite status of existing movie in db
-                movieDao.updateFavoriteStatus(movie.id, isFavorite)
-            }
+            movieDao.setFavorite(movie.toEntity(isFavorite = isFavorite, isPopular = false), isFavorite)
         }
 
         override fun getFavoriteMovies(): Flow<List<Movie>> =
@@ -174,6 +161,7 @@ class MovieRepositoryImpl
                                 isPopular = true,
                                 isSearchResult = localMovie?.isSearchResult ?: false,
                                 pageOrder = index,
+                                runtimeMinutesOverride = localMovie?.runtimeMinutes,
                             )
                         }
                     val remoteKeys =

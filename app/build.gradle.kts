@@ -95,7 +95,6 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
-    implementation(libs.androidx.datastore.core)
     ksp(libs.hilt.compiler)
 
     // Network & Data
