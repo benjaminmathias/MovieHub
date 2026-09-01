@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.util.UiText
-import com.benjamin.moviehub.domain.model.Movie
+import com.benjamin.moviehub.domain.model.MovieCredits
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
 @HiltViewModel
@@ -26,6 +28,7 @@ class MovieDetailViewModel
         private val _uiState = MutableStateFlow<MovieDetailUiState>(MovieDetailUiState.Loading)
         val uiState: StateFlow<MovieDetailUiState> = _uiState.asStateFlow()
         private var loadJob: Job? = null
+        private val favoriteMutex = Mutex()
 
         fun loadMovieDetails(movieId: Int) {
             val currentState = _uiState.value
@@ -40,12 +43,31 @@ class MovieDetailViewModel
                 try {
                     supervisorScope {
                         val movieDeferred = async { repository.getMovieDetails(movieId) }
-                        val actorsDeferred = async { repository.getMovieActors(movieId) }
+                        val creditsDeferred = async { repository.getMovieCredits(movieId) }
 
-                        val movie = movieDeferred.await()
-                        val actors = actorsDeferred.await().getOrDefault(emptyList())
+                        val movie =
+                            try {
+                                movieDeferred.await()
+                            } catch (e: Exception) {
+                                creditsDeferred.cancel()
+                                throw e
+                            }
 
-                        _uiState.value = MovieDetailUiState.Success(movie, actors)
+                        _uiState.value = MovieDetailUiState.Success(movie, MovieCredits())
+
+                        val credits =
+                            try {
+                                creditsDeferred.await().getOrDefault(MovieCredits())
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (_: Exception) {
+                                MovieCredits()
+                            }
+
+                        if ((_uiState.value as? MovieDetailUiState.Success)?.movie?.id == movieId) {
+                            _uiState.value =
+                                (_uiState.value as MovieDetailUiState.Success).copy(credits = credits)
+                        }
                     }
                 } catch (e: CancellationException) {
                     throw e
@@ -56,22 +78,25 @@ class MovieDetailViewModel
             }
         }
 
-        fun toggleFavorite(movie: Movie) {
+        fun toggleFavorite() {
             viewModelScope.launch {
-                val currentState = _uiState.value as? MovieDetailUiState.Success ?: return@launch
-                val newStatus = !movie.isFavorite
+                favoriteMutex.withLock {
+                    val currentState = _uiState.value as? MovieDetailUiState.Success ?: return@withLock
+                    val requestedMovie = currentState.movie
+                    val newStatus = !requestedMovie.isFavorite
 
-                _uiState.value =
-                    currentState.copy(
-                        movie = currentState.movie.copy(isFavorite = newStatus),
-                    )
+                    _uiState.value = currentState.copy(movie = requestedMovie.copy(isFavorite = newStatus))
 
-                try {
-                    repository.toggleFavorite(movie, newStatus)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    _uiState.value = currentState
+                    try {
+                        repository.toggleFavorite(requestedMovie, newStatus)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        val latestState = _uiState.value as? MovieDetailUiState.Success
+                        if (latestState?.movie?.id == requestedMovie.id && latestState.movie.isFavorite == newStatus) {
+                            _uiState.value = currentState
+                        }
+                    }
                 }
             }
         }

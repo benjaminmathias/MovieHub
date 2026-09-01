@@ -1,14 +1,10 @@
 package com.benjamin.moviehub.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarData
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -16,75 +12,48 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.connectivity.ConnectivityStatus
-import kotlinx.coroutines.delay
 
 @Composable
 fun NetworkStatusBar(
     status: ConnectivityStatus,
-    modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState,
 ) {
-    // Composable only visible if we're losing connectivity
     val isOffline = status == ConnectivityStatus.LOST || status == ConnectivityStatus.UNAVAILABLE
+    val offlineMessage = stringResource(R.string.no_internet_connection)
+    val restoredMessage = stringResource(R.string.connection_restored)
 
     var wasOffline by remember { mutableStateOf(false) }
-    var showSuccess by remember { mutableStateOf(false) }
 
     LaunchedEffect(status) {
         if (isOffline) {
             wasOffline = true
-            showSuccess = false
+            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.showSnackbar(
+                message = offlineMessage,
+                duration = SnackbarDuration.Indefinite,
+            )
         } else if (wasOffline && status == ConnectivityStatus.AVAILABLE) {
-            showSuccess = true
             wasOffline = false
-            delay(5000)
-            showSuccess = false
-        }
-    }
-
-    AnimatedVisibility(
-        visible = isOffline,
-        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-        modifier = modifier,
-    ) {
-        Snackbar(
-            modifier =
-                Modifier
-                    .padding(16.dp)
-                    .padding(bottom = 80.dp)
-                    .fillMaxWidth(),
-            containerColor = MaterialTheme.colorScheme.error,
-            contentColor = MaterialTheme.colorScheme.onError,
-        ) {
-            Text(
-                text = stringResource(R.string.no_internet_connection),
-                style = MaterialTheme.typography.bodyMedium,
+            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.showSnackbar(
+                message = restoredMessage,
+                duration = SnackbarDuration.Long,
             )
         }
     }
+}
 
-    AnimatedVisibility(
-        visible = showSuccess,
-        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-        modifier = modifier,
+@Composable
+fun NetworkStatusBar(snackbarData: SnackbarData) {
+    val isOffline = snackbarData.visuals.message == stringResource(R.string.no_internet_connection)
+    Snackbar(
+        containerColor = if (isOffline) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primaryContainer,
+        contentColor =
+            if (isOffline) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimaryContainer,
     ) {
-        Snackbar(
-            modifier =
-                Modifier
-                    .padding(16.dp)
-                    .padding(bottom = 80.dp)
-                    .fillMaxWidth(),
-            containerColor = Color(0xFF4CAF50),
-            contentColor = Color.White,
-        ) {
-            Text(text = stringResource(R.string.connection_restored), style = MaterialTheme.typography.bodyMedium)
-        }
+        Text(text = snackbarData.visuals.message, style = MaterialTheme.typography.bodyMedium)
     }
 }

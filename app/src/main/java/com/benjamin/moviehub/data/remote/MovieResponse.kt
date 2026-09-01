@@ -26,10 +26,28 @@ data class MovieDto(
     // Format utilisé par le Détail (/movie/{id})
     @SerializedName("genres")
     val genres: List<GenreDto>? = null,
+    @SerializedName("original_title") val originalTitle: String? = null,
+    @SerializedName("original_language") val originalLanguage: String? = null,
+    @SerializedName("status") val status: String? = null,
+    @SerializedName("vote_count") val voteCount: Int? = null,
+    @SerializedName("budget") val budget: Long? = null,
+    @SerializedName("revenue") val revenue: Long? = null,
+    @SerializedName("production_countries")
+    val productionCountries: List<ProductionCountryDto>? = null,
 )
 
 data class MovieCreditsDto(
-    @SerializedName("cast") val cast: List<ActorDto>,
+    @SerializedName("cast") val cast: List<ActorDto> = emptyList(),
+    @SerializedName("crew") val crew: List<CrewMemberDto> = emptyList(),
+)
+
+data class ProductionCountryDto(
+    @SerializedName("name") val name: String,
+)
+
+data class CrewMemberDto(
+    @SerializedName("name") val name: String,
+    @SerializedName("job") val job: String,
 )
 
 data class ActorDto(

@@ -4,8 +4,11 @@ import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.mapper.toEntity
 import com.benjamin.moviehub.data.remote.ActorDto
+import com.benjamin.moviehub.data.remote.CrewMemberDto
 import com.benjamin.moviehub.data.remote.GenreDto
+import com.benjamin.moviehub.data.remote.MovieCreditsDto
 import com.benjamin.moviehub.data.remote.MovieDto
+import com.benjamin.moviehub.data.remote.ProductionCountryDto
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -146,5 +149,47 @@ class MovieMapperUnitTest {
         val entity = listDto.toEntity()
 
         assertEquals(listOf(99, 100), entity.genreIds)
+    }
+
+    @Test
+    fun `detail dto maps useful metadata and removes zero values`() {
+        val dto =
+            createFakeDto().copy(
+                originalTitle = "Original Movie",
+                originalLanguage = "en",
+                status = "Released",
+                voteCount = 8673,
+                budget = 100_000_000,
+                revenue = 0,
+                productionCountries = listOf(ProductionCountryDto("United States"), ProductionCountryDto(" ")),
+            )
+
+        val result = dto.toDomain(dto.toEntity().toDomain())
+
+        assertEquals("Original Movie", result.originalTitle)
+        assertEquals("en", result.originalLanguage)
+        assertEquals("Released", result.status)
+        assertEquals(8673, result.voteCount)
+        assertEquals(100_000_000L, result.budget)
+        assertEquals(null, result.revenue)
+        assertEquals(listOf("United States"), result.productionCountries)
+    }
+
+    @Test
+    fun `credits dto maps actors and the first director`() {
+        val credits =
+            MovieCreditsDto(
+                cast = listOf(ActorDto(7, "Name", "Role", "/profile.jpg")),
+                crew =
+                    listOf(
+                        CrewMemberDto("Writer", "Writer"),
+                        CrewMemberDto("Director Name", "Director"),
+                    ),
+            )
+
+        val result = credits.toDomain()
+
+        assertEquals(1, result.actors.size)
+        assertEquals("Director Name", result.director)
     }
 }

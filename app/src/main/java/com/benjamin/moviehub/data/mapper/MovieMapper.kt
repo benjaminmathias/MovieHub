@@ -2,9 +2,11 @@ package com.benjamin.moviehub.data.mapper
 
 import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.remote.ActorDto
+import com.benjamin.moviehub.data.remote.MovieCreditsDto
 import com.benjamin.moviehub.data.remote.MovieDto
 import com.benjamin.moviehub.domain.model.Actor
 import com.benjamin.moviehub.domain.model.Movie
+import com.benjamin.moviehub.domain.model.MovieCredits
 
 private const val TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/"
 
@@ -89,6 +91,28 @@ fun MovieDto.toEntity(
 }
 
 fun ActorDto.toDomain(): Actor = Actor(id, name, character, toTmdbImageUrl(profilePath, "w185"))
+
+fun MovieCreditsDto.toDomain(): MovieCredits =
+    MovieCredits(
+        actors = cast.take(15).map { it.toDomain() },
+        director = crew.firstOrNull { it.job == "Director" && it.name.isNotBlank() }?.name,
+    )
+
+fun MovieDto.toDomain(baseMovie: Movie): Movie {
+    val detailGenres = genres.orEmpty().mapNotNull { it.name.trim().takeIf(String::isNotEmpty) }
+
+    return baseMovie.copy(
+        genres = detailGenres.ifEmpty { baseMovie.genres },
+        originalTitle = originalTitle?.trim()?.takeIf(String::isNotEmpty),
+        originalLanguage = originalLanguage?.trim()?.takeIf(String::isNotEmpty),
+        status = status?.trim()?.takeIf(String::isNotEmpty),
+        voteCount = voteCount?.takeIf { it > 0 },
+        budget = budget?.takeIf { it > 0 },
+        revenue = revenue?.takeIf { it > 0 },
+        productionCountries = productionCountries.orEmpty()
+            .mapNotNull { it.name.trim().takeIf(String::isNotEmpty) },
+    )
+}
 
 /**
  * Convert a MovieEntity (DB entity) to a Movie (Domain model)

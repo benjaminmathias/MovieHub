@@ -22,7 +22,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import com.benjamin.moviehub.R
-import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.EmptyStateView
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,7 +29,7 @@ import com.benjamin.moviehub.ui.components.EmptyStateView
 fun MovieDetailScreen(
     uiState: MovieDetailUiState,
     onBackClick: () -> Unit,
-    onToggleFavorite: (Movie) -> Unit,
+    onToggleFavorite: () -> Unit,
     onRetry: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -89,7 +88,7 @@ fun MovieDetailScreen(
                 Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
                     MovieDetailContent(
                         movie = uiState.movie,
-                        actors = uiState.actors,
+                        credits = uiState.credits,
                         onToggleFavorite = onToggleFavorite,
                     )
                 }

@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -39,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.DeleteBackground
@@ -110,7 +112,7 @@ fun FavoriteScreen(
                         is MovieFavoriteListUiState.Loading -> {
                             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                                 repeat(5) {
-                                    MovieShimmerItem()
+                                    MovieShimmerItem(compact = true)
                                 }
                             }
                         }
@@ -124,6 +126,7 @@ fun FavoriteScreen(
                             } else {
                                 LazyColumn(
                                     modifier = Modifier.fillMaxSize(),
+                                    contentPadding = PaddingValues(vertical = 8.dp),
                                 ) {
                                     items(state.movies, key = { it.id }) { movie ->
 

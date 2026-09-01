@@ -1,10 +1,16 @@
 package com.benjamin.moviehub.ui.list
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Movie
@@ -107,6 +113,7 @@ fun MovieListScreen(
             val isError =
                 (refreshLoadState is LoadState.Error || mediatorLoadState is LoadState.Error) &&
                     lazyPagingItems.itemCount == 0
+            val appendErrorMessage = stringResource(R.string.error_loading_more_movies)
 
             PullToRefreshBox(
                 state = refreshState,
@@ -118,7 +125,20 @@ fun MovieListScreen(
             ) {
                 when {
                     isInitialLoading -> {
-                        Column { repeat(5) { MovieShimmerItem() } }
+                        if (searchQuery.isBlank()) {
+                            LazyVerticalGrid(
+                                columns = GridCells.Adaptive(minSize = 144.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                items(6) { MovieShimmerItem() }
+                            }
+                        } else {
+                            LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
+                                items(5) { MovieShimmerItem(compact = true) }
+                            }
+                        }
                     }
 
                     isError -> {
@@ -149,8 +169,31 @@ fun MovieListScreen(
                         }
                     }
 
+                    searchQuery.isBlank() -> {
+                        LazyVerticalGrid(
+                            columns = GridCells.Adaptive(minSize = 144.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            items(
+                                count = lazyPagingItems.itemCount,
+                                key = lazyPagingItems.itemKey { it.id },
+                            ) { index ->
+                                lazyPagingItems[index]?.let { movie ->
+                                    MovieItem(movie = movie, onMovieClick = onMovieClick)
+                                }
+                            }
+                            appendItems(
+                                appendState = lazyPagingItems.loadState.append,
+                                onRetry = { lazyPagingItems.retry() },
+                                errorMessage = appendErrorMessage,
+                            )
+                        }
+                    }
+
                     else -> {
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
                             items(
                                 count = lazyPagingItems.itemCount,
                                 key = lazyPagingItems.itemKey { it.id },
@@ -159,7 +202,7 @@ fun MovieListScreen(
                                     MovieItem(
                                         movie = movie,
                                         onMovieClick = onMovieClick,
-                                        compact = searchQuery.isNotBlank(),
+                                        compact = true,
                                     )
                                 }
                             }
@@ -173,14 +216,38 @@ fun MovieListScreen(
                                     )
                                 }
                             }
-
                             if (appendState is LoadState.Loading) {
-                                item { MovieShimmerItem() }
+                                item { MovieShimmerItem(compact = true) }
                             }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+private fun androidx.compose.foundation.lazy.grid.LazyGridScope.appendItems(
+    appendState: LoadState,
+    onRetry: () -> Unit,
+    errorMessage: String,
+) {
+    when (appendState) {
+        is LoadState.Error -> {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                ErrorRetryItem(
+                    message = errorMessage,
+                    onRetry = onRetry,
+                )
+            }
+        }
+
+        LoadState.Loading -> {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                MovieShimmerItem()
+            }
+        }
+
+        is LoadState.NotLoading -> Unit
     }
 }

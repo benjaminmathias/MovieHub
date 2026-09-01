@@ -4,6 +4,5 @@ enum class ConnectivityStatus {
     UNKNOWN,
     AVAILABLE,
     UNAVAILABLE,
-    LOSING,
     LOST,
 }

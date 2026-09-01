@@ -21,7 +21,6 @@ import com.benjamin.moviehub.data.paging.POPULAR_REMOTE_KEY_TYPE
 import com.benjamin.moviehub.data.paging.PREFETCH_DISTANCE
 import com.benjamin.moviehub.data.paging.SearchMovieRemoteMediator
 import com.benjamin.moviehub.data.remote.MovieApiService
-import com.benjamin.moviehub.domain.model.Actor
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import kotlinx.coroutines.Dispatchers
@@ -95,7 +94,7 @@ class MovieRepositoryImpl
                 // Save to DB
                 movieDao.insertMovie(remoteMovieEntity)
 
-                remoteMovieEntity.toDomain()
+                dto.toDomain(remoteMovieEntity.toDomain())
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: IOException) {
@@ -136,15 +135,10 @@ class MovieRepositoryImpl
                     entities.map { it.toDomain() }
                 }.flowOn(Dispatchers.IO)
 
-        override suspend fun getMovieActors(movieId: Int): Result<List<Actor>> =
+        override suspend fun getMovieCredits(movieId: Int) =
             try {
                 val response = apiService.getMovieCredits(movieId, BuildConfig.TMDB_API_KEY)
-
-                val actors =
-                    response.cast.take(15).map { dto ->
-                        dto.toDomain()
-                    }
-                Result.success(actors)
+                Result.success(response.toDomain())
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {

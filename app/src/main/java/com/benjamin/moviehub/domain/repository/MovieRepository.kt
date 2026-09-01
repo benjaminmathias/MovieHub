@@ -1,8 +1,8 @@
 package com.benjamin.moviehub.domain.repository
 
 import androidx.paging.PagingData
-import com.benjamin.moviehub.domain.model.Actor
 import com.benjamin.moviehub.domain.model.Movie
+import com.benjamin.moviehub.domain.model.MovieCredits
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -33,10 +33,8 @@ interface MovieRepository {
      */
     fun getFavoriteMovies(): Flow<List<Movie>>
 
-    /**
-     * Get movie actors from the API
-     */
-    suspend fun getMovieActors(movieId: Int): Result<List<Actor>>
+    /** Get movie credits from the API. */
+    suspend fun getMovieCredits(movieId: Int): Result<MovieCredits>
 
     suspend fun syncPopularMoviesCache()
 }

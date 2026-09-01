@@ -4,6 +4,9 @@ import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.local.MovieDatabase
 import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.mapper.toDomain
+import com.benjamin.moviehub.data.remote.ActorDto
+import com.benjamin.moviehub.data.remote.CrewMemberDto
+import com.benjamin.moviehub.data.remote.MovieCreditsDto
 import com.benjamin.moviehub.data.remote.MovieApiService
 import com.benjamin.moviehub.domain.model.Movie
 import io.mockk.coEvery
@@ -45,6 +48,26 @@ class MovieRepositoryTest {
 
             assertEquals(localMovie.toDomain(), result)
             coVerify(exactly = 0) { dao.insertMovie(any()) }
+        }
+
+    @Test
+    fun `get movie credits maps cast and director`() =
+        runBlocking {
+            val apiService = mockk<MovieApiService>()
+            val database = mockk<MovieDatabase>()
+            val dao = mockk<MovieDao>()
+            val repository = MovieRepositoryImpl(apiService, database, dao)
+
+            coEvery { apiService.getMovieCredits(9, any()) } returns
+                MovieCreditsDto(
+                    cast = listOf(ActorDto(1, "Actor", "Role", null)),
+                    crew = listOf(CrewMemberDto("Director", "Director")),
+                )
+
+            val result = repository.getMovieCredits(9).getOrThrow()
+
+            assertEquals("Director", result.director)
+            assertEquals("Actor", result.actors.single().name)
         }
 
     @Test

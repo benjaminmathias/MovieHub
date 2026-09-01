@@ -12,14 +12,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.core.util.AppTheme
 import com.benjamin.moviehub.ui.MainViewModel
-import com.benjamin.moviehub.ui.components.NetworkStatusBar
 import com.benjamin.moviehub.ui.navigation.NavigationRoot
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -55,12 +53,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background,
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
-                        NavigationRoot()
-
-                        NetworkStatusBar(
-                            status = networkStatus,
-                            modifier = Modifier.align(Alignment.BottomCenter),
-                        )
+                        NavigationRoot(networkStatus = networkStatus)
                     }
                 }
             }

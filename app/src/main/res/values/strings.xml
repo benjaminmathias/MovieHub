@@ -17,8 +17,19 @@
 
     <string name="error_loading_movie_detail">Impossible de charger les détails du film.</string>
     <string name="rating_value">%1$.1f</string>
+    <string name="rating_out_of_ten">%1$.1f / 10</string>
+    <string name="vote_count_format">%1$d votes</string>
     <string name="runtime_format">%1$dh %2$02dm</string>
     <string name="synopsis">Synopsis</string>
+    <string name="additional_information">Informations</string>
+    <string name="director">Réalisateur</string>
+    <string name="release_date">Date de sortie</string>
+    <string name="original_language">Langue originale</string>
+    <string name="movie_status">Statut</string>
+    <string name="production_countries">Pays</string>
+    <string name="budget">Budget</string>
+    <string name="revenue">Recettes</string>
+    <string name="error_loading_more_movies">Impossible de charger plus de films.</string>
     <string name="cast_principal">Casting Principal</string>
     <string name="share_movie_text">Regarde ce film : %1$s \nPlus d\'infos ici : %2$s</string>
     <string name="favorite">Ajouter aux favoris</string>
