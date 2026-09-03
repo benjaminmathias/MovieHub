@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -21,8 +22,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
@@ -41,6 +45,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.ui.components.EmptyStateView
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 @Composable
 fun MovieDetailScreen(
@@ -48,12 +54,21 @@ fun MovieDetailScreen(
     onBackClick: () -> Unit,
     onToggleFavorite: () -> Unit,
     onRetry: () -> Unit,
+    favoriteActionErrors: Flow<Unit> = emptyFlow(),
 ) {
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val favoriteErrorMessage = stringResource(R.string.error_updating_favorite)
     val listState = rememberLazyListState()
     val isScrolled by remember {
         derivedStateOf {
             listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0
+        }
+    }
+
+    LaunchedEffect(favoriteActionErrors, favoriteErrorMessage) {
+        favoriteActionErrors.collect {
+            snackbarHostState.showSnackbar(favoriteErrorMessage)
         }
     }
 
@@ -64,13 +79,7 @@ fun MovieDetailScreen(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .background(
-                        if (isScrolled) {
-                            MaterialTheme.colorScheme.surface
-                        } else {
-                            Color.Transparent
-                        },
-                    )
+                    .background(if (isScrolled) MaterialTheme.colorScheme.surface else Color.Transparent)
                     .statusBarsPadding()
                     .padding(horizontal = 8.dp)
                     .zIndex(1f)
@@ -83,7 +92,6 @@ fun MovieDetailScreen(
             DetailControlButton(
                 contentDescription = stringResource(R.string.back),
                 onClick = onBackClick,
-                isScrolled = isScrolled,
             ) {
                 Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
             }
@@ -92,7 +100,6 @@ fun MovieDetailScreen(
                 DetailControlButton(
                     contentDescription = stringResource(R.string.share),
                     onClick = { shareMovie(context, uiState.movie) },
-                    isScrolled = isScrolled,
                 ) {
                     Icon(imageVector = Icons.Outlined.Share, contentDescription = null)
                 }
@@ -103,7 +110,6 @@ fun MovieDetailScreen(
                         ),
                     modifier = Modifier.testTag("detail_favorite"),
                     onClick = onToggleFavorite,
-                    isScrolled = isScrolled,
                 ) {
                     Icon(
                         imageVector =
@@ -144,7 +150,6 @@ fun MovieDetailScreen(
                 MovieDetailContent(
                     movie = uiState.movie,
                     credits = uiState.credits,
-                    onToggleFavorite = onToggleFavorite,
                     listState = listState,
                 )
             }
@@ -162,6 +167,11 @@ fun MovieDetailScreen(
                 }
             }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
+        )
     }
 }
 
@@ -170,7 +180,6 @@ private fun DetailControlButton(
     contentDescription: String,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
-    isScrolled: Boolean,
     icon: @Composable () -> Unit,
 ) {
     IconButton(
@@ -188,13 +197,7 @@ private fun DetailControlButton(
                 Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(
-                        if (isScrolled) {
-                            MaterialTheme.colorScheme.surfaceContainer
-                        } else {
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.78f)
-                        },
-                    ),
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.78f)),
             contentAlignment = Alignment.Center,
         ) {
             icon()

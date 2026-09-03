@@ -19,9 +19,10 @@ import com.benjamin.moviehub.R
 fun ErrorRetryItem(
     message: String,
     onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        modifier = modifier.fillMaxWidth().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(text = message, color = MaterialTheme.colorScheme.error)

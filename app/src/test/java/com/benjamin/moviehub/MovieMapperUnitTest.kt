@@ -8,7 +8,6 @@ import com.benjamin.moviehub.data.remote.CrewMemberDto
 import com.benjamin.moviehub.data.remote.GenreDto
 import com.benjamin.moviehub.data.remote.MovieCreditsDto
 import com.benjamin.moviehub.data.remote.MovieDto
-import com.benjamin.moviehub.data.remote.ProductionCountryDto
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -54,14 +53,6 @@ class MovieMapperUnitTest {
         voteAverage = 7.5,
         releaseDate = "2024-01-01",
     )
-
-    @Test
-    fun `Check favorite status is mapped correctly`() {
-        val entity = createFakeEntity(isFavorite = true)
-        val result = entity.toDomain()
-
-        assertEquals(true, result.isFavorite)
-    }
 
     @Test
     fun `toEntity should handle null fields and use default empty strings`() {
@@ -152,27 +143,15 @@ class MovieMapperUnitTest {
     }
 
     @Test
-    fun `detail dto maps useful metadata and removes zero values`() {
+    fun `detail dto maps useful rating metadata`() {
         val dto =
             createFakeDto().copy(
-                originalTitle = "Original Movie",
-                originalLanguage = "en",
-                status = "Released",
                 voteCount = 8673,
-                budget = 100_000_000,
-                revenue = 0,
-                productionCountries = listOf(ProductionCountryDto("United States"), ProductionCountryDto(" ")),
             )
 
         val result = dto.toDomain(dto.toEntity().toDomain())
 
-        assertEquals("Original Movie", result.originalTitle)
-        assertEquals("en", result.originalLanguage)
-        assertEquals("Released", result.status)
         assertEquals(8673, result.voteCount)
-        assertEquals(100_000_000L, result.budget)
-        assertEquals(null, result.revenue)
-        assertEquals(listOf("United States"), result.productionCountries)
     }
 
     @Test

@@ -13,6 +13,7 @@ import com.benjamin.moviehub.data.local.MovieSearchResultEntity
 import com.benjamin.moviehub.data.local.SearchQueryKey
 import com.benjamin.moviehub.data.mapper.toEntity
 import com.benjamin.moviehub.data.remote.MovieApiService
+import com.benjamin.moviehub.data.remote.isEndOfPagination
 
 @OptIn(ExperimentalPagingApi::class)
 class SearchMovieRemoteMediator(
@@ -51,15 +52,15 @@ class SearchMovieRemoteMediator(
                 )
 
             val movies = response.movies
-            val endOfPaginationReached = movies.isEmpty() || movies.size < state.config.pageSize
+            val endOfPaginationReached = response.isEndOfPagination(page, state.config.pageSize)
 
             database.withTransaction {
                 val localMovies =
                     movieDao.getMoviesByIds(movies.map { it.id }).associateBy { it.id }
 
                 if (loadType == LoadType.REFRESH) {
-                    movieDao.clearAllSearchResults()
-                    movieDao.clearAllSearchRemoteKeys()
+                    movieDao.clearSearchResults(queryKey)
+                    movieDao.clearRemoteKeysByType(remoteKeyType)
                     movieDao.clearOrphanSearchMovies(movies.map { it.id })
                 }
 
@@ -86,7 +87,7 @@ class SearchMovieRemoteMediator(
                             isFavorite = localMovie?.isFavorite ?: false,
                             isPopular = localMovie?.isPopular ?: false,
                             isSearchResult = true,
-                            pageOrder = position,
+                            pageOrder = localMovie?.takeIf { it.isPopular }?.pageOrder ?: -1,
                             runtimeMinutesOverride = localMovie?.runtimeMinutes,
                         )
                     }

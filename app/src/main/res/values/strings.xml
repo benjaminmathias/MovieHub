@@ -9,6 +9,7 @@
     <string name="favorite_tab">Favoris</string>
 
     <string name="search_placeholder">Rechercher un film…</string>
+    <string name="search_label">Rechercher un film</string>
     <string name="clear_search">Effacer</string>
     <string name="error_loading_movies">Impossible de charger les films.</string>
     <string name="no_movie_available">Aucun film disponible</string>
@@ -18,7 +19,6 @@
     <string name="error_loading_movie_detail">Impossible de charger les détails du film.</string>
     <string name="rating_value">%1$.1f</string>
     <string name="rating_out_of_ten">%1$.1f / 10</string>
-    <string name="vote_count_format">%1$d votes</string>
     <string name="runtime_format">%1$dh %2$02dm</string>
     <string name="synopsis">Synopsis</string>
     <string name="genres">Genres</string>
@@ -29,6 +29,8 @@
     <string name="share_movie_text">Regarde ce film : %1$s \nPlus d\'infos ici : %2$s</string>
     <string name="favorite">Ajouter aux favoris</string>
     <string name="remove_favorite">Retirer des favoris</string>
+    <string name="favorite_state">Dans vos favoris</string>
+    <string name="not_favorite_state">Pas dans vos favoris</string>
     <string name="error_updating_favorite">Impossible de modifier ce favori.</string>
 
     <string name="settings_title">Paramètres</string>

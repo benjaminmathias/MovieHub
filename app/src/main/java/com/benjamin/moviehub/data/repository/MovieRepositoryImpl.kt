@@ -21,6 +21,7 @@ import com.benjamin.moviehub.data.paging.POPULAR_REMOTE_KEY_TYPE
 import com.benjamin.moviehub.data.paging.PREFETCH_DISTANCE
 import com.benjamin.moviehub.data.paging.SearchMovieRemoteMediator
 import com.benjamin.moviehub.data.remote.MovieApiService
+import com.benjamin.moviehub.data.remote.isEndOfPagination
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import kotlinx.coroutines.Dispatchers
@@ -72,9 +73,6 @@ class MovieRepositoryImpl
         }
 
         override suspend fun getMovieDetails(movieId: Int): Movie {
-            // Try to get cached movie
-            val localMovie = movieDao.getMovieById(movieId)
-
             return try {
                 // API call
                 val dto =
@@ -83,25 +81,17 @@ class MovieRepositoryImpl
                         apiKey = BuildConfig.TMDB_API_KEY,
                     )
 
-                val remoteMovieEntity =
-                    dto.toEntity(
-                        isFavorite = localMovie?.isFavorite ?: false,
-                        isPopular = localMovie?.isPopular ?: false,
-                        isSearchResult = false,
-                        pageOrder = localMovie?.pageOrder ?: -1,
-                    )
+                val remoteMovieEntity = dto.toEntity()
+                val savedMovie = movieDao.upsertMovieDetails(remoteMovieEntity)
 
-                // Save to DB
-                movieDao.insertMovie(remoteMovieEntity)
-
-                dto.toDomain(remoteMovieEntity.toDomain())
+                dto.toDomain(savedMovie.toDomain())
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: IOException) {
-                localMovie?.toDomain() ?: throw e
+                movieDao.getMovieById(movieId)?.toDomain() ?: throw e
             } catch (e: HttpException) {
                 if (e.code() >= 500 || e.code() == 408 || e.code() == 429) {
-                    localMovie?.toDomain() ?: throw e
+                    movieDao.getMovieById(movieId)?.toDomain() ?: throw e
                 } else {
                     throw e
                 }
@@ -149,8 +139,17 @@ class MovieRepositoryImpl
                             movieDao.getMoviesByIds(movieIds).associateBy { it.id }
                         }
 
-                    movieDao.clearRemoteKeysByType(POPULAR_REMOTE_KEY_TYPE)
-                    movieDao.clearPopularMovies()
+                    val isFirstPageOnly = response.isEndOfPagination(page = 1, pageSize = PAGE_SIZE)
+                    if (isFirstPageOnly) {
+                        movieDao.clearRemoteKeysByType(POPULAR_REMOTE_KEY_TYPE)
+                        movieDao.clearPopularMovies()
+                    } else {
+                        val cachedFirstPageIds = movieDao.getPopularFirstPage(PAGE_SIZE).map { it.id }
+                        movieDao.clearPopularFirstPage(PAGE_SIZE)
+                        if (cachedFirstPageIds.isNotEmpty()) {
+                            movieDao.clearRemoteKeysForMovies(cachedFirstPageIds, POPULAR_REMOTE_KEY_TYPE)
+                        }
+                    }
 
                     val remoteEntities =
                         response.movies.mapIndexed { index, dto ->
@@ -169,7 +168,7 @@ class MovieRepositoryImpl
                             MovieRemoteKey(
                                 movieId = dto.id,
                                 prevKey = null,
-                                nextKey = if (response.movies.size < PAGE_SIZE) null else 2,
+                                nextKey = if (isFirstPageOnly) null else 2,
                                 type = POPULAR_REMOTE_KEY_TYPE,
                             )
                         }

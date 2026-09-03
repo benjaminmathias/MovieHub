@@ -65,7 +65,7 @@ fun MovieDto.toEntity(
     isFavorite: Boolean = false,
     isPopular: Boolean = false,
     isSearchResult: Boolean = false,
-    pageOrder: Int = 0,
+    pageOrder: Int = -1,
     runtimeMinutesOverride: Int? = null,
 ): MovieEntity {
     val finalGenreIds =
@@ -75,8 +75,8 @@ fun MovieDto.toEntity(
 
     return MovieEntity(
         id = this.id,
-        title = this.title,
-        overview = this.description,
+        title = this.title.orEmpty(),
+        overview = this.description.orEmpty(),
         posterPath = normalizeImagePath(this.posterPath),
         backdropPath = normalizeImagePath(this.backdropPath),
         voteAverage = this.voteAverage,
@@ -90,27 +90,21 @@ fun MovieDto.toEntity(
     )
 }
 
-fun ActorDto.toDomain(): Actor = Actor(id, name, character, toTmdbImageUrl(profilePath, "w185"))
+fun ActorDto.toDomain(): Actor = Actor(id, name.orEmpty(), character.orEmpty(), toTmdbImageUrl(profilePath, "w185"))
 
 fun MovieCreditsDto.toDomain(): MovieCredits =
     MovieCredits(
         actors = cast.take(15).map { it.toDomain() },
-        director = crew.firstOrNull { it.job == "Director" && it.name.isNotBlank() }?.name,
+        director =
+            crew.firstOrNull { it.job == "Director" && !it.name.isNullOrBlank() }?.name?.trim(),
     )
 
 fun MovieDto.toDomain(baseMovie: Movie): Movie {
-    val detailGenres = genres.orEmpty().mapNotNull { it.name.trim().takeIf(String::isNotEmpty) }
+    val detailGenres = genres.orEmpty().mapNotNull { it.name?.trim()?.takeIf(String::isNotEmpty) }
 
     return baseMovie.copy(
         genres = detailGenres.ifEmpty { baseMovie.genres },
-        originalTitle = originalTitle?.trim()?.takeIf(String::isNotEmpty),
-        originalLanguage = originalLanguage?.trim()?.takeIf(String::isNotEmpty),
-        status = status?.trim()?.takeIf(String::isNotEmpty),
         voteCount = voteCount?.takeIf { it > 0 },
-        budget = budget?.takeIf { it > 0 },
-        revenue = revenue?.takeIf { it > 0 },
-        productionCountries = productionCountries.orEmpty()
-            .mapNotNull { it.name.trim().takeIf(String::isNotEmpty) },
     )
 }
 

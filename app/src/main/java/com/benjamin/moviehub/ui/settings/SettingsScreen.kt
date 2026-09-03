@@ -82,7 +82,7 @@ fun SettingsScreen(
                     .padding(paddingValues)
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             SettingsSection(title = stringResource(R.string.appearance_section)) {
                 Surface(
@@ -173,14 +173,14 @@ fun SettingsScreen(
 }
 
 @Composable
-fun SettingsSection(
+private fun SettingsSection(
     title: String,
     content: @Composable () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.SemiBold,
         )
@@ -189,7 +189,7 @@ fun SettingsSection(
 }
 
 @Composable
-fun ThemeSelector(
+private fun ThemeSelector(
     currentTheme: AppTheme,
     onThemeSelected: (AppTheme) -> Unit,
 ) {
@@ -215,7 +215,7 @@ fun ThemeSelector(
 }
 
 @Composable
-fun ThemeRadioButton(
+private fun ThemeRadioButton(
     selected: Boolean,
     text: String,
     onClick: () -> Unit,
@@ -235,7 +235,7 @@ fun ThemeRadioButton(
 }
 
 @Composable
-fun SettingsItem(
+private fun SettingsItem(
     title: String,
     subtitle: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -247,8 +247,8 @@ fun SettingsItem(
             Modifier
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
-                .clickable(enabled = enabled, onClick = onClick)
-                .padding(vertical = 8.dp),
+                .padding(vertical = 8.dp)
+                .clickable(enabled = enabled, onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(

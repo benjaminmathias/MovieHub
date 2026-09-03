@@ -63,13 +63,13 @@ class MovieRoomPagingTest {
             dao.insertAllKeys(
                 listOf(
                     MovieRemoteKey(42, null, 2, "POPULAR"),
-                    MovieRemoteKey(42, null, 3, "SEARCH"),
+                    MovieRemoteKey(42, null, 3, "SEARCH:test"),
                 ),
             )
 
-            assertEquals(2, dao.getRemoteKeysCountByType("POPULAR") + dao.getRemoteKeysCountByType("SEARCH"))
+            assertEquals(2, dao.getRemoteKeysCountByType("POPULAR") + dao.getRemoteKeysCountByType("SEARCH:test"))
             assertEquals(2, dao.getRemoteKeysForMovieId(42, "POPULAR")?.nextKey)
-            assertEquals(3, dao.getRemoteKeysForMovieId(42, "SEARCH")?.nextKey)
+            assertEquals(3, dao.getRemoteKeysForMovieId(42, "SEARCH:test")?.nextKey)
         }
 
     @Test
@@ -86,7 +86,7 @@ class MovieRoomPagingTest {
         }
 
     @Test
-    fun refreshingSearch_replacesPreviousQueryCache() =
+    fun refreshingSearch_onlyReplacesCurrentQueryCache() =
         runBlocking {
             val api =
                 FakeMovieApiService(
@@ -101,7 +101,7 @@ class MovieRoomPagingTest {
             SearchMovieRemoteMediator(api, database, " alpha ").load(LoadType.REFRESH, emptyPagingState())
             SearchMovieRemoteMediator(api, database, "beta").load(LoadType.REFRESH, emptyPagingState())
 
-            assertTrue(database.movieDao().getSearchResultMovieIds("alpha").isEmpty())
+            assertEquals(listOf(100), database.movieDao().getSearchResultMovieIds("alpha"))
             assertEquals(listOf(200), database.movieDao().getSearchResultMovieIds("beta"))
         }
 

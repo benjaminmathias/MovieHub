@@ -8,10 +8,9 @@ sealed class MovieFavoriteListUiState {
 
     data class Success(
         val movies: List<Movie>,
-        val emptyMessage: UiText? = null,
     ) : MovieFavoriteListUiState()
 
     data class Error(
-        val errorMessage: UiText? = null,
+        val errorMessage: UiText,
     ) : MovieFavoriteListUiState()
 }

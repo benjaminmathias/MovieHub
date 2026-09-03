@@ -2,7 +2,6 @@ package com.benjamin.moviehub.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -26,7 +25,7 @@ import com.benjamin.moviehub.R
 fun MovieSearchBar(
     query: String,
     onQueryChanged: (String) -> Unit,
-    modifier: Modifier = Modifier.Companion,
+    modifier: Modifier = Modifier,
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -37,6 +36,7 @@ fun MovieSearchBar(
             modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
+        label = { Text(stringResource(R.string.search_label)) },
         placeholder = { Text(stringResource(R.string.search_placeholder)) },
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
         trailingIcon = {
@@ -47,7 +47,7 @@ fun MovieSearchBar(
             }
         },
         singleLine = true,
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.large,
         colors =
             OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,

@@ -90,8 +90,9 @@ fun MovieListScreen(
             if (searchQuery.isBlank()) {
                 Text(
                     text = stringResource(R.string.movie_hub_popular),
-                    style = MaterialTheme.typography.headlineLarge,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
 

@@ -34,18 +34,6 @@ class FavoriteViewModelTest {
         Movie(1, "Movie", "", null, null, 0.0, "", null, true, emptyList(), emptyList())
 
     @Test
-    fun `favorite list exposes empty success state`() =
-        runTest {
-            every { repository.getFavoriteMovies() } returns flowOf(emptyList())
-            val viewModel = FavoriteViewModel(repository)
-            viewModel.uiState.test {
-                val state = awaitItem() as MovieFavoriteListUiState.Success
-                assertEquals(emptyList<Movie>(), state.movies)
-                assertEquals(true, state.emptyMessage != null)
-            }
-        }
-
-    @Test
     fun `favorite list exposes loading then non-empty state and reacts to room emissions`() =
         runTest {
             val source = MutableSharedFlow<List<Movie>>(replay = 0)

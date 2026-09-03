@@ -26,11 +26,12 @@ import com.benjamin.moviehub.R
 @Composable
 fun EmptyStateView(
     message: String,
+    modifier: Modifier = Modifier,
     icon: ImageVector = Icons.Default.Info,
     onRetry: (() -> Unit)? = null,
 ) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

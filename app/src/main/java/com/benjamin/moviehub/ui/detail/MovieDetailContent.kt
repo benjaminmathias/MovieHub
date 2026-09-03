@@ -46,12 +46,12 @@ import com.benjamin.moviehub.domain.model.Actor
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
 import com.benjamin.moviehub.ui.components.ActorItem
+import com.benjamin.moviehub.ui.components.MovieGenreTag
 
 @Composable
 fun MovieDetailContent(
     movie: Movie,
     credits: MovieCredits,
-    onToggleFavorite: () -> Unit,
     listState: LazyListState = rememberLazyListState(),
 ) {
     Box(
@@ -124,12 +124,7 @@ fun MovieDetailContent(
                                 items = movie.genres,
                                 key = { index, genre -> "genre-$index-$genre" },
                             ) { _, genre ->
-                                Text(
-                                    text = genre,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
-                                )
+                                MovieGenreTag(name = genre)
                             }
                         }
                     }
@@ -229,7 +224,7 @@ private fun MovieDetailSummary(
         ) {
             Text(
                 text = movie.title,
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,

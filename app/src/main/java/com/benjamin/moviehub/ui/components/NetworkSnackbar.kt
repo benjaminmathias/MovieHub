@@ -17,7 +17,7 @@ import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.connectivity.ConnectivityStatus
 
 @Composable
-fun NetworkStatusBar(
+fun NetworkStatusEffect(
     status: ConnectivityStatus,
     snackbarHostState: SnackbarHostState,
 ) {
@@ -47,8 +47,10 @@ fun NetworkStatusBar(
 }
 
 @Composable
-fun NetworkStatusBar(snackbarData: SnackbarData) {
-    val isOffline = snackbarData.visuals.message == stringResource(R.string.no_internet_connection)
+fun NetworkSnackbar(
+    snackbarData: SnackbarData,
+    isOffline: Boolean,
+) {
     Snackbar(
         containerColor = if (isOffline) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primaryContainer,
         contentColor =

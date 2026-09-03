@@ -16,10 +16,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun DeleteBackground() {
+fun DeleteBackground(modifier: Modifier = Modifier) {
     Box(
         modifier =
-            Modifier
+            modifier
                 .fillMaxSize()
                 .padding(8.dp)
                 .clip(RoundedCornerShape(16.dp))

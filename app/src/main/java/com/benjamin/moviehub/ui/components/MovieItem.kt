@@ -1,6 +1,5 @@
 package com.benjamin.moviehub.ui.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +28,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -41,12 +42,13 @@ import com.benjamin.moviehub.domain.model.Movie
 fun MovieItem(
     movie: Movie,
     onMovieClick: (Int) -> Unit,
+    modifier: Modifier = Modifier,
     compact: Boolean = false,
 ) {
     if (compact) {
-        CompactMovieItem(movie, onMovieClick)
+        CompactMovieItem(movie, onMovieClick, modifier)
     } else {
-        PosterMovieItem(movie, onMovieClick)
+        PosterMovieItem(movie, onMovieClick, modifier)
     }
 }
 
@@ -54,13 +56,22 @@ fun MovieItem(
 private fun PosterMovieItem(
     movie: Movie,
     onMovieClick: (Int) -> Unit,
+    modifier: Modifier,
 ) {
+    val favoriteStateDescription =
+        stringResource(
+            if (movie.isFavorite) R.string.favorite_state else R.string.not_favorite_state,
+        )
+
     Card(
+        onClick = { onMovieClick(movie.id) },
         modifier =
-            Modifier
+            modifier
                 .testTag("movie_item")
                 .fillMaxWidth()
-                .clickable { onMovieClick(movie.id) },
+                .semantics {
+                    stateDescription = favoriteStateDescription
+                },
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
@@ -115,17 +126,25 @@ private fun PosterMovieItem(
 private fun CompactMovieItem(
     movie: Movie,
     onMovieClick: (Int) -> Unit,
+    modifier: Modifier,
 ) {
     val posterWidth = 64.dp
     val posterHeight = 96.dp
+    val favoriteStateDescription =
+        stringResource(
+            if (movie.isFavorite) R.string.favorite_state else R.string.not_favorite_state,
+        )
 
     Card(
+        onClick = { onMovieClick(movie.id) },
         modifier =
-            Modifier
+            modifier
                 .testTag("movie_item")
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 4.dp)
-                .clickable { onMovieClick(movie.id) },
+                .semantics {
+                    stateDescription = favoriteStateDescription
+                },
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {

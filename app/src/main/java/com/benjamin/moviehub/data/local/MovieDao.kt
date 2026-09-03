@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -19,6 +20,29 @@ interface MovieDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovie(movie: MovieEntity)
+
+    @Update
+    suspend fun updateMovie(movie: MovieEntity)
+
+    @Transaction
+    suspend fun upsertMovieDetails(movie: MovieEntity): MovieEntity {
+        val localMovie = getMovieById(movie.id)
+        val mergedMovie =
+            movie.copy(
+                isFavorite = localMovie?.isFavorite ?: movie.isFavorite,
+                isPopular = localMovie?.isPopular ?: movie.isPopular,
+                isSearchResult = localMovie?.isSearchResult ?: movie.isSearchResult,
+                pageOrder = localMovie?.pageOrder ?: movie.pageOrder,
+                runtimeMinutes = movie.runtimeMinutes ?: localMovie?.runtimeMinutes,
+            )
+
+        if (localMovie == null) {
+            insertMovie(mergedMovie)
+        } else {
+            updateMovie(mergedMovie)
+        }
+        return mergedMovie
+    }
 
     @Transaction
     suspend fun setFavorite(
@@ -39,11 +63,11 @@ interface MovieDao {
     )
 
     // --- FILMS : LISTES & FLOWS ---
-    @Query("SELECT * FROM movies WHERE isFavorite = 1")
+    @Query("SELECT * FROM movies WHERE isFavorite = 1 ORDER BY title COLLATE NOCASE ASC, id ASC")
     fun getFavoriteMoviesFlow(): Flow<List<MovieEntity>>
 
     // --- PAGINATION (SOURCES) ---
-    @Query("SELECT * FROM movies WHERE isPopular = 1 ORDER BY pageOrder ASC")
+    @Query("SELECT * FROM movies WHERE isPopular = 1 ORDER BY pageOrder ASC, id ASC")
     fun getPopularMoviesPaging(): PagingSource<Int, MovieEntity>
 
     @Query(
@@ -51,7 +75,7 @@ interface MovieDao {
         SELECT movies.* FROM movies
         INNER JOIN movie_search_results ON movies.id = movie_search_results.movieId
         WHERE movie_search_results.queryKey = :queryKey
-        ORDER BY movie_search_results.pageOrder ASC
+        ORDER BY movie_search_results.pageOrder ASC, movies.id ASC
         """,
     )
     fun searchMoviesPaging(queryKey: String): PagingSource<Int, MovieEntity>
@@ -79,11 +103,24 @@ interface MovieDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSearchResults(results: List<MovieSearchResultEntity>)
 
-    @Query("DELETE FROM movie_search_results")
-    suspend fun clearAllSearchResults()
+    @Query("DELETE FROM movie_search_results WHERE queryKey = :queryKey")
+    suspend fun clearSearchResults(queryKey: String)
 
-    @Query("DELETE FROM remote_keys WHERE type LIKE 'SEARCH:%'")
-    suspend fun clearAllSearchRemoteKeys()
+    @Query("SELECT * FROM movies WHERE isPopular = 1 AND pageOrder >= 0 AND pageOrder < :pageSize")
+    suspend fun getPopularFirstPage(pageSize: Int): List<MovieEntity>
+
+    @Query(
+        "DELETE FROM remote_keys WHERE type = :type AND movieId IN (:movieIds)",
+    )
+    suspend fun clearRemoteKeysForMovies(
+        movieIds: List<Int>,
+        type: String,
+    )
+
+    @Query(
+        "UPDATE movies SET isPopular = 0, pageOrder = -1 WHERE isPopular = 1 AND pageOrder >= 0 AND pageOrder < :pageSize",
+    )
+    suspend fun clearPopularFirstPage(pageSize: Int)
 
     @Query(
         """

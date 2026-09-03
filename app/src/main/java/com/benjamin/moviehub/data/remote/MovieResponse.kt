@@ -3,18 +3,26 @@ package com.benjamin.moviehub.data.remote
 import com.google.gson.annotations.SerializedName
 
 data class MovieResponse(
-    @SerializedName("results") val movies: List<MovieDto>,
+    @SerializedName("results") val movies: List<MovieDto> = emptyList(),
+    @SerializedName("total_pages") val totalPages: Int? = null,
 )
+
+fun MovieResponse.isEndOfPagination(
+    page: Int,
+    pageSize: Int,
+): Boolean =
+    totalPages?.let { page >= it }
+        ?: (movies.isEmpty() || movies.size < pageSize)
 
 data class GenreDto(
     val id: Int,
-    val name: String,
+    val name: String? = null,
 )
 
 data class MovieDto(
     @SerializedName("id") val id: Int,
-    @SerializedName("title") val title: String,
-    @SerializedName("overview") val description: String,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("overview") val description: String? = null,
     @SerializedName("poster_path") val posterPath: String?,
     @SerializedName("backdrop_path") val backdropPath: String?,
     @SerializedName("vote_average") val voteAverage: Double,
@@ -26,14 +34,7 @@ data class MovieDto(
     // Format utilisé par le Détail (/movie/{id})
     @SerializedName("genres")
     val genres: List<GenreDto>? = null,
-    @SerializedName("original_title") val originalTitle: String? = null,
-    @SerializedName("original_language") val originalLanguage: String? = null,
-    @SerializedName("status") val status: String? = null,
     @SerializedName("vote_count") val voteCount: Int? = null,
-    @SerializedName("budget") val budget: Long? = null,
-    @SerializedName("revenue") val revenue: Long? = null,
-    @SerializedName("production_countries")
-    val productionCountries: List<ProductionCountryDto>? = null,
 )
 
 data class MovieCreditsDto(
@@ -41,18 +42,14 @@ data class MovieCreditsDto(
     @SerializedName("crew") val crew: List<CrewMemberDto> = emptyList(),
 )
 
-data class ProductionCountryDto(
-    @SerializedName("name") val name: String,
-)
-
 data class CrewMemberDto(
-    @SerializedName("name") val name: String,
-    @SerializedName("job") val job: String,
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("job") val job: String? = null,
 )
 
 data class ActorDto(
     val id: Int,
-    @SerializedName("name") val name: String,
-    @SerializedName("character") val character: String,
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("character") val character: String? = null,
     @SerializedName("profile_path") val profilePath: String?,
 )

@@ -16,6 +16,6 @@ data class MovieEntity(
     val isFavorite: Boolean = false,
     val isPopular: Boolean = false,
     val isSearchResult: Boolean = false,
-    val pageOrder: Int = 0,
+    val pageOrder: Int = -1,
     val runtimeMinutes: Int? = null,
 )

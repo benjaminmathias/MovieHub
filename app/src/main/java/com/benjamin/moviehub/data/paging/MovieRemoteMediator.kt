@@ -11,6 +11,7 @@ import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.local.MovieRemoteKey
 import com.benjamin.moviehub.data.mapper.toEntity
 import com.benjamin.moviehub.data.remote.MovieApiService
+import com.benjamin.moviehub.data.remote.isEndOfPagination
 
 @OptIn(ExperimentalPagingApi::class)
 class MovieRemoteMediator(
@@ -45,7 +46,7 @@ class MovieRemoteMediator(
                 )
 
             val movies = response.movies
-            val endOfPaginationReached = movies.isEmpty()
+            val endOfPaginationReached = response.isEndOfPagination(page, state.config.pageSize)
 
             database.withTransaction {
                 if (loadType == LoadType.REFRESH) {

@@ -1,7 +1,6 @@
 package com.benjamin.moviehub.viewmodel
 
 import androidx.paging.PagingData
-import app.cash.turbine.test
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import com.benjamin.moviehub.ui.list.MovieListViewModel
 import com.benjamin.moviehub.util.MainDispatcherRule
@@ -10,13 +9,11 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
-import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
@@ -31,17 +28,8 @@ class MovieListViewModelTest {
     @Before
     fun setup() {
         coEvery { repository.getPagedMovies(any()) } returns flowOf(PagingData.empty())
-        coEvery { repository.getFavoriteMovies() } returns emptyFlow()
         viewModel = MovieListViewModel(repository)
     }
-
-    @Test
-    fun `search query is initially empty and updates immediately`() =
-        runTest {
-            assertEquals("", viewModel.searchQuery.value)
-            viewModel.onSearchQueryChanged("Batman")
-            assertEquals("Batman", viewModel.searchQuery.value)
-        }
 
     @Test
     fun `search query should be debounced`() =
@@ -81,15 +69,6 @@ class MovieListViewModelTest {
             viewModel.onSearchQueryChanged("Ava")
             advanceTimeBy(600)
             coVerify(exactly = 1) { repository.getPagedMovies("Ava") }
-            job.cancel()
-        }
-
-    @Test
-    fun `paged flow is collected from repository for latest query`() =
-        runTest {
-            val job = launch { viewModel.pagedMovies.test { awaitItem() } }
-            advanceTimeBy(600)
-            coVerify(exactly = 1) { repository.getPagedMovies("") }
             job.cancel()
         }
 

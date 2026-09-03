@@ -43,7 +43,8 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.benjamin.moviehub.ui.detail.MovieDetailScreen
 import com.benjamin.moviehub.ui.detail.MovieDetailViewModel
-import com.benjamin.moviehub.ui.components.NetworkStatusBar
+import com.benjamin.moviehub.ui.components.NetworkSnackbar
+import com.benjamin.moviehub.ui.components.NetworkStatusEffect
 import com.benjamin.moviehub.domain.connectivity.ConnectivityStatus
 import com.benjamin.moviehub.ui.favorites.FavoriteScreen
 import com.benjamin.moviehub.ui.favorites.FavoriteViewModel
@@ -62,7 +63,22 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val useNavigationRail = maxWidth >= 600.dp
         val showTopLevelNavigation = currentRoute is Route.List || currentRoute is Route.FavoriteList
-        NetworkStatusBar(networkStatus, snackbarHostState)
+        fun navigateToTopLevel(route: Route) {
+            when {
+                currentRoute == route -> Unit
+                route == Route.List && currentRoute is Route.FavoriteList -> backStack.removeLastOrNull()
+                else -> backStack.add(route)
+            }
+        }
+
+        fun openMovieDetails(movieId: Int) {
+            val route = Route.Detail(movieId)
+            if (backStack.lastOrNull() != route) {
+                backStack.add(route)
+            }
+        }
+
+        NetworkStatusEffect(networkStatus, snackbarHostState)
 
         Scaffold(
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -70,7 +86,12 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                 SnackbarHost(
                     hostState = snackbarHostState,
                     modifier = if (useNavigationRail || !showTopLevelNavigation) Modifier.navigationBarsPadding() else Modifier,
-                ) { snackbarData -> NetworkStatusBar(snackbarData) }
+                ) { snackbarData ->
+                    NetworkSnackbar(
+                        snackbarData = snackbarData,
+                        isOffline = networkStatus == ConnectivityStatus.LOST || networkStatus == ConnectivityStatus.UNAVAILABLE,
+                    )
+                }
             },
             bottomBar = {
                 if (!useNavigationRail && showTopLevelNavigation) {
@@ -79,15 +100,7 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                             MovieBottomNavigationItem(
                                 item = item,
                                 selected = currentRoute == item.route,
-                                onClick = {
-                                    when {
-                                        currentRoute == item.route -> Unit
-                                        item.route == Route.List && currentRoute is Route.FavoriteList -> {
-                                            backStack.removeLastOrNull()
-                                        }
-                                        else -> backStack.add(item.route)
-                                    }
-                                },
+                                onClick = { navigateToTopLevel(item.route) },
                             )
                         }
                     }
@@ -107,15 +120,7 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                             MovieRailNavigationItem(
                                 item = item,
                                 selected = currentRoute == item.route,
-                                onClick = {
-                                    when {
-                                        currentRoute == item.route -> Unit
-                                        item.route == Route.List && currentRoute is Route.FavoriteList -> {
-                                            backStack.removeLastOrNull()
-                                        }
-                                        else -> backStack.add(item.route)
-                                    }
-                                },
+                                onClick = { navigateToTopLevel(item.route) },
                             )
                         }
                     }
@@ -136,26 +141,26 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                             (
                                 slideInHorizontally(
                                     initialOffsetX = { fullWidth -> fullWidth },
-                                    animationSpec = tween(400),
-                                ) + fadeIn(animationSpec = tween(400))
+                                    animationSpec = tween(300),
+                                ) + fadeIn(animationSpec = tween(300))
                             ).togetherWith(
                                 slideOutHorizontally(
                                     targetOffsetX = { fullWidth -> -fullWidth },
-                                    animationSpec = tween(400),
-                                ) + fadeOut(animationSpec = tween(400)),
+                                    animationSpec = tween(300),
+                                ) + fadeOut(animationSpec = tween(300)),
                             )
                         },
                         popTransitionSpec = {
                             (
                                 slideInHorizontally(
                                     initialOffsetX = { fullWidth -> -fullWidth },
-                                    animationSpec = tween(400),
-                                ) + fadeIn(animationSpec = tween(400))
+                                    animationSpec = tween(300),
+                                ) + fadeIn(animationSpec = tween(300))
                             ).togetherWith(
                                 slideOutHorizontally(
                                     targetOffsetX = { fullWidth -> fullWidth },
-                                    animationSpec = tween(400),
-                                ) + fadeOut(animationSpec = tween(400)),
+                                    animationSpec = tween(300),
+                                ) + fadeOut(animationSpec = tween(300)),
                             )
                         },
                         entryProvider =
@@ -168,7 +173,7 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                                         pagedMovies = viewModel.pagedMovies,
                                         searchQuery = searchQuery,
                                         onSearchChanged = viewModel::onSearchQueryChanged,
-                                        onMovieClick = { id -> backStack.add(Route.Detail(id)) },
+                                        onMovieClick = { id -> openMovieDetails(id) },
                                         onSettingsClick = { backStack.add(Route.Settings) },
                                     )
                                 }
@@ -186,6 +191,7 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                                         onBackClick = { backStack.removeLastOrNull() },
                                         onToggleFavorite = viewModel::toggleFavorite,
                                         onRetry = { viewModel.loadMovieDetails(key.movieId) },
+                                        favoriteActionErrors = viewModel.favoriteActionErrors,
                                     )
                                 }
 
@@ -197,7 +203,7 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                                         state = favoriteUiState,
                                         onBackClick = { backStack.removeLastOrNull() },
                                         onSettingsClick = { backStack.add(Route.Settings) },
-                                        onMovieClick = { id -> backStack.add(Route.Detail(id)) },
+                                        onMovieClick = { id -> openMovieDetails(id) },
                                         onRemoveFavorite = { movie -> viewModel.onToggleFavorite(movie) },
                                         onRetry = viewModel::onRetry,
                                         favoriteActionErrors = viewModel.favoriteActionErrors,

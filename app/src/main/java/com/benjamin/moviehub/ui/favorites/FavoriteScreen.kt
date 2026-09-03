@@ -1,10 +1,5 @@
 package com.benjamin.moviehub.ui.favorites
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
@@ -64,7 +60,7 @@ fun FavoriteScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val favoriteErrorMessage = stringResource(R.string.error_updating_favorite)
 
-    LaunchedEffect(favoriteActionErrors) {
+    LaunchedEffect(favoriteActionErrors, favoriteErrorMessage) {
         favoriteActionErrors.collect {
             snackbarHostState.showSnackbar(favoriteErrorMessage)
         }
@@ -95,106 +91,89 @@ fun FavoriteScreen(
                     .padding(paddingValues),
         ) {
             Box(modifier = Modifier.weight(1f)) {
-                AnimatedContent(
-                    targetState = state,
-                    transitionSpec = {
-                        fadeIn(animationSpec = tween(300)) togetherWith
-                            fadeOut(
-                                animationSpec =
-                                    tween(
-                                        300,
-                                    ),
-                            )
-                    },
-                    label = "StateAnimation",
-                ) { state ->
-                    when (state) {
-                        is MovieFavoriteListUiState.Loading -> {
-                            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                                repeat(5) {
-                                    MovieShimmerItem(compact = true)
-                                }
+                when (state) {
+                    is MovieFavoriteListUiState.Loading -> {
+                        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                            repeat(5) {
+                                MovieShimmerItem(compact = true)
                             }
                         }
+                    }
 
-                        is MovieFavoriteListUiState.Success -> {
-                            if (state.movies.isEmpty()) {
-                                EmptyStateView(
-                                    message = state.emptyMessage?.asString() ?: "",
-                                    icon = Icons.Default.ErrorOutline,
-                                )
-                            } else {
-                                LazyColumn(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentPadding = PaddingValues(vertical = 8.dp),
-                                ) {
-                                    items(state.movies, key = { it.id }) { movie ->
+                    is MovieFavoriteListUiState.Success -> {
+                        if (state.movies.isEmpty()) {
+                            EmptyStateView(
+                                message = stringResource(R.string.no_favorite_added),
+                                icon = Icons.Outlined.FavoriteBorder,
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(vertical = 8.dp),
+                            ) {
+                                items(state.movies, key = { it.id }) { movie ->
 
-                                        val haptic = LocalHapticFeedback.current
-                                        val removeFavoriteLabel =
-                                            stringResource(R.string.remove_favorite_accessibility)
-                                        val dismissState = rememberSwipeToDismissBoxState()
-                                        LaunchedEffect(dismissState.currentValue) {
-                                            if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
-                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                onRemoveFavorite(movie)
-                                            }
+                                    val haptic = LocalHapticFeedback.current
+                                    val removeFavoriteLabel =
+                                        stringResource(R.string.remove_favorite_accessibility)
+                                    val dismissState = rememberSwipeToDismissBoxState()
+                                    LaunchedEffect(dismissState.currentValue) {
+                                        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            onRemoveFavorite(movie)
                                         }
-                                        Box(
+                                    }
+                                    Box(
+                                        modifier =
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .animateItem(),
+                                    ) {
+                                        SwipeToDismissBox(
+                                            state = dismissState,
                                             modifier =
-                                                Modifier
-                                                    .fillMaxWidth()
-                                                    .animateItem(),
-                                        ) {
-                                            SwipeToDismissBox(
-                                                state = dismissState,
-                                                modifier =
-                                                    Modifier.semantics {
-                                                        customActions =
-                                                            listOf(
-                                                                CustomAccessibilityAction(
-                                                                    label = removeFavoriteLabel,
-                                                                    action = {
-                                                                        onRemoveFavorite(movie)
-                                                                        true
-                                                                    },
-                                                                ),
-                                                            )
-                                                    },
-                                                enableDismissFromStartToEnd = false,
-                                                backgroundContent = {
-                                                    val isVisible =
-                                                        dismissState.currentValue != SwipeToDismissBoxValue.Settled ||
-                                                            dismissState.targetValue != SwipeToDismissBoxValue.Settled
+                                                Modifier.semantics {
+                                                    customActions =
+                                                        listOf(
+                                                            CustomAccessibilityAction(
+                                                                label = removeFavoriteLabel,
+                                                                action = {
+                                                                    onRemoveFavorite(movie)
+                                                                    true
+                                                                },
+                                                            ),
+                                                        )
+                                                },
+                                            enableDismissFromStartToEnd = false,
+                                            backgroundContent = {
+                                                val isVisible =
+                                                    dismissState.currentValue != SwipeToDismissBoxValue.Settled ||
+                                                        dismissState.targetValue != SwipeToDismissBoxValue.Settled
 
-                                                    if (isVisible) {
-                                                        DeleteBackground()
-                                                    }
-                                                },
-                                                content = {
-                                                    MovieItem(
-                                                        movie = movie,
-                                                        onMovieClick = onMovieClick,
-                                                        compact = true,
-                                                    )
-                                                },
-                                            )
-                                        }
+                                                if (isVisible) {
+                                                    DeleteBackground()
+                                                }
+                                            },
+                                            content = {
+                                                MovieItem(
+                                                    movie = movie,
+                                                    onMovieClick = onMovieClick,
+                                                    compact = true,
+                                                )
+                                            },
+                                        )
                                     }
                                 }
                             }
                         }
+                    }
 
-                        is MovieFavoriteListUiState.Error -> {
-                            val errorMessage =
-                                state.errorMessage?.asString()
-                                    ?: stringResource(R.string.error_loading_movies)
-                            EmptyStateView(
-                                message = stringResource(R.string.error_prefix, errorMessage),
-                                icon = Icons.Default.ErrorOutline,
-                                onRetry = onRetry,
-                            )
-                        }
+                    is MovieFavoriteListUiState.Error -> {
+                        EmptyStateView(
+                            message = stringResource(R.string.error_prefix, state.errorMessage.asString()),
+                            icon = Icons.Default.ErrorOutline,
+                            onRetry = onRetry,
+                        )
                     }
                 }
             }

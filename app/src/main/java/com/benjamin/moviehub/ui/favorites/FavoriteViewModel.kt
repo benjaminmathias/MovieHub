@@ -37,12 +37,8 @@ class FavoriteViewModel
         val uiState: StateFlow<MovieFavoriteListUiState> =
             retryTrigger.flatMapLatest {
                 repository.getFavoriteMovies()
-                    .map { movies ->
-                        val state: MovieFavoriteListUiState = MovieFavoriteListUiState.Success(
-                            movies,
-                            if (movies.isEmpty()) UiText.StringResource(R.string.no_favorite_added) else null,
-                        )
-                        state
+                    .map<List<Movie>, MovieFavoriteListUiState> { movies ->
+                        MovieFavoriteListUiState.Success(movies)
                     }.onStart { emit(MovieFavoriteListUiState.Loading) }
                     .catch { error ->
                         if (error is CancellationException) throw error

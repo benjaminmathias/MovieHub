@@ -11,7 +11,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
@@ -27,6 +29,8 @@ class MovieDetailViewModel
     ) : ViewModel() {
         private val _uiState = MutableStateFlow<MovieDetailUiState>(MovieDetailUiState.Loading)
         val uiState: StateFlow<MovieDetailUiState> = _uiState.asStateFlow()
+        private val _favoriteActionErrors = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+        val favoriteActionErrors = _favoriteActionErrors.asSharedFlow()
         private var loadJob: Job? = null
         private val favoriteMutex = Mutex()
 
@@ -92,6 +96,7 @@ class MovieDetailViewModel
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
+                        _favoriteActionErrors.tryEmit(Unit)
                         val latestState = _uiState.value as? MovieDetailUiState.Success
                         if (latestState?.movie?.id == requestedMovie.id && latestState.movie.isFavorite == newStatus) {
                             _uiState.value = currentState
