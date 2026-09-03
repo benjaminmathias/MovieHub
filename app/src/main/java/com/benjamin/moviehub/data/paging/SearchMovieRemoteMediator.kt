@@ -5,7 +5,6 @@ import androidx.paging.LoadType
 import androidx.paging.PagingState
 import androidx.paging.RemoteMediator
 import androidx.room.withTransaction
-import com.benjamin.moviehub.BuildConfig
 import com.benjamin.moviehub.data.local.MovieDatabase
 import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.local.MovieSearchResultEntity
@@ -43,12 +42,7 @@ class SearchMovieRemoteMediator(
             }
 
         return try {
-            val response =
-                apiService.searchMovies(
-                    BuildConfig.TMDB_API_KEY,
-                    page = page,
-                    query = query,
-                )
+            val response = apiService.searchMovies(query = query, page = page)
 
             val movies = response.movies
             val endOfPaginationReached = response.isEndOfPagination(page, state.config.pageSize)

@@ -5,7 +5,6 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
-import com.benjamin.moviehub.BuildConfig
 import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.local.MovieDatabase
 import com.benjamin.moviehub.data.local.SearchQueryKey
@@ -70,11 +69,7 @@ class MovieRepositoryImpl
         override suspend fun getMovieDetails(movieId: Int): Movie {
             return try {
                 // API call
-                val dto =
-                    apiService.getMovieDetails(
-                        movieId = movieId,
-                        apiKey = BuildConfig.TMDB_API_KEY,
-                    )
+                val dto = apiService.getMovieDetails(movieId = movieId)
 
                 val remoteMovieEntity = dto.toEntity()
                 val savedMovie = movieDao.upsertMovieDetails(remoteMovieEntity)
@@ -108,5 +103,5 @@ class MovieRepositoryImpl
                 }.flowOn(Dispatchers.IO)
 
         override suspend fun getMovieCredits(movieId: Int) =
-            apiService.getMovieCredits(movieId, BuildConfig.TMDB_API_KEY).toDomain()
+            apiService.getMovieCredits(movieId).toDomain()
     }

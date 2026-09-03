@@ -39,7 +39,7 @@ class MovieRepositoryTest {
                 )
 
             coEvery { dao.getMovieById(9) } returns localMovie
-            coEvery { apiService.getMovieDetails(9, any()) } throws IOException("offline")
+            coEvery { apiService.getMovieDetails(9) } throws IOException("offline")
 
             val result = repository.getMovieDetails(9)
 

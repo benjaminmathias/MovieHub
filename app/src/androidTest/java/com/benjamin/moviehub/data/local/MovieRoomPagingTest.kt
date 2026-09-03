@@ -192,8 +192,6 @@ class MovieRoomPagingTest {
         val searchPagesRequested = mutableListOf<Int>()
 
         override suspend fun getPopularMovies(
-            apiKey: String,
-            language: String,
             page: Int,
         ): MovieResponse {
             popularPagesRequested += page
@@ -201,9 +199,7 @@ class MovieRoomPagingTest {
         }
 
         override suspend fun searchMovies(
-            apiKey: String,
             query: String,
-            language: String,
             page: Int,
         ): MovieResponse {
             searchPagesRequested += page
@@ -213,14 +209,10 @@ class MovieRoomPagingTest {
 
         override suspend fun getMovieDetails(
             movieId: Int,
-            apiKey: String,
-            language: String,
         ): MovieDto = movieDto(movieId)
 
         override suspend fun getMovieCredits(
             movieId: Int,
-            apiKey: String,
-            language: String,
         ): MovieCreditsDto = MovieCreditsDto(emptyList<ActorDto>())
     }
 }

@@ -98,6 +98,7 @@ dependencies {
     // Network & Data
     implementation(libs.retrofit)
     implementation(libs.retrofit.gson)
+    implementation(libs.okhttp)
 
     // Datastore
     implementation(libs.androidx.datastore.preferences)
