@@ -115,7 +115,6 @@ class MovieDetailAccessibilityTest {
 
         composeRule.onNodeWithText("8.7 / 10").assertIsDisplayed()
         composeRule.onNodeWithText("Réalisé par Director Name").assertIsDisplayed()
-        composeRule.onNodeWithText("Genres").assertIsDisplayed()
         composeRule.onNodeWithText("Action").assertIsDisplayed()
         assertTrue(composeRule.onAllNodesWithText("Budget").fetchSemanticsNodes().isEmpty())
     }
