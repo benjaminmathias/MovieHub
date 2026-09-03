@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -35,6 +36,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,8 +44,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -69,13 +74,16 @@ fun MovieDetailContent(
 ) {
     // Insets edge-to-edge : le bottom système passe en contentPadding, pas en Modifier,
     // pour que le contenu scrolle derrière les barres sans être rogné.
-    val navigationBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val navigationInsets = WindowInsets.navigationBars.asPaddingValues()
+    val layoutDirection = LocalLayoutDirection.current
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         state = listState,
         contentPadding =
             PaddingValues(
-                bottom = 24.dp + navigationBottom,
+                start = navigationInsets.calculateLeftPadding(layoutDirection),
+                end = navigationInsets.calculateRightPadding(layoutDirection),
+                bottom = 24.dp + navigationInsets.calculateBottomPadding(),
             ),
     ) {
         item(key = "header") {
@@ -94,21 +102,25 @@ fun MovieDetailContent(
 
         if (movie.genres.isNotEmpty()) {
             item(key = "genres") {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding =
-                        PaddingValues(
-                            start = 16.dp,
-                            end = 16.dp,
-                            top = 12.dp,
-                            bottom = 4.dp,
-                        ),
+                DetailSection(
+                    title = stringResource(R.string.genres),
+                    fullBleed = true,
                 ) {
-                    itemsIndexed(
-                        items = movie.genres,
-                        key = { index, genre -> "genre-$index-$genre" },
-                    ) { _, genre ->
-                        MovieGenreTag(name = genre)
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding =
+                            PaddingValues(
+                                start = 16.dp,
+                                end = 16.dp,
+                                bottom = 4.dp,
+                            ),
+                    ) {
+                        itemsIndexed(
+                            items = movie.genres,
+                            key = { index, genre -> "genre-$index-$genre" },
+                        ) { _, genre ->
+                            MovieGenreTag(name = genre)
+                        }
                     }
                 }
             }
@@ -120,8 +132,12 @@ fun MovieDetailContent(
                     // Colonne dédiée : sans elle, les deux enfants se superposeraient
                     // dans le Box de DetailSection (le bouton tombait dans le texte).
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        var expanded by rememberSaveable { mutableStateOf(false) }
-                        var showToggle by rememberSaveable { mutableStateOf(false) }
+                        var expanded by rememberSaveable(movie.id, movie.overview) {
+                            mutableStateOf(false)
+                        }
+                        var hasVisualOverflow by remember(movie.id, movie.overview) {
+                            mutableStateOf(false)
+                        }
                         Text(
                             text = movie.overview,
                             style = MaterialTheme.typography.bodyMedium,
@@ -129,12 +145,12 @@ fun MovieDetailContent(
                             maxLines = if (expanded) Int.MAX_VALUE else 4,
                             overflow = TextOverflow.Ellipsis,
                             onTextLayout = { result ->
-                                if (result.hasVisualOverflow && !showToggle) {
-                                    showToggle = true
+                                if (!expanded && hasVisualOverflow != result.hasVisualOverflow) {
+                                    hasVisualOverflow = result.hasVisualOverflow
                                 }
                             },
                         )
-                        if (showToggle) {
+                        if (expanded || hasVisualOverflow) {
                             TextButton(
                                 onClick = { expanded = !expanded },
                                 contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
@@ -269,7 +285,7 @@ private fun MovieDetailSummary(
         Column(
             modifier =
                 if (hasFullInfo) {
-                    Modifier.weight(1f).height(PosterHeight)
+                    Modifier.weight(1f).heightIn(min = PosterHeight)
                 } else {
                     Modifier.weight(1f)
                 },
@@ -392,7 +408,10 @@ private fun DetailSection(
             text = title,
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(horizontal = horizontalPadding),
+            modifier =
+                Modifier
+                    .padding(horizontal = horizontalPadding)
+                    .semantics { heading() },
         )
         if (fullBleed) {
             content()

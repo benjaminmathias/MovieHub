@@ -8,6 +8,8 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.domain.model.Movie
@@ -115,8 +117,45 @@ class MovieDetailAccessibilityTest {
 
         composeRule.onNodeWithText("8.7 / 10").assertIsDisplayed()
         composeRule.onNodeWithText("Réalisé par Director Name").assertIsDisplayed()
+        composeRule.onNodeWithText("Genres").assertIsDisplayed()
         composeRule.onNodeWithText("Action").assertIsDisplayed()
         assertTrue(composeRule.onAllNodesWithText("Budget").fetchSemanticsNodes().isEmpty())
+    }
+
+    @Test
+    fun longSynopsisCanBeExpandedAndCollapsed() {
+        val movie =
+            Movie(
+                id = 1,
+                title = "Test movie",
+                overview =
+                    "A long synopsis that needs to be truncated before it can be expanded. "
+                        .repeat(8),
+                posterPath = null,
+                backdropPath = null,
+                voteAverage = 0.0,
+                releaseDate = "2024-01-01",
+                webUrl = null,
+                isFavorite = false,
+                genreIds = emptyList(),
+                genres = emptyList(),
+            )
+
+        composeRule.setContent {
+            MovieHubTheme {
+                MovieDetailContent(
+                    movie = movie,
+                    credits = MovieCredits(),
+                )
+            }
+        }
+
+        composeRule
+            .onNodeWithText("Lire plus")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
+        composeRule.onNodeWithText("Réduire").assertIsDisplayed()
     }
 
     @Test
