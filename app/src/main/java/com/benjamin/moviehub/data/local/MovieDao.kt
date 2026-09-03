@@ -106,22 +106,6 @@ interface MovieDao {
     @Query("DELETE FROM movie_search_results WHERE queryKey = :queryKey")
     suspend fun clearSearchResults(queryKey: String)
 
-    @Query("SELECT * FROM movies WHERE isPopular = 1 AND pageOrder >= 0 AND pageOrder < :pageSize")
-    suspend fun getPopularFirstPage(pageSize: Int): List<MovieEntity>
-
-    @Query(
-        "DELETE FROM remote_keys WHERE type = :type AND movieId IN (:movieIds)",
-    )
-    suspend fun clearRemoteKeysForMovies(
-        movieIds: List<Int>,
-        type: String,
-    )
-
-    @Query(
-        "UPDATE movies SET isPopular = 0, pageOrder = -1 WHERE isPopular = 1 AND pageOrder >= 0 AND pageOrder < :pageSize",
-    )
-    suspend fun clearPopularFirstPage(pageSize: Int)
-
     @Query(
         """
         DELETE FROM movies

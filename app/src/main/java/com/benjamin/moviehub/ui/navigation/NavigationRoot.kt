@@ -97,6 +97,7 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
         }
 
         NetworkStatusEffect(networkStatus, snackbarHostState)
+        val isOffline = networkStatus == ConnectivityStatus.LOST || networkStatus == ConnectivityStatus.UNAVAILABLE
 
         Scaffold(
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -107,7 +108,7 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                 ) { snackbarData ->
                     NetworkSnackbar(
                         snackbarData = snackbarData,
-                        isOffline = networkStatus == ConnectivityStatus.LOST || networkStatus == ConnectivityStatus.UNAVAILABLE,
+                        isOffline = isOffline,
                     )
                 }
             },

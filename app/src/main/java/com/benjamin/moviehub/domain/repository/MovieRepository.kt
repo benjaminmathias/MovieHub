@@ -33,8 +33,6 @@ interface MovieRepository {
      */
     fun getFavoriteMovies(): Flow<List<Movie>>
 
-    /** Get movie credits from the API. */
-    suspend fun getMovieCredits(movieId: Int): Result<MovieCredits>
-
-    suspend fun syncPopularMoviesCache()
+    /** Get movie credits from the API. Throws on network error; callers show details without credits. */
+    suspend fun getMovieCredits(movieId: Int): MovieCredits
 }

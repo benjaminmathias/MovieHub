@@ -29,7 +29,6 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        // testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunner = "com.benjamin.moviehub.HiltTestRunner"
 
         val properties = Properties()
@@ -110,11 +109,6 @@ dependencies {
     implementation(libs.androidx.room.paging)
     implementation(libs.androidx.paging.runtime.ktx)
     implementation(libs.androidx.paging.compose)
-
-    // WorkManager
-    implementation(libs.androidx.work.runtime.ktx)
-    implementation(libs.androidx.hilt.work)
-    ksp(libs.androidx.hilt.compiler)
 
     // Navigation 3
     implementation(libs.androidx.navigation3.ui)

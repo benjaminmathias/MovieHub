@@ -3,9 +3,9 @@ package com.benjamin.moviehub.viewmodel
 import com.benjamin.moviehub.core.util.AppTheme
 import com.benjamin.moviehub.data.cache.ImageCacheManager
 import com.benjamin.moviehub.domain.repository.UserPreferencesRepository
-import com.benjamin.moviehub.ui.settings.ImageCacheState
 import com.benjamin.moviehub.ui.settings.SettingsViewModel
 import com.benjamin.moviehub.util.MainDispatcherRule
+import app.cash.turbine.test
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -37,12 +37,14 @@ class SettingsViewModelTest {
     @Test
     fun `clearing image cache reports success and only calls image cache manager`() =
         runTest {
-            coEvery { imageCacheManager.clear() } coAnswers { Unit }
+            coEvery { imageCacheManager.clear() } returns Unit
             val viewModel = SettingsViewModel(preferences, imageCacheManager)
 
-            viewModel.clearImageCacheNow()
-
-            assertEquals(ImageCacheState.Success, viewModel.imageCacheState.value)
+            viewModel.imageCacheMessages.test {
+                viewModel.clearImageCache()
+                assertEquals(true, awaitItem())
+            }
+            assertEquals(false, viewModel.isClearing.value)
             coVerify(exactly = 1) { imageCacheManager.clear() }
         }
 
@@ -52,23 +54,24 @@ class SettingsViewModelTest {
             coEvery { imageCacheManager.clear() } throws IllegalStateException("cache failure")
             val viewModel = SettingsViewModel(preferences, imageCacheManager)
 
-            viewModel.clearImageCacheNow()
-
-            assertEquals(ImageCacheState.Error, viewModel.imageCacheState.value)
+            viewModel.imageCacheMessages.test {
+                viewModel.clearImageCache()
+                assertEquals(false, awaitItem())
+            }
+            assertEquals(false, viewModel.isClearing.value)
         }
 
     @Test
-    fun `clearing image cache propagates cancellation`() =
+    fun `clearing image cache emits nothing on cancellation`() =
         runTest {
-            val cancellation = CancellationException("cancelled")
-            coEvery { imageCacheManager.clear() } throws cancellation
+            coEvery { imageCacheManager.clear() } throws CancellationException("cancelled")
             val viewModel = SettingsViewModel(preferences, imageCacheManager)
-            try {
-                viewModel.clearImageCacheNow()
-                error("Expected cancellation")
-            } catch (error: CancellationException) {
-                assertEquals(cancellation, error)
+
+            viewModel.imageCacheMessages.test {
+                viewModel.clearImageCache()
+                expectNoEvents()
             }
+            assertEquals(false, viewModel.isClearing.value)
         }
 
     @Test

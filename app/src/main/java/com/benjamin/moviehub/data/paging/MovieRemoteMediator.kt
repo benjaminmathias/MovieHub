@@ -8,7 +8,6 @@ import androidx.room.withTransaction
 import com.benjamin.moviehub.BuildConfig
 import com.benjamin.moviehub.data.local.MovieDatabase
 import com.benjamin.moviehub.data.local.MovieEntity
-import com.benjamin.moviehub.data.local.MovieRemoteKey
 import com.benjamin.moviehub.data.mapper.toEntity
 import com.benjamin.moviehub.data.remote.MovieApiService
 import com.benjamin.moviehub.data.remote.isEndOfPagination
@@ -29,7 +28,7 @@ class MovieRemoteMediator(
                 LoadType.REFRESH -> 1
                 LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
                 LoadType.APPEND -> {
-                    val remoteKeys = getRemoteKeyForLastItem(state)
+                    val remoteKeys = MediatorPagingHelper.remoteKeyForLastItem(state, movieDao, POPULAR_REMOTE_KEY_TYPE)
                     val nextKey =
                         remoteKeys?.nextKey ?: return MediatorResult.Success(
                             endOfPaginationReached = remoteKeys != null,
@@ -54,33 +53,26 @@ class MovieRemoteMediator(
                     movieDao.clearPopularMovies()
                 }
 
-                val prevKey = if (page == 1) null else page - 1
-                val nextKey = if (endOfPaginationReached) null else page + 1
-
+                val movieIds = movies.map { it.id }
                 val keys =
-                    movies.map {
-                        MovieRemoteKey(
-                            movieId = it.id,
-                            prevKey = prevKey,
-                            nextKey = nextKey,
-                            type = POPULAR_REMOTE_KEY_TYPE,
-                        )
-                    }
+                    MediatorPagingHelper.remoteKeys(
+                        movieIds,
+                        page,
+                        endOfPaginationReached,
+                        POPULAR_REMOTE_KEY_TYPE,
+                    )
 
-                val localMovies =
-                    movieDao.getMoviesByIds(movies.map { it.id }).associateBy { it.id }
+                val localMovies = MediatorPagingHelper.preservedByIds(movieDao, movieIds)
 
                 val movieEntities =
                     movies.mapIndexed { index, dto ->
-                        val position = ((page - 1) * state.config.pageSize) + index
-
                         val localMovie = localMovies[dto.id]
 
                         dto.toEntity(
                             isFavorite = localMovie?.isFavorite ?: false,
                             isPopular = true,
                             isSearchResult = localMovie?.isSearchResult ?: false,
-                            pageOrder = position,
+                            pageOrder = MediatorPagingHelper.pageOrder(page, state.config.pageSize, index),
                             runtimeMinutesOverride = localMovie?.runtimeMinutes,
                         )
                     }
@@ -94,15 +86,6 @@ class MovieRemoteMediator(
             MediatorResult.Error(e)
         }
     }
-
-    private suspend fun getRemoteKeyForLastItem(state: PagingState<Int, MovieEntity>): MovieRemoteKey? =
-        state.pages
-            .lastOrNull { it.data.isNotEmpty() }
-            ?.data
-            ?.lastOrNull()
-            ?.let { movie ->
-                movieDao.getRemoteKeysForMovieId(movie.id, POPULAR_REMOTE_KEY_TYPE)
-            }
 
     override suspend fun initialize(): InitializeAction =
         if (database.withTransaction { movieDao.getRemoteKeysCountByType(POPULAR_REMOTE_KEY_TYPE) == 0 }) {

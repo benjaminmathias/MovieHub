@@ -14,8 +14,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
@@ -44,28 +44,25 @@ class MovieDetailViewModel
                 _uiState.value = MovieDetailUiState.Loading
 
                 try {
-                    supervisorScope {
+                    coroutineScope {
                         val movieDeferred = async { repository.getMovieDetails(movieId) }
-                        val creditsDeferred = async { repository.getMovieCredits(movieId) }
-
-                        val movie =
-                            try {
-                                movieDeferred.await()
-                            } catch (e: Exception) {
-                                creditsDeferred.cancel()
-                                throw e
+                        val creditsDeferred =
+                            async {
+                                try {
+                                    repository.getMovieCredits(movieId)
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (_: Exception) {
+                                    MovieCredits()
+                                }
                             }
+
+                        // Throws on movie failure and cancels the credits child automatically.
+                        val movie = movieDeferred.await()
 
                         _uiState.value = MovieDetailUiState.Success(movie, MovieCredits())
 
-                        val credits =
-                            try {
-                                creditsDeferred.await().getOrDefault(MovieCredits())
-                            } catch (e: CancellationException) {
-                                throw e
-                            } catch (_: Exception) {
-                                MovieCredits()
-                            }
+                        val credits = creditsDeferred.await()
 
                         if ((_uiState.value as? MovieDetailUiState.Success)?.movie?.id == movieId) {
                             _uiState.value =

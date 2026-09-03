@@ -53,7 +53,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val currentTheme by viewModel.currentTheme.collectAsStateWithLifecycle()
-    val imageCacheState by viewModel.imageCacheState.collectAsStateWithLifecycle()
+    val isClearing by viewModel.isClearing.collectAsStateWithLifecycle()
     val snackbarHostState = androidx.compose.runtime.remember { SnackbarHostState() }
     val imageCacheClearedMessage = stringResource(R.string.image_cache_cleared)
     val imageCacheClearFailedMessage = stringResource(R.string.image_cache_clear_failed)
@@ -110,10 +110,10 @@ fun SettingsScreen(
                             title = stringResource(R.string.clear_image_cache),
                             subtitle = stringResource(R.string.clear_image_cache_description),
                             icon = Icons.Default.Delete,
-                            enabled = imageCacheState !is ImageCacheState.Loading,
+                            enabled = !isClearing,
                             onClick = viewModel::clearImageCache,
                         )
-                        if (imageCacheState is ImageCacheState.Loading) {
+                        if (isClearing) {
                             Row(
                                 modifier = Modifier.padding(top = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -149,19 +149,11 @@ fun SettingsScreen(
         }
     }
 
-    LaunchedEffect(imageCacheState) {
-        when (imageCacheState) {
-            ImageCacheState.Success -> {
-                snackbarHostState.showSnackbar(imageCacheClearedMessage)
-                viewModel.resetImageCacheState()
-            }
-
-            ImageCacheState.Error -> {
-                snackbarHostState.showSnackbar(imageCacheClearFailedMessage)
-                viewModel.resetImageCacheState()
-            }
-
-            ImageCacheState.Idle, ImageCacheState.Loading -> Unit
+    LaunchedEffect(viewModel.imageCacheMessages) {
+        viewModel.imageCacheMessages.collect { cleared ->
+            snackbarHostState.showSnackbar(
+                if (cleared) imageCacheClearedMessage else imageCacheClearFailedMessage,
+            )
         }
     }
 
@@ -194,23 +186,23 @@ private fun ThemeSelector(
     onThemeSelected: (AppTheme) -> Unit,
 ) {
     Column(modifier = Modifier.selectableGroup()) {
-        ThemeRadioButton(
-            selected = currentTheme == AppTheme.SYSTEM,
-            text = stringResource(R.string.theme_system),
-            onClick = { onThemeSelected(AppTheme.SYSTEM) },
-        )
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        ThemeRadioButton(
-            selected = currentTheme == AppTheme.LIGHT,
-            text = stringResource(R.string.theme_light),
-            onClick = { onThemeSelected(AppTheme.LIGHT) },
-        )
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        ThemeRadioButton(
-            selected = currentTheme == AppTheme.DARK,
-            text = stringResource(R.string.theme_dark),
-            onClick = { onThemeSelected(AppTheme.DARK) },
-        )
+        listOf(AppTheme.SYSTEM, AppTheme.LIGHT, AppTheme.DARK).forEachIndexed { index, theme ->
+            if (index > 0) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
+            ThemeRadioButton(
+                selected = currentTheme == theme,
+                text =
+                    stringResource(
+                        when (theme) {
+                            AppTheme.SYSTEM -> R.string.theme_system
+                            AppTheme.LIGHT -> R.string.theme_light
+                            AppTheme.DARK -> R.string.theme_dark
+                        },
+                    ),
+                onClick = { onThemeSelected(theme) },
+            )
+        }
     }
 }
 

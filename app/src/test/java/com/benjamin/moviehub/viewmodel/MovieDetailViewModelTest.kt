@@ -45,7 +45,7 @@ class MovieDetailViewModelTest {
     fun `details remain visible when casting is unavailable`() =
         runTest {
             coEvery { repository.getMovieDetails(1) } returns movie
-            coEvery { repository.getMovieCredits(1) } returns Result.failure(IllegalStateException())
+            coEvery { repository.getMovieCredits(1) } throws IllegalStateException()
             val viewModel = MovieDetailViewModel(repository)
 
             viewModel.loadMovieDetails(1)
@@ -65,7 +65,7 @@ class MovieDetailViewModelTest {
                 if (detailsCalls++ == 0) throw IllegalStateException()
                 movie
             }
-            coEvery { repository.getMovieCredits(1) } returns Result.success(MovieCredits())
+            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
             val viewModel = MovieDetailViewModel(repository)
 
             viewModel.loadMovieDetails(1)
@@ -85,7 +85,7 @@ class MovieDetailViewModelTest {
     fun `favorite update restores previous state when repository fails`() =
         runTest {
             coEvery { repository.getMovieDetails(1) } returns movie
-            coEvery { repository.getMovieCredits(1) } returns Result.success(MovieCredits())
+            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
             val failureGate = CompletableDeferred<Unit>()
             coEvery { repository.toggleFavorite(movie, true) } coAnswers {
                 failureGate.await()
@@ -108,7 +108,7 @@ class MovieDetailViewModelTest {
     fun `double toggle uses latest state and does not rollback newer transition`() =
         runTest {
             coEvery { repository.getMovieDetails(1) } returns movie
-            coEvery { repository.getMovieCredits(1) } returns Result.success(MovieCredits())
+            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
             coEvery { repository.toggleFavorite(any(), any()) } returns Unit
             val viewModel = MovieDetailViewModel(repository)
             viewModel.loadMovieDetails(1)
@@ -127,7 +127,7 @@ class MovieDetailViewModelTest {
     fun `two failed toggles serialize and leave the original state`() =
         runTest {
             coEvery { repository.getMovieDetails(1) } returns movie
-            coEvery { repository.getMovieCredits(1) } returns Result.success(MovieCredits())
+            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
             coEvery { repository.toggleFavorite(any(), any()) } throws IllegalStateException()
             val viewModel = MovieDetailViewModel(repository)
             viewModel.loadMovieDetails(1)
@@ -144,7 +144,7 @@ class MovieDetailViewModelTest {
     @Test
     fun `late credits preserve an optimistic favorite`() =
         runTest {
-            val creditsGate = CompletableDeferred<Result<MovieCredits>>()
+            val creditsGate = CompletableDeferred<MovieCredits>()
             coEvery { repository.getMovieDetails(1) } returns movie
             coEvery { repository.getMovieCredits(1) } coAnswers { creditsGate.await() }
             coEvery { repository.toggleFavorite(movie, true) } returns Unit
@@ -156,7 +156,7 @@ class MovieDetailViewModelTest {
             runCurrent()
             assertTrue((viewModel.uiState.value as MovieDetailUiState.Success).movie.isFavorite)
 
-            creditsGate.complete(Result.success(MovieCredits(director = "Director")))
+            creditsGate.complete(MovieCredits(director = "Director"))
             advanceUntilIdle()
 
             val state = viewModel.uiState.value as MovieDetailUiState.Success
