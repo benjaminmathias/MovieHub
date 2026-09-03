@@ -38,9 +38,11 @@ import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.EmptyStateView
 import com.benjamin.moviehub.ui.components.ErrorRetryItem
-import com.benjamin.moviehub.ui.components.MovieItem
+import com.benjamin.moviehub.ui.components.CompactMovieItem
+import com.benjamin.moviehub.ui.components.CompactMovieShimmerItem
 import com.benjamin.moviehub.ui.components.MovieSearchBar
-import com.benjamin.moviehub.ui.components.MovieShimmerItem
+import com.benjamin.moviehub.ui.components.PosterMovieItem
+import com.benjamin.moviehub.ui.components.PosterMovieShimmerItem
 import kotlinx.coroutines.flow.Flow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -189,11 +191,11 @@ private fun MovieListLoadingShimmer(isGrid: Boolean) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(6) { MovieShimmerItem() }
+            items(6) { PosterMovieShimmerItem() }
         }
     } else {
         LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
-            items(5) { MovieShimmerItem(compact = true) }
+            items(5) { CompactMovieShimmerItem() }
         }
     }
 }
@@ -216,7 +218,7 @@ private fun PopularMovieGrid(
             key = lazyPagingItems.itemKey { it.id },
         ) { index ->
             lazyPagingItems[index]?.let { movie ->
-                MovieItem(movie = movie, onMovieClick = onMovieClick)
+                PosterMovieItem(movie = movie, onMovieClick = onMovieClick)
             }
         }
         appendItems(
@@ -239,10 +241,9 @@ private fun SearchMovieList(
             key = lazyPagingItems.itemKey { it.id },
         ) { index ->
             lazyPagingItems[index]?.let { movie ->
-                MovieItem(
+                CompactMovieItem(
                     movie = movie,
                     onMovieClick = onMovieClick,
-                    compact = true,
                 )
             }
         }
@@ -256,9 +257,9 @@ private fun SearchMovieList(
                 )
             }
         }
-        if (appendState is LoadState.Loading) {
-            item { MovieShimmerItem(compact = true) }
-        }
+            if (appendState is LoadState.Loading) {
+                item { CompactMovieShimmerItem() }
+            }
     }
 }
 
@@ -279,7 +280,7 @@ private fun androidx.compose.foundation.lazy.grid.LazyGridScope.appendItems(
 
         LoadState.Loading -> {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                MovieShimmerItem()
+                PosterMovieShimmerItem()
             }
         }
 

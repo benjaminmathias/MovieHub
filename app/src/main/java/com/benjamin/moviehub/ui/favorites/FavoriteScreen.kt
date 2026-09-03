@@ -41,8 +41,8 @@ import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.DeleteBackground
 import com.benjamin.moviehub.ui.components.EmptyStateView
-import com.benjamin.moviehub.ui.components.MovieItem
-import com.benjamin.moviehub.ui.components.MovieShimmerItem
+import com.benjamin.moviehub.ui.components.CompactMovieItem
+import com.benjamin.moviehub.ui.components.CompactMovieShimmerItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 
@@ -91,7 +91,7 @@ fun FavoriteScreen(
                 is MovieFavoriteListUiState.Loading -> {
                     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                         repeat(5) {
-                            MovieShimmerItem(compact = true)
+                            CompactMovieShimmerItem()
                         }
                     }
                 }
@@ -108,57 +108,12 @@ fun FavoriteScreen(
                             contentPadding = PaddingValues(vertical = 8.dp),
                         ) {
                             items(state.movies, key = { it.id }) { movie ->
-
-                                val haptic = LocalHapticFeedback.current
-                                val removeFavoriteLabel =
-                                    stringResource(R.string.remove_favorite_accessibility)
-                                val dismissState = rememberSwipeToDismissBoxState()
-                                LaunchedEffect(dismissState.currentValue) {
-                                    if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onRemoveFavorite(movie)
-                                    }
-                                }
-                                Box(
-                                    modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .animateItem(),
-                                ) {
-                                    SwipeToDismissBox(
-                                        state = dismissState,
-                                        modifier =
-                                            Modifier.semantics {
-                                                customActions =
-                                                    listOf(
-                                                        CustomAccessibilityAction(
-                                                            label = removeFavoriteLabel,
-                                                            action = {
-                                                                onRemoveFavorite(movie)
-                                                                true
-                                                            },
-                                                        ),
-                                                    )
-                                            },
-                                        enableDismissFromStartToEnd = false,
-                                        backgroundContent = {
-                                            val isVisible =
-                                                dismissState.currentValue != SwipeToDismissBoxValue.Settled ||
-                                                    dismissState.targetValue != SwipeToDismissBoxValue.Settled
-
-                                            if (isVisible) {
-                                                DeleteBackground()
-                                            }
-                                        },
-                                        content = {
-                                            MovieItem(
-                                                movie = movie,
-                                                onMovieClick = onMovieClick,
-                                                compact = true,
-                                            )
-                                        },
-                                    )
-                                }
+                                FavoriteSwipeItem(
+                                    movie = movie,
+                                    modifier = Modifier.animateItem(),
+                                    onMovieClick = onMovieClick,
+                                    onRemoveFavorite = onRemoveFavorite,
+                                )
                             }
                         }
                     }
@@ -173,5 +128,62 @@ fun FavoriteScreen(
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FavoriteSwipeItem(
+    movie: Movie,
+    modifier: Modifier = Modifier,
+    onMovieClick: (Int) -> Unit,
+    onRemoveFavorite: (Movie) -> Unit,
+) {
+    val haptic = LocalHapticFeedback.current
+    val removeFavoriteLabel = stringResource(R.string.remove_favorite_accessibility)
+    val dismissState = rememberSwipeToDismissBoxState()
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onRemoveFavorite(movie)
+        }
+    }
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth(),
+    ) {
+        SwipeToDismissBox(
+            state = dismissState,
+            modifier =
+                Modifier.semantics {
+                    customActions =
+                        listOf(
+                            CustomAccessibilityAction(
+                                label = removeFavoriteLabel,
+                                action = {
+                                    onRemoveFavorite(movie)
+                                    true
+                                },
+                            ),
+                        )
+                },
+            enableDismissFromStartToEnd = false,
+            backgroundContent = {
+                val isVisible =
+                    dismissState.currentValue != SwipeToDismissBoxValue.Settled ||
+                        dismissState.targetValue != SwipeToDismissBoxValue.Settled
+
+                if (isVisible) {
+                    DeleteBackground()
+                }
+            },
+            content = {
+                CompactMovieItem(
+                    movie = movie,
+                    onMovieClick = onMovieClick,
+                )
+            },
+        )
     }
 }

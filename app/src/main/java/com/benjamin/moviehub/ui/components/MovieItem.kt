@@ -39,24 +39,10 @@ import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.Movie
 
 @Composable
-fun MovieItem(
+fun PosterMovieItem(
     movie: Movie,
     onMovieClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    compact: Boolean = false,
-) {
-    if (compact) {
-        CompactMovieItem(movie, onMovieClick, modifier)
-    } else {
-        PosterMovieItem(movie, onMovieClick, modifier)
-    }
-}
-
-@Composable
-private fun PosterMovieItem(
-    movie: Movie,
-    onMovieClick: (Int) -> Unit,
-    modifier: Modifier,
 ) {
     val favoriteStateDescription =
         stringResource(
@@ -123,10 +109,10 @@ private fun PosterMovieItem(
 }
 
 @Composable
-private fun CompactMovieItem(
+fun CompactMovieItem(
     movie: Movie,
     onMovieClick: (Int) -> Unit,
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
 ) {
     val posterWidth = 64.dp
     val posterHeight = 96.dp
@@ -245,7 +231,7 @@ fun MovieItemPreview() {
             genres = emptyList(),
         )
 
-    MovieItem(
+    PosterMovieItem(
         movie = fakeMovie,
         onMovieClick = {},
     )

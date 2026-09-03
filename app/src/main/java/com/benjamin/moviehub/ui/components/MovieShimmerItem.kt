@@ -22,19 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.valentinilk.shimmer.shimmer
 
 @Composable
-fun MovieShimmerItem(
-    modifier: Modifier = Modifier,
-    compact: Boolean = false,
-) {
-    if (compact) {
-        CompactMovieShimmerItem(modifier)
-    } else {
-        PosterMovieShimmerItem(modifier)
-    }
-}
-
-@Composable
-private fun PosterMovieShimmerItem(modifier: Modifier) {
+fun PosterMovieShimmerItem(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth().shimmer(),
         shape = MaterialTheme.shapes.medium,
@@ -72,7 +60,7 @@ private fun PosterMovieShimmerItem(modifier: Modifier) {
 }
 
 @Composable
-private fun CompactMovieShimmerItem(modifier: Modifier) {
+fun CompactMovieShimmerItem(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).shimmer(),
         shape = MaterialTheme.shapes.medium,
