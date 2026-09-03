@@ -5,7 +5,7 @@ import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
 
 sealed class MovieDetailUiState {
-    object Loading : MovieDetailUiState()
+    data object Loading : MovieDetailUiState()
 
     data class Success(
         val movie: Movie,
@@ -13,6 +13,6 @@ sealed class MovieDetailUiState {
     ) : MovieDetailUiState()
 
     data class Error(
-        @param:StringRes val errorMessage: Int,
+        @StringRes val errorMessage: Int,
     ) : MovieDetailUiState()
 }
