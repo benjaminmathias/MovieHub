@@ -2,8 +2,6 @@
     <string name="app_name">MovieHub</string>
 
     <string name="movie_hub_popular">Films Populaires</string>
-    <string name="search">Recherche</string>
-    <string name="details">Détails</string>
     <string name="error_prefix">Erreur : %1$s</string>
     <string name="home_tab">Accueil</string>
     <string name="favorite_tab">Favoris</string>
@@ -23,7 +21,6 @@
     <string name="synopsis">Synopsis</string>
     <string name="genres">Genres</string>
     <string name="director_format">Réalisé par %1$s</string>
-    <string name="release_date">Date de sortie</string>
     <string name="error_loading_more_movies">Impossible de charger plus de films.</string>
     <string name="cast_principal">Casting Principal</string>
     <string name="share_movie_text">Regarde ce film : %1$s \nPlus d\'infos ici : %2$s</string>
@@ -50,8 +47,6 @@
     <string name="share">Partager</string>
     <string name="share_chooser">Partager via</string>
     <string name="loading_movie_details">Chargement des détails…</string>
-    <string name="not_available">N/A</string>
-    <string name="cast">Casting</string>
     <string name="no_internet_connection">Pas de connexion internet</string>
     <string name="connection_restored">Connexion rétablie</string>
     <string name="remove_favorite_accessibility">Retirer des favoris</string>

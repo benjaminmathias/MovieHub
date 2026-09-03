@@ -17,16 +17,13 @@ import java.io.IOException
 import javax.inject.Inject
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+private val themeKey = stringPreferencesKey("app_theme")
 
 class UserPreferenceRepositoryImpl
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
     ) : UserPreferencesRepository {
-        private object Keys {
-            val THEME = stringPreferencesKey("app_theme")
-        }
-
         override val theme: Flow<AppTheme> =
             context.dataStore.data
                 .catch { exception ->
@@ -37,7 +34,7 @@ class UserPreferenceRepositoryImpl
                     }
                 }
                 .map { preferences ->
-                    val themeName = preferences[Keys.THEME] ?: AppTheme.SYSTEM.name
+                    val themeName = preferences[themeKey] ?: AppTheme.SYSTEM.name
                     try {
                         AppTheme.valueOf(themeName)
                     } catch (e: IllegalArgumentException) {
@@ -47,7 +44,7 @@ class UserPreferenceRepositoryImpl
 
         override suspend fun setTheme(theme: AppTheme) {
             context.dataStore.edit { preferences ->
-                preferences[Keys.THEME] = theme.name
+                preferences[themeKey] = theme.name
             }
         }
     }

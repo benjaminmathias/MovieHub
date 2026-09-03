@@ -3,7 +3,6 @@ package com.benjamin.moviehub.ui.favorites
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benjamin.moviehub.R
-import com.benjamin.moviehub.core.util.UiText
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -42,7 +41,7 @@ class FavoriteViewModel
                     }.onStart { emit(MovieFavoriteListUiState.Loading) }
                     .catch { error ->
                         if (error is CancellationException) throw error
-                        emit(MovieFavoriteListUiState.Error(UiText.StringResource(R.string.error_loading_movies)))
+                        emit(MovieFavoriteListUiState.Error(R.string.error_loading_movies))
                     }
             }.stateIn(
                 viewModelScope,

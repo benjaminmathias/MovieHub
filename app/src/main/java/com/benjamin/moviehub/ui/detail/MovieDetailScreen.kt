@@ -1,6 +1,7 @@
 package com.benjamin.moviehub.ui.detail
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -135,7 +136,7 @@ fun MovieDetailScreen(
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+                    verticalArrangement = Arrangement.Center,
                 ) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     Text(
@@ -155,16 +156,10 @@ fun MovieDetailScreen(
             }
 
             is MovieDetailUiState.Error -> {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
-                ) {
-                    EmptyStateView(
-                        message = uiState.errorMessage.asString(),
-                        onRetry = onRetry,
-                    )
-                }
+                EmptyStateView(
+                    message = stringResource(uiState.errorMessage),
+                    onRetry = onRetry,
+                )
             }
         }
 

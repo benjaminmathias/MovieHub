@@ -18,7 +18,7 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
-            pickFirst("META-INF/gradle/incremental.annotation.processors")
+            pickFirsts.add("META-INF/gradle/incremental.annotation.processors")
         }
     }
 
@@ -87,7 +87,6 @@ dependencies {
     implementation(libs.androidx.compose.material3)
 
     // Icons & Visuals
-    implementation(libs.androidx.material.icons.core)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.coil.compose)
     implementation(libs.compose.shimmer)

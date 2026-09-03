@@ -54,78 +54,73 @@ fun MovieDetailContent(
     credits: MovieCredits,
     listState: LazyListState = rememberLazyListState(),
 ) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.TopCenter,
+    LazyColumn(
+        modifier = Modifier.fillMaxWidth().navigationBarsPadding(),
+        state = listState,
+        contentPadding = PaddingValues(bottom = 16.dp),
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth().navigationBarsPadding(),
-            state = listState,
-            contentPadding = PaddingValues(bottom = 16.dp),
-        ) {
-            item(key = "header") {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    MovieDetailHero(
-                        backdropPath = movie.backdropPath,
-                        posterPath = movie.posterPath,
-                        title = movie.title,
-                    )
-                    MovieDetailSummary(movie = movie)
-                }
+        item(key = "header") {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                MovieDetailHero(
+                    backdropPath = movie.backdropPath,
+                    posterPath = movie.posterPath,
+                    title = movie.title,
+                )
+                MovieDetailSummary(movie = movie)
             }
+        }
 
-            if (movie.overview.isNotBlank()) {
-                item(key = "synopsis") {
-                    DetailSection(title = stringResource(R.string.synopsis)) {
-                        Text(
-                            text = movie.overview,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-                }
-            }
-
-            credits.director?.trim()?.takeIf(String::isNotEmpty)?.let { director ->
-                item(key = "director") {
+        if (movie.overview.isNotBlank()) {
+            item(key = "synopsis") {
+                DetailSection(title = stringResource(R.string.synopsis)) {
                     Text(
-                        text = stringResource(R.string.director_format, director),
+                        text = movie.overview,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }
+        }
 
-            if (credits.actors.isNotEmpty()) {
-                item(key = "cast") {
-                    DetailSection(title = stringResource(R.string.cast_principal)) {
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            contentPadding = PaddingValues(bottom = 4.dp),
-                        ) {
-                            items(credits.actors, key = Actor::id) { actor ->
-                                ActorItem(actor)
-                            }
+        credits.director?.trim()?.takeIf(String::isNotEmpty)?.let { director ->
+            item(key = "director") {
+                Text(
+                    text = stringResource(R.string.director_format, director),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+        }
+
+        if (credits.actors.isNotEmpty()) {
+            item(key = "cast") {
+                DetailSection(title = stringResource(R.string.cast_principal)) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(bottom = 4.dp),
+                    ) {
+                        items(credits.actors, key = Actor::id) { actor ->
+                            ActorItem(actor)
                         }
                     }
                 }
             }
+        }
 
-            if (movie.genres.isNotEmpty()) {
-                item(key = "genres") {
-                    DetailSection(title = stringResource(R.string.genres)) {
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            contentPadding = PaddingValues(bottom = 4.dp),
-                        ) {
-                            itemsIndexed(
-                                items = movie.genres,
-                                key = { index, genre -> "genre-$index-$genre" },
-                            ) { _, genre ->
-                                MovieGenreTag(name = genre)
-                            }
+        if (movie.genres.isNotEmpty()) {
+            item(key = "genres") {
+                DetailSection(title = stringResource(R.string.genres)) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(bottom = 4.dp),
+                    ) {
+                        itemsIndexed(
+                            items = movie.genres,
+                            key = { index, genre -> "genre-$index-$genre" },
+                        ) { _, genre ->
+                            MovieGenreTag(name = genre)
                         }
                     }
                 }

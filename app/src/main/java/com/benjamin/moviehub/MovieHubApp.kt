@@ -3,6 +3,7 @@ package com.benjamin.moviehub
 import android.app.Application
 import android.util.Log
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import androidx.work.Constraints
@@ -60,7 +61,7 @@ class MovieHubApp :
                 {
                     try {
                         enqueueOperation.result.get()
-                        migrationPreferences.edit().putBoolean(SYNC_WORK_MIGRATION_KEY, true).apply()
+                        migrationPreferences.edit { putBoolean(SYNC_WORK_MIGRATION_KEY, true) }
                     } catch (e: InterruptedException) {
                         Thread.currentThread().interrupt()
                     } catch (e: Exception) {

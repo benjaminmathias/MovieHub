@@ -1,6 +1,6 @@
 package com.benjamin.moviehub.ui.detail
 
-import com.benjamin.moviehub.core.util.UiText
+import androidx.annotation.StringRes
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
 
@@ -13,6 +13,6 @@ sealed class MovieDetailUiState {
     ) : MovieDetailUiState()
 
     data class Error(
-        val errorMessage: UiText,
+        @param:StringRes val errorMessage: Int,
     ) : MovieDetailUiState()
 }

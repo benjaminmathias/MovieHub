@@ -15,6 +15,11 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -32,6 +37,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -41,6 +47,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.benjamin.moviehub.R
 import com.benjamin.moviehub.ui.detail.MovieDetailScreen
 import com.benjamin.moviehub.ui.detail.MovieDetailViewModel
 import com.benjamin.moviehub.ui.components.NetworkSnackbar
@@ -52,7 +59,18 @@ import com.benjamin.moviehub.ui.list.MovieListScreen
 import com.benjamin.moviehub.ui.list.MovieListViewModel
 import com.benjamin.moviehub.ui.settings.SettingsScreen
 
-private val bottomNavItems = listOf(BottomNavItem.Home, BottomNavItem.Favorite)
+private data class BottomNavItem(
+    val route: Route,
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector,
+    val labelRes: Int,
+)
+
+private val bottomNavItems =
+    listOf(
+        BottomNavItem(Route.List, Icons.Default.Home, Icons.Outlined.Home, R.string.home_tab),
+        BottomNavItem(Route.FavoriteList, Icons.Default.Favorite, Icons.Outlined.FavoriteBorder, R.string.favorite_tab),
+    )
 
 @Composable
 fun NavigationRoot(networkStatus: ConnectivityStatus) {

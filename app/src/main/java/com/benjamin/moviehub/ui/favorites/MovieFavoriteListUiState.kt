@@ -1,6 +1,6 @@
 package com.benjamin.moviehub.ui.favorites
 
-import com.benjamin.moviehub.core.util.UiText
+import androidx.annotation.StringRes
 import com.benjamin.moviehub.domain.model.Movie
 
 sealed class MovieFavoriteListUiState {
@@ -11,6 +11,6 @@ sealed class MovieFavoriteListUiState {
     ) : MovieFavoriteListUiState()
 
     data class Error(
-        val errorMessage: UiText,
+        @param:StringRes val errorMessage: Int,
     ) : MovieFavoriteListUiState()
 }
