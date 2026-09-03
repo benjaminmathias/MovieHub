@@ -1,5 +1,7 @@
 package com.benjamin.moviehub.ui.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -77,6 +79,7 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
     val backStack = rememberNavBackStack(Route.List)
     val currentRoute = backStack.lastOrNull()
     val snackbarHostState = remember { SnackbarHostState() }
+    val isOffline = networkStatus == ConnectivityStatus.LOST || networkStatus == ConnectivityStatus.UNAVAILABLE
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val useNavigationRail = maxWidth >= 600.dp
@@ -97,7 +100,6 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
         }
 
         NetworkStatusEffect(networkStatus, snackbarHostState)
-        val isOffline = networkStatus == ConnectivityStatus.LOST || networkStatus == ConnectivityStatus.UNAVAILABLE
 
         Scaffold(
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -156,76 +158,29 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                                 backStack.size > 1 -> backStack.removeLastOrNull()
                             }
                         },
-                        transitionSpec = {
-                            (
-                                slideInHorizontally(
-                                    initialOffsetX = { fullWidth -> fullWidth },
-                                    animationSpec = tween(300),
-                                ) + fadeIn(animationSpec = tween(300))
-                            ).togetherWith(
-                                slideOutHorizontally(
-                                    targetOffsetX = { fullWidth -> -fullWidth },
-                                    animationSpec = tween(300),
-                                ) + fadeOut(animationSpec = tween(300)),
-                            )
-                        },
-                        popTransitionSpec = {
-                            (
-                                slideInHorizontally(
-                                    initialOffsetX = { fullWidth -> -fullWidth },
-                                    animationSpec = tween(300),
-                                ) + fadeIn(animationSpec = tween(300))
-                            ).togetherWith(
-                                slideOutHorizontally(
-                                    targetOffsetX = { fullWidth -> fullWidth },
-                                    animationSpec = tween(300),
-                                ) + fadeOut(animationSpec = tween(300)),
-                            )
-                        },
+                        transitionSpec = { forwardTransition() },
+                        popTransitionSpec = { backTransition() },
                         entryProvider =
                             entryProvider {
                                 entry<Route.List> {
-                                    val viewModel: MovieListViewModel = hiltViewModel()
-                                    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
-
-                                    MovieListScreen(
-                                        pagedMovies = viewModel.pagedMovies,
-                                        searchQuery = searchQuery,
-                                        onSearchChanged = viewModel::onSearchQueryChanged,
-                                        onMovieClick = { id -> openMovieDetails(id) },
-                                        onSettingsClick = { backStack.add(Route.Settings) },
+                                    MovieListEntry(
+                                        onOpenDetails = { id -> openMovieDetails(id) },
+                                        onOpenSettings = { backStack.add(Route.Settings) },
                                     )
                                 }
 
                                 entry<Route.Detail> { key ->
-                                    val viewModel: MovieDetailViewModel = hiltViewModel()
-                                    val detailsUiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-                                    LaunchedEffect(key.movieId) {
-                                        viewModel.loadMovieDetails(key.movieId)
-                                    }
-
-                                    MovieDetailScreen(
-                                        uiState = detailsUiState,
-                                        onBackClick = { backStack.removeLastOrNull() },
-                                        onToggleFavorite = viewModel::toggleFavorite,
-                                        onRetry = { viewModel.loadMovieDetails(key.movieId) },
-                                        favoriteActionErrors = viewModel.favoriteActionErrors,
+                                    MovieDetailEntry(
+                                        movieId = key.movieId,
+                                        onBack = { backStack.removeLastOrNull() },
                                     )
                                 }
 
                                 entry<Route.FavoriteList> {
-                                    val viewModel: FavoriteViewModel = hiltViewModel()
-                                    val favoriteUiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-                                    FavoriteScreen(
-                                        state = favoriteUiState,
-                                        onBackClick = { backStack.removeLastOrNull() },
-                                        onSettingsClick = { backStack.add(Route.Settings) },
-                                        onMovieClick = { id -> openMovieDetails(id) },
-                                        onRemoveFavorite = { movie -> viewModel.onToggleFavorite(movie) },
-                                        onRetry = viewModel::onRetry,
-                                        favoriteActionErrors = viewModel.favoriteActionErrors,
+                                    FavoriteListEntry(
+                                        onBack = { backStack.removeLastOrNull() },
+                                        onOpenSettings = { backStack.add(Route.Settings) },
+                                        onOpenDetails = { id -> openMovieDetails(id) },
                                     )
                                 }
 
@@ -248,19 +203,116 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
 }
 
 @Composable
+private fun MovieListEntry(
+    onOpenDetails: (Int) -> Unit,
+    onOpenSettings: () -> Unit,
+) {
+    val viewModel: MovieListViewModel = hiltViewModel()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+
+    MovieListScreen(
+        pagedMovies = viewModel.pagedMovies,
+        searchQuery = searchQuery,
+        onSearchChanged = viewModel::onSearchQueryChanged,
+        onMovieClick = onOpenDetails,
+        onSettingsClick = onOpenSettings,
+    )
+}
+
+@Composable
+private fun MovieDetailEntry(
+    movieId: Int,
+    onBack: () -> Unit,
+) {
+    val viewModel: MovieDetailViewModel = hiltViewModel()
+    val detailsUiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(movieId) {
+        viewModel.loadMovieDetails(movieId)
+    }
+
+    MovieDetailScreen(
+        uiState = detailsUiState,
+        onBackClick = onBack,
+        onToggleFavorite = viewModel::toggleFavorite,
+        onRetry = { viewModel.loadMovieDetails(movieId) },
+        favoriteActionErrors = viewModel.favoriteActionErrors,
+    )
+}
+
+@Composable
+private fun FavoriteListEntry(
+    onBack: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpenDetails: (Int) -> Unit,
+) {
+    val viewModel: FavoriteViewModel = hiltViewModel()
+    val favoriteUiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    FavoriteScreen(
+        state = favoriteUiState,
+        onBackClick = onBack,
+        onSettingsClick = onOpenSettings,
+        onMovieClick = onOpenDetails,
+        onRemoveFavorite = { movie -> viewModel.onToggleFavorite(movie) },
+        onRetry = viewModel::onRetry,
+        favoriteActionErrors = viewModel.favoriteActionErrors,
+    )
+}
+
+private fun AnimatedContentTransitionScope<*>.forwardTransition(): ContentTransform =
+    (
+        slideInHorizontally(
+            initialOffsetX = { fullWidth -> fullWidth },
+            animationSpec = tween(300),
+        ) + fadeIn(animationSpec = tween(300))
+    ).togetherWith(
+        slideOutHorizontally(
+            targetOffsetX = { fullWidth -> -fullWidth },
+            animationSpec = tween(300),
+        ) + fadeOut(animationSpec = tween(300)),
+    )
+
+private fun AnimatedContentTransitionScope<*>.backTransition(): ContentTransform =
+    (
+        slideInHorizontally(
+            initialOffsetX = { fullWidth -> -fullWidth },
+            animationSpec = tween(300),
+        ) + fadeIn(animationSpec = tween(300))
+    ).togetherWith(
+        slideOutHorizontally(
+            targetOffsetX = { fullWidth -> fullWidth },
+            animationSpec = tween(300),
+        ) + fadeOut(animationSpec = tween(300)),
+    )
+
+private data class NavItemVisuals(
+    val label: String,
+    val icon: ImageVector,
+)
+
+@Composable
+private fun navItemVisuals(
+    item: BottomNavItem,
+    selected: Boolean,
+): NavItemVisuals {
+    val label = stringResource(item.labelRes)
+    return NavItemVisuals(label, if (selected) item.selectedIcon else item.unselectedIcon)
+}
+
+@Composable
 private fun RowScope.MovieBottomNavigationItem(
     item: BottomNavItem,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    val label = stringResource(item.labelRes)
-    val icon = if (selected) item.selectedIcon else item.unselectedIcon
+    val visuals = navItemVisuals(item, selected)
 
     NavigationBarItem(
         selected = selected,
         onClick = onClick,
-        icon = { Icon(icon, contentDescription = label) },
-        label = { Text(label) },
+        icon = { Icon(visuals.icon, contentDescription = visuals.label) },
+        label = { Text(visuals.label) },
         colors =
             NavigationBarItemDefaults.colors(
                 selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -278,14 +330,13 @@ private fun MovieRailNavigationItem(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    val label = stringResource(item.labelRes)
-    val icon = if (selected) item.selectedIcon else item.unselectedIcon
+    val visuals = navItemVisuals(item, selected)
 
     NavigationRailItem(
         selected = selected,
         onClick = onClick,
-        icon = { Icon(icon, contentDescription = label) },
-        label = { Text(label) },
+        icon = { Icon(visuals.icon, contentDescription = visuals.label) },
+        label = { Text(visuals.label) },
         colors =
             NavigationRailItemDefaults.colors(
                 selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,

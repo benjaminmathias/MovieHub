@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.PagingData
+import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.benjamin.moviehub.R
@@ -126,20 +127,7 @@ fun MovieListScreen(
             ) {
                 when {
                     isInitialLoading -> {
-                        if (searchQuery.isBlank()) {
-                            LazyVerticalGrid(
-                                columns = GridCells.Adaptive(minSize = 144.dp),
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                items(6) { MovieShimmerItem() }
-                            }
-                        } else {
-                            LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
-                                items(5) { MovieShimmerItem(compact = true) }
-                            }
-                        }
+                        MovieListLoadingShimmer(isGrid = searchQuery.isBlank())
                     }
 
                     isError -> {
@@ -171,59 +159,105 @@ fun MovieListScreen(
                     }
 
                     searchQuery.isBlank() -> {
-                        LazyVerticalGrid(
-                            columns = GridCells.Adaptive(minSize = 144.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            items(
-                                count = lazyPagingItems.itemCount,
-                                key = lazyPagingItems.itemKey { it.id },
-                            ) { index ->
-                                lazyPagingItems[index]?.let { movie ->
-                                    MovieItem(movie = movie, onMovieClick = onMovieClick)
-                                }
-                            }
-                            appendItems(
-                                appendState = lazyPagingItems.loadState.append,
-                                onRetry = { lazyPagingItems.retry() },
-                                errorMessage = appendErrorMessage,
-                            )
-                        }
+                        PopularMovieGrid(
+                            lazyPagingItems = lazyPagingItems,
+                            onMovieClick = onMovieClick,
+                            onRetry = { lazyPagingItems.retry() },
+                            errorMessage = appendErrorMessage,
+                        )
                     }
 
                     else -> {
-                        LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
-                            items(
-                                count = lazyPagingItems.itemCount,
-                                key = lazyPagingItems.itemKey { it.id },
-                            ) { index ->
-                                lazyPagingItems[index]?.let { movie ->
-                                    MovieItem(
-                                        movie = movie,
-                                        onMovieClick = onMovieClick,
-                                        compact = true,
-                                    )
-                                }
-                            }
-
-                            val appendState = lazyPagingItems.loadState.append
-                            if (appendState is LoadState.Error) {
-                                item {
-                                    ErrorRetryItem(
-                                        message = stringResource(R.string.error_loading_movies),
-                                        onRetry = { lazyPagingItems.retry() },
-                                    )
-                                }
-                            }
-                            if (appendState is LoadState.Loading) {
-                                item { MovieShimmerItem(compact = true) }
-                            }
-                        }
+                        SearchMovieList(
+                            lazyPagingItems = lazyPagingItems,
+                            onMovieClick = onMovieClick,
+                            onRetry = { lazyPagingItems.retry() },
+                        )
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun MovieListLoadingShimmer(isGrid: Boolean) {
+    if (isGrid) {
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 144.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(6) { MovieShimmerItem() }
+        }
+    } else {
+        LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
+            items(5) { MovieShimmerItem(compact = true) }
+        }
+    }
+}
+
+@Composable
+private fun PopularMovieGrid(
+    lazyPagingItems: LazyPagingItems<Movie>,
+    onMovieClick: (Int) -> Unit,
+    onRetry: () -> Unit,
+    errorMessage: String,
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 144.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        items(
+            count = lazyPagingItems.itemCount,
+            key = lazyPagingItems.itemKey { it.id },
+        ) { index ->
+            lazyPagingItems[index]?.let { movie ->
+                MovieItem(movie = movie, onMovieClick = onMovieClick)
+            }
+        }
+        appendItems(
+            appendState = lazyPagingItems.loadState.append,
+            onRetry = onRetry,
+            errorMessage = errorMessage,
+        )
+    }
+}
+
+@Composable
+private fun SearchMovieList(
+    lazyPagingItems: LazyPagingItems<Movie>,
+    onMovieClick: (Int) -> Unit,
+    onRetry: () -> Unit,
+) {
+    LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
+        items(
+            count = lazyPagingItems.itemCount,
+            key = lazyPagingItems.itemKey { it.id },
+        ) { index ->
+            lazyPagingItems[index]?.let { movie ->
+                MovieItem(
+                    movie = movie,
+                    onMovieClick = onMovieClick,
+                    compact = true,
+                )
+            }
+        }
+
+        val appendState = lazyPagingItems.loadState.append
+        if (appendState is LoadState.Error) {
+            item {
+                ErrorRetryItem(
+                    message = stringResource(R.string.error_loading_movies),
+                    onRetry = onRetry,
+                )
+            }
+        }
+        if (appendState is LoadState.Loading) {
+            item { MovieShimmerItem(compact = true) }
         }
     }
 }
