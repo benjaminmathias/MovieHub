@@ -11,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import com.benjamin.moviehub.R
@@ -25,7 +26,7 @@ fun NetworkStatusEffect(
     val offlineMessage = stringResource(R.string.no_internet_connection)
     val restoredMessage = stringResource(R.string.connection_restored)
 
-    var wasOffline by remember { mutableStateOf(false) }
+    var wasOffline by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(status) {
         if (isOffline) {

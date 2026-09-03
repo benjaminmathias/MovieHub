@@ -126,6 +126,8 @@ dependencies {
     // Instrumented Tests
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.test.runner)
+    // Pins espresso-core transitively required by compose ui-test to 3.7.0:
+    // older transitives (3.5.0) crash Espresso.onIdle on recent emulator APIs.
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
