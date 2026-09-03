@@ -82,7 +82,8 @@ fun MovieDetailContent(
             }
         }
 
-        credits.director?.trim()?.takeIf(String::isNotEmpty)?.let { director ->
+        // Director is already trimmed by the mapper; only the blank guard remains here.
+        credits.director?.takeIf { it.isNotBlank() }?.let { director ->
             item(key = "director") {
                 Text(
                     text = stringResource(R.string.director_format, director),
@@ -102,7 +103,7 @@ fun MovieDetailContent(
                         contentPadding = PaddingValues(bottom = 4.dp),
                     ) {
                         items(credits.actors, key = Actor::id) { actor ->
-                            ActorItem(actor)
+                            ActorItem(actor = actor)
                         }
                     }
                 }
@@ -197,12 +198,12 @@ private fun MovieDetailHero(
 private fun MovieDetailSummary(
     movie: Movie,
 ) {
-    val metadata = buildList {
-        movie.releaseDate.take(4).takeIf { it.length == 4 }?.let(::add)
-        movie.runtimeMinutes?.takeIf { it > 0 }?.let {
-            add(stringResource(R.string.runtime_format, it / 60, it % 60))
+    val year = movie.releaseDate.take(4).takeIf { it.length == 4 }
+    val runtime =
+        movie.runtimeMinutes?.takeIf { it > 0 }?.let { minutes ->
+            stringResource(R.string.runtime_format, minutes / 60, minutes % 60)
         }
-    }
+    val metadata = listOfNotNull(year, runtime)
 
     Row(
         modifier =
