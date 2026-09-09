@@ -72,6 +72,8 @@ import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
 import com.benjamin.moviehub.ui.components.ActorItem
 import com.benjamin.moviehub.ui.components.MovieGenreTag
+import java.text.NumberFormat
+import java.util.Locale
 
 private val HeroHeight = 264.dp
 private val PosterWidth = 120.dp
@@ -328,7 +330,7 @@ private fun MovieDetailSummary(
                             Text(
                                 text = stringResource(R.string.director_format, it),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = MaterialTheme.colorScheme.primary,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -487,12 +489,16 @@ private fun MovieDetailRating(movie: Movie) {
             Text(
                 text = stringResource(R.string.rating_out_of_ten, movie.voteAverage),
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = MaterialTheme.colorScheme.tertiary,
                 maxLines = 1,
             )
             movie.voteCount?.takeIf { it > 0 }?.let { voteCount ->
                 Text(
-                    text = stringResource(R.string.vote_count, voteCount),
+                    text =
+                        stringResource(
+                            R.string.vote_count,
+                            NumberFormat.getIntegerInstance(Locale.FRANCE).format(voteCount),
+                        ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -524,7 +530,7 @@ private fun DetailSection(
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = MaterialTheme.colorScheme.primary,
             modifier =
                 Modifier
                     .padding(horizontal = horizontalPadding)

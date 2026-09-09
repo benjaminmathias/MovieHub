@@ -153,11 +153,11 @@ class MovieDetailAccessibilityTest {
         }
 
         composeRule
-            .onNodeWithText("Lire plus")
+            .onNodeWithText("Afficher plus")
             .performScrollTo()
             .assertIsDisplayed()
             .performClick()
-        composeRule.onNodeWithText("Réduire").assertIsDisplayed()
+        composeRule.onNodeWithText("Afficher moins").assertIsDisplayed()
     }
 
     @Test
@@ -191,7 +191,7 @@ class MovieDetailAccessibilityTest {
         assertTrue(composeRule.onAllNodesWithText("0.0 / 10").fetchSemanticsNodes().isEmpty())
         assertTrue(composeRule.onAllNodesWithText("0 votes").fetchSemanticsNodes().isEmpty())
         composeRule.onNodeWithText("Non noté").assertIsDisplayed()
-        assertTrue(composeRule.onAllNodesWithText("Casting Principal").fetchSemanticsNodes().isEmpty())
+        assertTrue(composeRule.onAllNodesWithText("Distribution").fetchSemanticsNodes().isEmpty())
     }
 
     @Test
