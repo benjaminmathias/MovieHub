@@ -17,6 +17,8 @@
     <string name="error_loading_movie_detail">Impossible de charger les détails du film.</string>
     <string name="rating_value">%1$.1f</string>
     <string name="rating_out_of_ten">%1$.1f / 10</string>
+    <string name="vote_count">%1$d votes</string>
+    <string name="rating_not_available">Non noté</string>
     <string name="runtime_format">%1$dh %2$02dm</string>
     <string name="synopsis">Synopsis</string>
     <string name="read_more">Lire plus</string>

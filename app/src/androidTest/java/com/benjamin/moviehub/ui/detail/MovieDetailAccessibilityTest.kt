@@ -104,6 +104,7 @@ class MovieDetailAccessibilityTest {
                 isFavorite = false,
                 genreIds = emptyList(),
                 genres = listOf("Action", "Drame"),
+                voteCount = 123,
             )
 
         composeRule.setContent {
@@ -116,6 +117,7 @@ class MovieDetailAccessibilityTest {
         }
 
         composeRule.onNodeWithText("8.7 / 10").assertIsDisplayed()
+        composeRule.onNodeWithText("123 votes").assertIsDisplayed()
         composeRule.onNodeWithText("Réalisé par Director Name").assertIsDisplayed()
         composeRule.onNodeWithText("Genres").assertIsDisplayed()
         composeRule.onNodeWithText("Action").assertIsDisplayed()
@@ -188,6 +190,7 @@ class MovieDetailAccessibilityTest {
         assertTrue(composeRule.onAllNodesWithText("Budget").fetchSemanticsNodes().isEmpty())
         assertTrue(composeRule.onAllNodesWithText("0.0 / 10").fetchSemanticsNodes().isEmpty())
         assertTrue(composeRule.onAllNodesWithText("0 votes").fetchSemanticsNodes().isEmpty())
+        composeRule.onNodeWithText("Non noté").assertIsDisplayed()
         assertTrue(composeRule.onAllNodesWithText("Casting Principal").fetchSemanticsNodes().isEmpty())
     }
 

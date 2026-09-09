@@ -6,11 +6,13 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
@@ -53,6 +55,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -71,9 +74,9 @@ import com.benjamin.moviehub.ui.components.ActorItem
 import com.benjamin.moviehub.ui.components.MovieGenreTag
 
 private val HeroHeight = 264.dp
-private val PosterWidth = 108.dp
+private val PosterWidth = 120.dp
 // Hauteur du poster (ratio 2/3) : le bloc texte s'y aligne.
-private val PosterHeight = 162.dp
+private val PosterHeight = 180.dp
 private val SummaryOverlap = 32.dp
 
 @Composable
@@ -196,7 +199,7 @@ fun MovieDetailContent(
                     fullBleed = true,
                 ) {
                     LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
                     ) {
                         items(credits.actors, key = Actor::id) { actor ->
@@ -293,44 +296,48 @@ private fun MovieDetailSummary(
                 .fillMaxWidth()
                 // Textes à gauche alignés à 16dp comme le reste du contenu,
                 // poster à droite : les deux partent du même top, sur la même ligne.
-                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 0.dp),
-        horizontalArrangement = Arrangement.spacedBy(20.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 0.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        // Le bloc texte remplit la hauteur du poster : marges réparties
-        // (SpaceBetween) quand toutes les lignes sont présentes, espacement
-        // fixe élargi sinon pour éviter un trou béant s'il manque des lignes.
-        val hasFullInfo = metadata.isNotEmpty() && movie.voteAverage > 0 && director != null
         Column(
-            modifier =
-                if (hasFullInfo) {
-                    Modifier.weight(1f).heightIn(min = PosterHeight)
-                } else {
-                    Modifier.weight(1f)
-                },
-            verticalArrangement =
-                if (hasFullInfo) {
-                    Arrangement.SpaceBetween
-                } else {
-                    Arrangement.spacedBy(8.dp)
-                },
+            modifier = Modifier.weight(1f).heightIn(min = PosterHeight),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = movie.title,
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (metadata.isNotEmpty() || director != null) {
-                MetaFlowRow(
-                    metadata = metadata,
-                    director = director,
+            Column(
+                modifier = Modifier.padding(top = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    text = movie.title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
+                if (metadata.isNotEmpty() || director != null) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        if (metadata.isNotEmpty()) {
+                            Text(
+                                text = metadata.joinToString(" • "),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        director?.let {
+                            Text(
+                                text = stringResource(R.string.director_format, it),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
             }
-            if (movie.voteAverage > 0) {
-                MovieDetailRating(movie)
-            }
+            Spacer(modifier = Modifier.weight(1f))
+            MovieDetailRating(movie)
         }
 
         Surface(
@@ -340,8 +347,8 @@ private fun MovieDetailSummary(
                     .aspectRatio(2f / 3f)
                     .testTag("detail_poster"),
             shape = MaterialTheme.shapes.medium,
-            tonalElevation = 4.dp,
-            shadowElevation = 8.dp,
+            tonalElevation = 2.dp,
+            shadowElevation = 4.dp,
         ) {
             Box(
                 modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
@@ -361,6 +368,7 @@ private fun MovieDetailSummary(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MovieDetailActions(
     movie: Movie,
@@ -380,73 +388,84 @@ private fun MovieDetailActions(
             ),
         label = "favoritePop",
     )
-
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    BoxWithConstraints(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
     ) {
-        onToggleFavorite?.let { toggleFavorite ->
-            Button(
-                onClick = toggleFavorite,
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp)
-                        .testTag("detail_favorite")
-                        .semantics { this.contentDescription = favoriteLabel },
-            ) {
-                Icon(
-                    imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = null,
+        val stackActions = LocalDensity.current.fontScale >= 1.3f || maxWidth < 360.dp
+
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            maxItemsInEachRow = if (stackActions) 1 else 2,
+        ) {
+            onToggleFavorite?.let { toggleFavorite ->
+                Button(
+                    onClick = toggleFavorite,
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                     modifier =
-                        Modifier.graphicsLayer {
-                            scaleX = favoriteScale
-                            scaleY = favoriteScale
-                        },
-                )
-                Text(text = favoriteLabel)
+                        Modifier
+                            .weight(1f)
+                            .height(52.dp)
+                            .testTag("detail_favorite")
+                            .semantics { this.contentDescription = favoriteLabel },
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = null,
+                            modifier =
+                                Modifier
+                                    .size(20.dp)
+                                    .graphicsLayer {
+                                        scaleX = favoriteScale
+                                        scaleY = favoriteScale
+                                    },
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = favoriteLabel,
+                            style = MaterialTheme.typography.labelLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
             }
-        }
 
-        onOpenTmdb?.let { openTmdb ->
-            OutlinedButton(
-                onClick = openTmdb,
-                modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("detail_tmdb"),
-            ) {
-                Icon(imageVector = Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null)
-                Text(text = stringResource(R.string.open_tmdb))
+            onOpenTmdb?.let { openTmdb ->
+                OutlinedButton(
+                    onClick = openTmdb,
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    modifier = Modifier.weight(1f).height(52.dp).testTag("detail_tmdb"),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.open_tmdb),
+                            style = MaterialTheme.typography.labelLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
             }
-        }
-    }
-}
-
-// Bloc meta compact (année • durée • réalisateur) : un seul groupe visuel
-// au lieu de deux lignes, chaque texte garde son nœud exact pour l'a11y.
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun MetaFlowRow(
-    metadata: List<String>,
-    director: String?,
-) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-        itemVerticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (metadata.isNotEmpty()) {
-            Text(
-                text = metadata.joinToString(" • "),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-        }
-        director?.let {
-            Text(
-                text = stringResource(R.string.director_format, it),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
         }
     }
 }
@@ -454,20 +473,39 @@ private fun MetaFlowRow(
 @Composable
 private fun MovieDetailRating(movie: Movie) {
     Row(
+        modifier = Modifier.padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Icon(
             imageVector = Icons.Default.Star,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.tertiary,
-            modifier = Modifier.size(16.dp),
+            modifier = Modifier.size(18.dp),
         )
-        Text(
-            text = stringResource(R.string.rating_out_of_ten, movie.voteAverage),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.tertiary,
-        )
+        if (movie.voteAverage > 0) {
+            Text(
+                text = stringResource(R.string.rating_out_of_ten, movie.voteAverage),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+            )
+            movie.voteCount?.takeIf { it > 0 }?.let { voteCount ->
+                Text(
+                    text = stringResource(R.string.vote_count, voteCount),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        } else {
+            Text(
+                text = stringResource(R.string.rating_not_available),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
