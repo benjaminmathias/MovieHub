@@ -1,5 +1,8 @@
 package com.benjamin.moviehub.ui.detail
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,10 +29,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,10 +51,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -71,6 +81,8 @@ fun MovieDetailContent(
     movie: Movie,
     credits: MovieCredits,
     listState: LazyListState = rememberLazyListState(),
+    onToggleFavorite: (() -> Unit)? = null,
+    onOpenTmdb: (() -> Unit)? = null,
 ) {
     // Insets edge-to-edge : le bottom système passe en contentPadding, pas en Modifier,
     // pour que le contenu scrolle derrière les barres sans être rogné.
@@ -96,6 +108,13 @@ fun MovieDetailContent(
                         movie = movie,
                         director = credits.director?.takeIf { it.isNotBlank() },
                     )
+                    if (onToggleFavorite != null || onOpenTmdb != null) {
+                        MovieDetailActions(
+                            movie = movie,
+                            onToggleFavorite = onToggleFavorite,
+                            onOpenTmdb = onOpenTmdb,
+                        )
+                    }
                 }
             }
         }
@@ -337,6 +356,66 @@ private fun MovieDetailSummary(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MovieDetailActions(
+    movie: Movie,
+    onToggleFavorite: (() -> Unit)?,
+    onOpenTmdb: (() -> Unit)?,
+) {
+    val favoriteLabel =
+        stringResource(
+            if (movie.isFavorite) R.string.remove_favorite else R.string.favorite,
+        )
+    val favoriteScale by animateFloatAsState(
+        targetValue = if (movie.isFavorite) 1.25f else 1f,
+        animationSpec =
+            spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMedium,
+            ),
+        label = "favoritePop",
+    )
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        onToggleFavorite?.let { toggleFavorite ->
+            Button(
+                onClick = toggleFavorite,
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp)
+                        .testTag("detail_favorite")
+                        .semantics { this.contentDescription = favoriteLabel },
+            ) {
+                Icon(
+                    imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = null,
+                    modifier =
+                        Modifier.graphicsLayer {
+                            scaleX = favoriteScale
+                            scaleY = favoriteScale
+                        },
+                )
+                Text(text = favoriteLabel)
+            }
+        }
+
+        onOpenTmdb?.let { openTmdb ->
+            OutlinedButton(
+                onClick = openTmdb,
+                modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("detail_tmdb"),
+            ) {
+                Icon(imageVector = Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null)
+                Text(text = stringResource(R.string.open_tmdb))
             }
         }
     }

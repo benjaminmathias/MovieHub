@@ -47,6 +47,7 @@
     <string name="theme_dark">Sombre</string>
     <string name="theme_update_failed">Impossible d\'enregistrer le thème.</string>
     <string name="share">Partager</string>
+    <string name="open_tmdb">Voir la fiche TMDB</string>
     <string name="share_chooser">Partager via</string>
     <string name="loading_movie_details">Chargement des détails…</string>
     <string name="no_internet_connection">Pas de connexion internet</string>

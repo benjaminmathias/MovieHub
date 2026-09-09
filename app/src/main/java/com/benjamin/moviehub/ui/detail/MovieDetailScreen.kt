@@ -1,8 +1,8 @@
 package com.benjamin.moviehub.ui.detail
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,8 +20,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -83,17 +81,6 @@ fun MovieDetailScreen(
     }
     val toolbarVisible = toolbarProgress > 0.7f
     val detailTitle = (uiState as? MovieDetailUiState.Success)?.movie?.title.orEmpty()
-    val isFavorite = (uiState as? MovieDetailUiState.Success)?.movie?.isFavorite == true
-    // Petit pop rebondissant à l'ajout en favori (déclaratif, piloté par l'état).
-    val favoriteScale by animateFloatAsState(
-        targetValue = if (isFavorite) 1.25f else 1f,
-        animationSpec =
-            spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessMedium,
-            ),
-        label = "favoritePop",
-    )
 
     LaunchedEffect(favoriteActionErrors, favoriteErrorMessage) {
         favoriteActionErrors.collect {
@@ -154,36 +141,6 @@ fun MovieDetailScreen(
                     ) {
                         Icon(imageVector = Icons.Outlined.Share, contentDescription = null)
                     }
-                    DetailControlButton(
-                        contentDescription =
-                            stringResource(
-                                if (uiState.movie.isFavorite) R.string.remove_favorite else R.string.favorite,
-                            ),
-                        modifier = Modifier.testTag("detail_favorite"),
-                        onClick = onToggleFavorite,
-                        elevated = !toolbarVisible,
-                    ) {
-                        Icon(
-                            imageVector =
-                                if (uiState.movie.isFavorite) {
-                                    Icons.Filled.Favorite
-                                } else {
-                                    Icons.Outlined.FavoriteBorder
-                                },
-                            contentDescription = null,
-                            tint =
-                                if (uiState.movie.isFavorite) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface
-                                },
-                            modifier =
-                                Modifier.graphicsLayer {
-                                    scaleX = favoriteScale
-                                    scaleY = favoriteScale
-                                },
-                        )
-                    }
                 }
             }
             if (toolbarVisible) {
@@ -214,6 +171,11 @@ fun MovieDetailScreen(
                     movie = uiState.movie,
                     credits = uiState.credits,
                     listState = listState,
+                    onToggleFavorite = onToggleFavorite,
+                    onOpenTmdb =
+                        uiState.movie.webUrl
+                            ?.takeIf(::isValidHttpUrl)
+                            ?.let { url -> { openMovieInBrowser(context, url) } },
                 )
             }
 
@@ -229,6 +191,21 @@ fun MovieDetailScreen(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
         )
+    }
+}
+
+private fun isValidHttpUrl(url: String): Boolean {
+    val uri = Uri.parse(url.trim())
+    return uri.host?.isNotBlank() == true && uri.scheme?.lowercase() in setOf("http", "https")
+}
+
+private fun openMovieInBrowser(
+    context: Context,
+    url: String,
+) {
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+    if (intent.resolveActivity(context.packageManager) != null) {
+        context.startActivity(intent)
     }
 }
 
