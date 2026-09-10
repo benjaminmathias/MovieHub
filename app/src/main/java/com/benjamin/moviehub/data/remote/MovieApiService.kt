@@ -25,4 +25,9 @@ interface MovieApiService {
     suspend fun getMovieCredits(
         @Path("movie_id") movieId: Int,
     ): MovieCreditsDto
+
+    @GET("movie/{movie_id}/recommendations")
+    suspend fun getMovieRecommendations(
+        @Path("movie_id") movieId: Int,
+    ): MovieResponse
 }

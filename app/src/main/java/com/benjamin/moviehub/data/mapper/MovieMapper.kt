@@ -99,6 +99,11 @@ fun MovieCreditsDto.toDomain(): MovieCredits =
             crew.firstOrNull { it.job == "Director" && !it.name.isNullOrBlank() }?.name?.trim(),
     )
 
+/**
+ * Convert a standalone MovieDto (list endpoints such as recommendations) to a Movie.
+ */
+fun MovieDto.toDomain(): Movie = toEntity().toDomain()
+
 fun MovieDto.toDomain(baseMovie: Movie): Movie {
     val detailGenres = genres.orEmpty().mapNotNull { it.name?.trim()?.takeIf(String::isNotEmpty) }
 

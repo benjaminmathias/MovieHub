@@ -71,6 +71,19 @@ class MovieMapperUnitTest {
     }
 
     @Test
+    fun `standalone dto maps to a complete Movie domain model`() {
+        val dto = createFakeDto(posterPath = "/pic.jpg").copy(genreIds = listOf(18))
+
+        val domain = dto.toDomain()
+
+        assertEquals(1, domain.id)
+        assertEquals("https://image.tmdb.org/t/p/w500/pic.jpg", domain.posterPath)
+        assertEquals("https://www.themoviedb.org/movie/1", domain.webUrl)
+        assertEquals(listOf("Drame"), domain.genres)
+        assertEquals(false, domain.isFavorite)
+    }
+
+    @Test
     fun `toDomain from Entity should keep all status flags intact`() {
         val entity = createFakeEntity(isFavorite = true)
         val domain = entity.toDomain()

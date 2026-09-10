@@ -173,6 +173,7 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                                     MovieDetailEntry(
                                         movieId = key.movieId,
                                         onBack = { backStack.removeLastOrNull() },
+                                        onOpenRecommendation = { id -> openMovieDetails(id) },
                                     )
                                 }
 
@@ -223,6 +224,7 @@ private fun MovieListEntry(
 private fun MovieDetailEntry(
     movieId: Int,
     onBack: () -> Unit,
+    onOpenRecommendation: (Int) -> Unit,
 ) {
     val viewModel: MovieDetailViewModel = hiltViewModel()
     val detailsUiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -237,6 +239,7 @@ private fun MovieDetailEntry(
         onToggleFavorite = viewModel::toggleFavorite,
         onRetry = { viewModel.loadMovieDetails(movieId) },
         favoriteActionErrors = viewModel.favoriteActionErrors,
+        onRecommendationClick = onOpenRecommendation,
     )
 }
 

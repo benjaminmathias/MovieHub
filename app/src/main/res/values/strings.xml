@@ -27,6 +27,7 @@
     <string name="director_format">Réalisé par %1$s</string>
     <string name="error_loading_more_movies">Impossible de charger plus de films.</string>
     <string name="cast_principal">Distribution</string>
+    <string name="you_might_also_like">Vous pourriez aussi aimer</string>
     <string name="share_movie_text">Regarde ce film : %1$s \nPlus d\'infos ici : %2$s</string>
     <string name="favorite">Ajouter aux favoris</string>
     <string name="remove_favorite">Retirer des favoris</string>

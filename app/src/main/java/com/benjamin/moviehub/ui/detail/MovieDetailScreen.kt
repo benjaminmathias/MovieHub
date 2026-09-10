@@ -63,6 +63,7 @@ fun MovieDetailScreen(
     onToggleFavorite: () -> Unit,
     onRetry: () -> Unit,
     favoriteActionErrors: Flow<Unit> = emptyFlow(),
+    onRecommendationClick: (Int) -> Unit = {},
 ) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -174,12 +175,14 @@ fun MovieDetailScreen(
                 MovieDetailContent(
                     movie = uiState.movie,
                     credits = uiState.credits,
+                    recommendations = uiState.recommendations,
                     listState = listState,
                     onToggleFavorite = onToggleFavorite,
                     onOpenTmdb =
                         uiState.movie.webUrl
                             ?.takeIf(::isValidHttpUrl)
                             ?.let { url -> { openMovieInBrowser(context, url) } },
+                    onRecommendationClick = onRecommendationClick,
                 )
             }
 

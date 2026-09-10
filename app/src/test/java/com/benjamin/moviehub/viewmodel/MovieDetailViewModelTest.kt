@@ -5,6 +5,7 @@ import com.benjamin.moviehub.domain.model.MovieCredits
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import com.benjamin.moviehub.ui.detail.MovieDetailUiState
 import com.benjamin.moviehub.ui.detail.MovieDetailViewModel
+import com.benjamin.moviehub.ui.detail.MovieRecommendationsUiState
 import com.benjamin.moviehub.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -16,6 +17,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
@@ -41,6 +43,11 @@ class MovieDetailViewModelTest {
             genres = listOf("Drama"),
         )
 
+    @Before
+    fun setup() {
+        coEvery { repository.getMovieRecommendations(any()) } returns emptyList()
+    }
+
     @Test
     fun `details remain visible when casting is unavailable`() =
         runTest {
@@ -52,7 +59,7 @@ class MovieDetailViewModelTest {
             advanceUntilIdle()
 
             assertEquals(
-                MovieDetailUiState.Success(movie, MovieCredits()),
+                MovieDetailUiState.Success(movie, MovieCredits(), MovieRecommendationsUiState.Empty),
                 viewModel.uiState.value,
             )
         }
@@ -76,7 +83,7 @@ class MovieDetailViewModelTest {
             advanceUntilIdle()
 
             assertEquals(
-                MovieDetailUiState.Success(movie, MovieCredits()),
+                MovieDetailUiState.Success(movie, MovieCredits(), MovieRecommendationsUiState.Empty),
                 viewModel.uiState.value,
             )
         }
@@ -162,5 +169,65 @@ class MovieDetailViewModelTest {
             val state = viewModel.uiState.value as MovieDetailUiState.Success
             assertTrue(state.movie.isFavorite)
             assertEquals("Director", state.credits.director)
+        }
+
+    @Test
+    fun `recommendations stay loading until the remote call resolves`() =
+        runTest {
+            val recommendationsGate = CompletableDeferred<List<Movie>>()
+            coEvery { repository.getMovieDetails(1) } returns movie
+            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
+            coEvery { repository.getMovieRecommendations(1) } coAnswers { recommendationsGate.await() }
+            val viewModel = MovieDetailViewModel(repository)
+
+            viewModel.loadMovieDetails(1)
+            runCurrent()
+
+            assertEquals(
+                MovieRecommendationsUiState.Loading,
+                (viewModel.uiState.value as MovieDetailUiState.Success).recommendations,
+            )
+
+            val suggested = movie.copy(id = 2, title = "Suggested")
+            recommendationsGate.complete(listOf(suggested))
+            advanceUntilIdle()
+
+            assertEquals(
+                MovieRecommendationsUiState.Success(listOf(suggested)),
+                (viewModel.uiState.value as MovieDetailUiState.Success).recommendations,
+            )
+        }
+
+    @Test
+    fun `empty recommendations map to the empty state`() =
+        runTest {
+            coEvery { repository.getMovieDetails(1) } returns movie
+            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
+            coEvery { repository.getMovieRecommendations(1) } returns emptyList()
+            val viewModel = MovieDetailViewModel(repository)
+
+            viewModel.loadMovieDetails(1)
+            advanceUntilIdle()
+
+            assertEquals(
+                MovieRecommendationsUiState.Empty,
+                (viewModel.uiState.value as MovieDetailUiState.Success).recommendations,
+            )
+        }
+
+    @Test
+    fun `recommendation failure maps to the error state without breaking details`() =
+        runTest {
+            coEvery { repository.getMovieDetails(1) } returns movie
+            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
+            coEvery { repository.getMovieRecommendations(1) } throws IllegalStateException()
+            val viewModel = MovieDetailViewModel(repository)
+
+            viewModel.loadMovieDetails(1)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as MovieDetailUiState.Success
+            assertEquals(MovieRecommendationsUiState.Error, state.recommendations)
+            assertEquals(movie, state.movie)
         }
 }

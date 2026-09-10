@@ -5,6 +5,8 @@ import com.benjamin.moviehub.data.local.MovieDatabase
 import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.remote.MovieApiService
+import com.benjamin.moviehub.data.remote.MovieDto
+import com.benjamin.moviehub.data.remote.MovieResponse
 import com.benjamin.moviehub.domain.model.Movie
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -80,5 +82,37 @@ class MovieRepositoryTest {
             assertEquals("/backdrop.jpg", entitySlot.captured.backdropPath)
             assertEquals(false, entitySlot.captured.isPopular)
             assertEquals(false, entitySlot.captured.isSearchResult)
+        }
+
+    @Test
+    fun `get movie recommendations maps remote dtos to domain`() =
+        runBlocking {
+            val apiService = mockk<MovieApiService>()
+            val database = mockk<MovieDatabase>()
+            val dao = mockk<MovieDao>()
+            val repository = MovieRepositoryImpl(apiService, database, dao)
+            coEvery { apiService.getMovieRecommendations(9) } returns
+                MovieResponse(
+                    movies =
+                        listOf(
+                            MovieDto(
+                                id = 9,
+                                title = "Recommended",
+                                description = "Overview",
+                                posterPath = "/poster.jpg",
+                                backdropPath = "/backdrop.jpg",
+                                voteAverage = 7.5,
+                                releaseDate = "2021-01-01",
+                            ),
+                        ),
+                )
+
+            val result = repository.getMovieRecommendations(9)
+
+            assertEquals(1, result.size)
+            assertEquals(9, result.single().id)
+            assertEquals("https://image.tmdb.org/t/p/w500/poster.jpg", result.single().posterPath)
+            assertEquals("https://www.themoviedb.org/movie/9", result.single().webUrl)
+            coVerify(exactly = 0) { dao.insertMovie(any()) }
         }
 }

@@ -43,12 +43,14 @@ class MovieDetailViewModel
                 _uiState.value = MovieDetailUiState.Loading
 
                 try {
-                    // Throws on movie failure and cancels the credits child automatically.
+                    // Throws on movie failure and cancels the secondary children automatically.
                     val creditsDeferred = async { loadCredits(movieId) }
+                    val recommendationsDeferred = async { loadRecommendations(movieId) }
                     val movie = repository.getMovieDetails(movieId)
 
                     _uiState.value = MovieDetailUiState.Success(movie, MovieCredits())
                     updateCredits(movieId, creditsDeferred.await())
+                    updateRecommendations(movieId, recommendationsDeferred.await())
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -95,6 +97,30 @@ class MovieDetailViewModel
             val latest = _uiState.value as? MovieDetailUiState.Success ?: return
             if (latest.movie.id == movieId) {
                 _uiState.value = latest.copy(credits = credits)
+            }
+        }
+
+        private suspend fun loadRecommendations(movieId: Int): MovieRecommendationsUiState =
+            try {
+                val movies = repository.getMovieRecommendations(movieId)
+                if (movies.isEmpty()) {
+                    MovieRecommendationsUiState.Empty
+                } else {
+                    MovieRecommendationsUiState.Success(movies)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                MovieRecommendationsUiState.Error
+            }
+
+        private fun updateRecommendations(
+            movieId: Int,
+            recommendations: MovieRecommendationsUiState,
+        ) {
+            val latest = _uiState.value as? MovieDetailUiState.Success ?: return
+            if (latest.movie.id == movieId) {
+                _uiState.value = latest.copy(recommendations = recommendations)
             }
         }
 

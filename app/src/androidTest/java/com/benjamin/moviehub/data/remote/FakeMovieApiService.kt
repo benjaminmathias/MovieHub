@@ -12,6 +12,7 @@ class FakeMovieApiService(
     private val searchPages: Map<String, Map<Int, List<MovieDto>>> = defaultSearchPages,
     private val details: Map<Int, MovieDto> = emptyMap(),
     private val credits: Map<Int, MovieCreditsDto> = emptyMap(),
+    private val recommendations: Map<Int, List<MovieDto>> = emptyMap(),
 ) : MovieApiService {
     val popularPagesRequested = mutableListOf<Int>()
     val searchPagesRequested = mutableListOf<Int>()
@@ -34,6 +35,9 @@ class FakeMovieApiService(
     override suspend fun getMovieDetails(movieId: Int): MovieDto = details[movieId] ?: movieDto(movieId)
 
     override suspend fun getMovieCredits(movieId: Int): MovieCreditsDto = credits[movieId] ?: MovieCreditsDto()
+
+    override suspend fun getMovieRecommendations(movieId: Int): MovieResponse =
+        MovieResponse(recommendations[movieId].orEmpty())
 
     companion object {
         val defaultPopularPages: Map<Int, List<MovieDto>> =

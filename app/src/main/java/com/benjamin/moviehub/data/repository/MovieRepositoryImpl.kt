@@ -104,4 +104,10 @@ class MovieRepositoryImpl
 
         override suspend fun getMovieCredits(movieId: Int) =
             apiService.getMovieCredits(movieId).toDomain()
+
+        override suspend fun getMovieRecommendations(movieId: Int): List<Movie> =
+            apiService
+                .getMovieRecommendations(movieId)
+                .movies
+                .map { it.toDomain() }
     }

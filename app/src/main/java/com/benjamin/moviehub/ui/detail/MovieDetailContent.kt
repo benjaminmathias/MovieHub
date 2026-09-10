@@ -72,6 +72,8 @@ import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
 import com.benjamin.moviehub.ui.components.ActorItem
 import com.benjamin.moviehub.ui.components.MovieGenreTag
+import com.benjamin.moviehub.ui.components.PosterMovieItem
+import com.benjamin.moviehub.ui.components.PosterMovieShimmerItem
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -85,9 +87,11 @@ private val SummaryOverlap = 32.dp
 fun MovieDetailContent(
     movie: Movie,
     credits: MovieCredits,
+    recommendations: MovieRecommendationsUiState = MovieRecommendationsUiState.Empty,
     listState: LazyListState = rememberLazyListState(),
     onToggleFavorite: (() -> Unit)? = null,
     onOpenTmdb: (() -> Unit)? = null,
+    onRecommendationClick: (Int) -> Unit = {},
 ) {
     // Insets edge-to-edge : le bottom système passe en contentPadding, pas en Modifier,
     // pour que le contenu scrolle derrière les barres sans être rogné.
@@ -215,7 +219,54 @@ fun MovieDetailContent(
             }
         }
 
+        when (recommendations) {
+            MovieRecommendationsUiState.Loading -> {
+                item(key = "recommendations") {
+                    RecommendationsSection {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                        ) {
+                            items(3) {
+                                PosterMovieShimmerItem(modifier = Modifier.width(140.dp))
+                            }
+                        }
+                    }
+                }
+            }
+
+            is MovieRecommendationsUiState.Success -> {
+                item(key = "recommendations") {
+                    RecommendationsSection {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                        ) {
+                            items(recommendations.movies, key = Movie::id) { recommended ->
+                                PosterMovieItem(
+                                    movie = recommended,
+                                    onMovieClick = onRecommendationClick,
+                                    modifier = Modifier.width(140.dp),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            MovieRecommendationsUiState.Empty, MovieRecommendationsUiState.Error -> Unit
+        }
     }
+}
+
+@Composable
+private fun RecommendationsSection(content: @Composable () -> Unit) {
+    DetailSection(
+        title = stringResource(R.string.you_might_also_like),
+        topPadding = 0.dp,
+        fullBleed = true,
+        content = content,
+    )
 }
 
 @Composable
