@@ -17,3 +17,5 @@
 .cxx
 local.properties
 apikeys.properties
+/.codex/
+/design-system/
