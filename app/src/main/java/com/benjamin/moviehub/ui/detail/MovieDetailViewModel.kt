@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -44,31 +43,12 @@ class MovieDetailViewModel
                 _uiState.value = MovieDetailUiState.Loading
 
                 try {
-                    coroutineScope {
-                        val movieDeferred = async { repository.getMovieDetails(movieId) }
-                        val creditsDeferred =
-                            async {
-                                try {
-                                    repository.getMovieCredits(movieId)
-                                } catch (e: CancellationException) {
-                                    throw e
-                                } catch (_: Exception) {
-                                    MovieCredits()
-                                }
-                            }
+                    // Throws on movie failure and cancels the credits child automatically.
+                    val creditsDeferred = async { loadCredits(movieId) }
+                    val movie = repository.getMovieDetails(movieId)
 
-                        // Throws on movie failure and cancels the credits child automatically.
-                        val movie = movieDeferred.await()
-
-                        _uiState.value = MovieDetailUiState.Success(movie, MovieCredits())
-
-                        val credits = creditsDeferred.await()
-
-                        if ((_uiState.value as? MovieDetailUiState.Success)?.movie?.id == movieId) {
-                            _uiState.value =
-                                (_uiState.value as MovieDetailUiState.Success).copy(credits = credits)
-                        }
-                    }
+                    _uiState.value = MovieDetailUiState.Success(movie, MovieCredits())
+                    updateCredits(movieId, creditsDeferred.await())
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -93,12 +73,39 @@ class MovieDetailViewModel
                         throw e
                     } catch (e: Exception) {
                         _favoriteActionErrors.tryEmit(Unit)
-                        val latestState = _uiState.value as? MovieDetailUiState.Success
-                        if (latestState?.movie?.id == requestedMovie.id && latestState.movie.isFavorite == newStatus) {
-                            _uiState.value = currentState
-                        }
+                        rollbackFavorite(requestedMovie.id, newStatus, currentState)
                     }
                 }
+            }
+        }
+
+        private suspend fun loadCredits(movieId: Int): MovieCredits =
+            try {
+                repository.getMovieCredits(movieId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                MovieCredits()
+            }
+
+        private fun updateCredits(
+            movieId: Int,
+            credits: MovieCredits,
+        ) {
+            val latest = _uiState.value as? MovieDetailUiState.Success ?: return
+            if (latest.movie.id == movieId) {
+                _uiState.value = latest.copy(credits = credits)
+            }
+        }
+
+        private fun rollbackFavorite(
+            movieId: Int,
+            attemptedStatus: Boolean,
+            previousState: MovieDetailUiState.Success,
+        ) {
+            val latest = _uiState.value as? MovieDetailUiState.Success ?: return
+            if (latest.movie.id == movieId && latest.movie.isFavorite == attemptedStatus) {
+                _uiState.value = previousState
             }
         }
     }
