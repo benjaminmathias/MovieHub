@@ -47,26 +47,12 @@ class MovieRemoteMediator(
     }
 
     /**
-     * Loads the first page while [initialize] runs, before Paging creates the local
-     * [androidx.paging.PagingSource].
-     *
-     * A freshly switched category has no cached rows yet, so the Room
-     * [androidx.room.paging.LimitOffsetPagingSource] does its first (empty) query while the remote
-     * REFRESH writes the rows. Room can drop the invalidation emitted inside that first-query window
-     * (`refreshComplete`), which would leave the new category stuck on an empty list. Preloading the
-     * first page first guarantees the initial local query already sees the rows.
+     * Always launches the initial refresh so dynamic feeds (popular, now playing, upcoming, top
+     * rated) do not stay stale across launches. Paging keeps showing the cached Room rows while the
+     * REFRESH runs, and a failed REFRESH returns [MediatorResult.Error] before clearing anything,
+     * so usable cached data is never lost.
      */
-    override suspend fun initialize(): InitializeAction {
-        val hasCache = database.withTransaction { movieDao.getRemoteKeysCountByType(remoteKeyType) > 0 }
-        if (hasCache) return InitializeAction.SKIP_INITIAL_REFRESH
-
-        val result = persistPage(page = 1, pageSize = INITIAL_LOAD_SIZE, clearCategory = true)
-        return if (result is MediatorResult.Error) {
-            InitializeAction.LAUNCH_INITIAL_REFRESH
-        } else {
-            InitializeAction.SKIP_INITIAL_REFRESH
-        }
-    }
+    override suspend fun initialize(): InitializeAction = InitializeAction.LAUNCH_INITIAL_REFRESH
 
     private suspend fun persistPage(
         page: Int,

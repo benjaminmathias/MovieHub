@@ -99,7 +99,7 @@ class MovieRoomPagingTest {
     fun categoryRefresh_clearsOnlyItsKeysAndPreservesFavorite() =
         runBlocking {
             val dao = database.movieDao()
-            dao.insertMovie(movieEntity(id = 1, isFavorite = true))
+            dao.insertMovie(movieEntity(id = 1, isFavorite = true, runtimeMinutes = 137))
             dao.insertAllKeys(
                 listOf(
                     MovieRemoteKey(1, null, 2, MovieCategory.POPULAR.key),
@@ -118,6 +118,7 @@ class MovieRoomPagingTest {
             assertTrue(result is androidx.paging.RemoteMediator.MediatorResult.Success)
             assertEquals(null, dao.getRemoteKeysForMovieId(99, MovieCategory.POPULAR.key))
             assertEquals(true, dao.getMovieById(1)?.isFavorite)
+            assertEquals(137, dao.getMovieById(1)?.runtimeMinutes)
             assertEquals(listOf(1), dao.getCategoryMovieIds(MovieCategory.POPULAR.key))
         }
 
@@ -229,6 +230,7 @@ class MovieRoomPagingTest {
         id: Int,
         isFavorite: Boolean = false,
         isSearchResult: Boolean = false,
+        runtimeMinutes: Int? = null,
     ) = MovieEntity(
         id = id,
         title = "Movie $id",
@@ -239,5 +241,6 @@ class MovieRoomPagingTest {
         releaseDate = "2020-01-01",
         isFavorite = isFavorite,
         isSearchResult = isSearchResult,
+        runtimeMinutes = runtimeMinutes,
     )
 }

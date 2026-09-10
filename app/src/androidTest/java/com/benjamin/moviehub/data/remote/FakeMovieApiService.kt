@@ -1,11 +1,15 @@
 package com.benjamin.moviehub.data.remote
 
+import java.io.IOException
+
 /**
  * Fake déterministe de [MovieApiService], partagé entre les tests instrumentés
  * (UI et médiateurs de pagination). Aucun appel réseau réel n'est effectué.
  *
  * Les données sont configurables au constructeur ; les valeurs par défaut
  * suffisent aux tests de navigation et de recherche sans configuration.
+ *
+ * [failRequests] simule une panne réseau pour vérifier que le cache Room reste utilisable.
  */
 class FakeMovieApiService(
     private val popularPages: Map<Int, List<MovieDto>> = defaultPopularPages,
@@ -16,6 +20,7 @@ class FakeMovieApiService(
     private val nowPlayingPages: Map<Int, List<MovieDto>> = defaultNowPlayingPages,
     private val upcomingPages: Map<Int, List<MovieDto>> = defaultUpcomingPages,
     private val topRatedPages: Map<Int, List<MovieDto>> = defaultTopRatedPages,
+    private val failRequests: Boolean = false,
 ) : MovieApiService {
     val popularPagesRequested = mutableListOf<Int>()
     val searchPagesRequested = mutableListOf<Int>()
@@ -25,21 +30,25 @@ class FakeMovieApiService(
 
     override suspend fun getPopularMovies(page: Int): MovieResponse {
         popularPagesRequested += page
+        failIfRequested()
         return MovieResponse(popularPages[page].orEmpty())
     }
 
     override suspend fun getNowPlayingMovies(page: Int): MovieResponse {
         nowPlayingPagesRequested += page
+        failIfRequested()
         return MovieResponse(nowPlayingPages[page].orEmpty())
     }
 
     override suspend fun getUpcomingMovies(page: Int): MovieResponse {
         upcomingPagesRequested += page
+        failIfRequested()
         return MovieResponse(upcomingPages[page].orEmpty())
     }
 
     override suspend fun getTopRatedMovies(page: Int): MovieResponse {
         topRatedPagesRequested += page
+        failIfRequested()
         return MovieResponse(topRatedPages[page].orEmpty())
     }
 
@@ -48,6 +57,7 @@ class FakeMovieApiService(
         page: Int,
     ): MovieResponse {
         searchPagesRequested += page
+        failIfRequested()
         val normalized = query.trim().lowercase()
         val pages = searchPages[normalized] ?: popularPages
         return MovieResponse(pages[page].orEmpty())
@@ -59,6 +69,10 @@ class FakeMovieApiService(
 
     override suspend fun getMovieRecommendations(movieId: Int): MovieResponse =
         MovieResponse(recommendations[movieId].orEmpty())
+
+    private fun failIfRequested() {
+        if (failRequests) throw IOException("Fake network failure")
+    }
 
     companion object {
         val defaultPopularPages: Map<Int, List<MovieDto>> =

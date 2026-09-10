@@ -1,12 +1,12 @@
 package com.benjamin.moviehub
 
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import com.benjamin.moviehub.data.remote.FakeMovieApiService
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -17,7 +17,7 @@ import org.junit.Test
 import javax.inject.Inject
 
 @HiltAndroidTest
-class MovieHomeSectionsTest {
+class MovieHomeRefreshTest {
     @get:Rule(order = 0)
     val hiltRule = HiltAndroidRule(this)
 
@@ -33,9 +33,7 @@ class MovieHomeSectionsTest {
     }
 
     @Test
-    fun home_showsSeveralCategoriesOnTheSamePage() {
-        // Synchronize on the fake API request itself instead of an arbitrary wait: the popular feed
-        // is the first one to load, then the UI renders it from Room.
+    fun pullToRefresh_refreshesVisibleCategoryOnce_andScrollingBackDoesNotRefreshAgain() {
         composeTestRule.waitUntil(timeoutMillis = 20_000) {
             fakeApi.popularPagesRequested.contains(1)
         }
@@ -45,23 +43,29 @@ class MovieHomeSectionsTest {
                 .fetchSemanticsNodes()
                 .isNotEmpty()
         }
-        composeTestRule.onNodeWithText("Populaires").assertIsDisplayed()
+        val popularRequestsAfterLoad = fakeApi.popularPagesRequested.count { it == 1 }
 
-        composeTestRule.onNodeWithTag("home_sections").performScrollToNode(hasText("Prochainement"))
+        composeTestRule.onNodeWithTag("home_sections").performTouchInput { swipeDown() }
 
-        // Scrolling a row into view triggers its lazy category load.
         composeTestRule.waitUntil(timeoutMillis = 20_000) {
-            fakeApi.upcomingPagesRequested.contains(1)
+            fakeApi.popularPagesRequested.count { it == 1 } == popularRequestsAfterLoad + 1
         }
+        val popularRequestsAfterRefresh = fakeApi.popularPagesRequested.count { it == 1 }
+
+        // Leave the popular row, then bring it back: recomposition must not refresh it again.
+        composeTestRule.onNodeWithTag("home_sections").performScrollToNode(hasText("Prochainement"))
+        composeTestRule.onNodeWithTag("home_sections").performScrollToNode(hasText("Populaires"))
         composeTestRule.waitUntil(timeoutMillis = 10_000) {
             composeTestRule
-                .onAllNodesWithText("Film Prochainement 1")
+                .onAllNodesWithText("Film Populaire 1")
                 .fetchSemanticsNodes()
                 .isNotEmpty()
         }
 
-        // Initial load must not hit the same endpoints repeatedly.
-        assertEquals(1, fakeApi.popularPagesRequested.count { it == 1 })
-        assertEquals(1, fakeApi.upcomingPagesRequested.count { it == 1 })
+        assertEquals(
+            "Scrolling a category back into composition must not refresh it again",
+            popularRequestsAfterRefresh,
+            fakeApi.popularPagesRequested.count { it == 1 },
+        )
     }
 }

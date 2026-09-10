@@ -26,7 +26,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -111,9 +110,12 @@ private fun HomeContent(
     modifier: Modifier = Modifier,
 ) {
     val refreshState = rememberPullToRefreshState()
-    var refreshNonce by remember { mutableIntStateOf(0) }
     var refreshRequested by remember { mutableStateOf(false) }
     val rowLoading = remember { mutableStateMapOf<MovieCategory, Boolean>() }
+
+    // One pending refresh per category. A row consumes its own entry when it composes, so a single
+    // pull refreshes each category once without re-triggering when a row is disposed and recreated.
+    val pendingRefreshes = remember { mutableStateMapOf<MovieCategory, Boolean>() }
 
     // Keep the pull indicator up from the gesture until every loaded row settles.
     LaunchedEffect(refreshRequested) {
@@ -130,7 +132,7 @@ private fun HomeContent(
         isRefreshing = refreshRequested,
         onRefresh = {
             refreshRequested = true
-            refreshNonce++
+            MovieCategory.entries.forEach { category -> pendingRefreshes[category] = true }
         },
         modifier = modifier,
     ) {
@@ -155,7 +157,8 @@ private fun HomeContent(
                     CategoryRow(
                         category = category,
                         movies = categoryMovies.getValue(category),
-                        refreshNonce = refreshNonce,
+                        refreshRequested = pendingRefreshes[category] == true,
+                        onRefreshHandled = { pendingRefreshes[category] = false },
                         onMovieClick = onMovieClick,
                         onToggleFavorite = onToggleFavorite,
                         onLoadingChanged = { loading -> rowLoading[category] = loading },
@@ -170,15 +173,19 @@ private fun HomeContent(
 private fun CategoryRow(
     category: MovieCategory,
     movies: Flow<PagingData<Movie>>,
-    refreshNonce: Int,
+    refreshRequested: Boolean,
+    onRefreshHandled: () -> Unit,
     onMovieClick: (Int) -> Unit,
     onToggleFavorite: (Movie, Boolean) -> Unit,
     onLoadingChanged: (Boolean) -> Unit,
 ) {
     val lazyPagingItems = movies.collectAsLazyPagingItems()
 
-    LaunchedEffect(refreshNonce) {
-        if (refreshNonce > 0) lazyPagingItems.refresh()
+    LaunchedEffect(refreshRequested) {
+        if (refreshRequested) {
+            lazyPagingItems.refresh()
+            onRefreshHandled()
+        }
     }
 
     val isRowLoading =

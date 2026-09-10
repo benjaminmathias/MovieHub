@@ -34,14 +34,9 @@ class MovieDatabaseMigrationTest {
     @Test
     fun migrate1To2_preservesMovieAndMigratesPopularMembership() =
         runBlocking {
-            createVersionOneDatabase()
+            createVersionOneDatabase(includeRuntimeColumn = true)
 
-            val database =
-                Room
-                    .databaseBuilder(context, MovieDatabase::class.java, dbName)
-                    .addMigrations(MIGRATION_1_2)
-                    .build()
-
+            val database = openMigratedDatabase()
             try {
                 val dao = database.movieDao()
 
@@ -50,15 +45,48 @@ class MovieDatabaseMigrationTest {
                 assertEquals(true, favorite?.isFavorite)
                 assertEquals(120, favorite?.runtimeMinutes)
 
-                // Legacy popular membership and order are preserved in the association table.
-                assertEquals(listOf(1), dao.getCategoryMovieIds("POPULAR"))
+                // Legacy popular order is preserved in the association table.
+                assertEquals(listOf(3, 1), dao.getCategoryMovieIds("POPULAR"))
                 assertEquals(1, dao.getRemoteKeysCountByType("POPULAR"))
+
+                // Existing search associations survive the movies table rebuild.
+                assertEquals(listOf(1), dao.getSearchResultMovieIds("matrix"))
             } finally {
                 database.close()
             }
         }
 
-    private fun createVersionOneDatabase() {
+    @Test
+    fun migrate1To2_withoutRuntimeColumn_opensAndPreservesData() =
+        runBlocking {
+            createVersionOneDatabase(includeRuntimeColumn = false)
+
+            val database = openMigratedDatabase()
+            try {
+                val dao = database.movieDao()
+
+                val favorite = dao.getMovieById(1)
+                assertNotNull(favorite)
+                assertEquals(true, favorite?.isFavorite)
+                // The legacy column never existed, so runtime stays null rather than being invented.
+                assertEquals(null, favorite?.runtimeMinutes)
+
+                assertEquals(listOf(3, 1), dao.getCategoryMovieIds("POPULAR"))
+                assertEquals(1, dao.getRemoteKeysCountByType("POPULAR"))
+                assertEquals(listOf(1), dao.getSearchResultMovieIds("matrix"))
+            } finally {
+                database.close()
+            }
+        }
+
+    private fun openMigratedDatabase(): MovieDatabase =
+        Room
+            .databaseBuilder(context, MovieDatabase::class.java, dbName)
+            .addMigrations(MIGRATION_1_2)
+            .build()
+
+    private fun createVersionOneDatabase(includeRuntimeColumn: Boolean) {
+        val runtimeColumnDefinition = if (includeRuntimeColumn) ", `runtimeMinutes` INTEGER" else ""
         val helper =
             FrameworkSQLiteOpenHelperFactory().create(
                 SupportSQLiteOpenHelper.Configuration
@@ -74,7 +102,7 @@ class MovieDatabaseMigrationTest {
                                         "`voteAverage` REAL NOT NULL, `releaseDate` TEXT NOT NULL, " +
                                         "`genreIds` TEXT NOT NULL, `isFavorite` INTEGER NOT NULL, " +
                                         "`isPopular` INTEGER NOT NULL, `isSearchResult` INTEGER NOT NULL, " +
-                                        "`pageOrder` INTEGER NOT NULL, `runtimeMinutes` INTEGER, " +
+                                        "`pageOrder` INTEGER NOT NULL$runtimeColumnDefinition, " +
                                         "PRIMARY KEY(`id`))",
                                 )
                                 db.execSQL(
@@ -99,18 +127,34 @@ class MovieDatabaseMigrationTest {
             )
 
         helper.writableDatabase.use { db ->
-            db.execSQL(
-                "INSERT INTO `movies` (`id`,`title`,`overview`,`posterPath`,`backdropPath`,`voteAverage`," +
-                    "`releaseDate`,`genreIds`,`isFavorite`,`isPopular`,`isSearchResult`,`pageOrder`,`runtimeMinutes`) " +
-                    "VALUES (1,'Popular Favorite','o',NULL,NULL,7.0,'2020-01-01','28',1,1,0,3,120)",
-            )
-            db.execSQL(
-                "INSERT INTO `movies` (`id`,`title`,`overview`,`posterPath`,`backdropPath`,`voteAverage`," +
-                    "`releaseDate`,`genreIds`,`isFavorite`,`isPopular`,`isSearchResult`,`pageOrder`,`runtimeMinutes`) " +
-                    "VALUES (2,'Plain','o',NULL,NULL,6.0,'2021-01-01','',0,0,0,-1,NULL)",
-            )
+            val runtimeColumn = if (includeRuntimeColumn) ",`runtimeMinutes`" else ""
+
+            fun insertMovie(
+                id: Int,
+                title: String,
+                isFavorite: Int,
+                isPopular: Int,
+                pageOrder: Int,
+                runtimeMinutes: Int?,
+            ) {
+                val runtimeValue = if (includeRuntimeColumn) ",${runtimeMinutes ?: "NULL"}" else ""
+                db.execSQL(
+                    "INSERT INTO `movies` (`id`,`title`,`overview`,`posterPath`,`backdropPath`,`voteAverage`," +
+                        "`releaseDate`,`genreIds`,`isFavorite`,`isPopular`,`isSearchResult`,`pageOrder`$runtimeColumn) " +
+                        "VALUES ($id,'$title','o',NULL,NULL,7.0,'2020-01-01','28',$isFavorite,$isPopular,0,$pageOrder$runtimeValue)",
+                )
+            }
+
+            insertMovie(id = 1, title = "Popular Favorite", isFavorite = 1, isPopular = 1, pageOrder = 3, runtimeMinutes = 120)
+            insertMovie(id = 2, title = "Plain", isFavorite = 0, isPopular = 0, pageOrder = -1, runtimeMinutes = null)
+            // A second popular movie with a lower pageOrder proves ordering is carried over.
+            insertMovie(id = 3, title = "Another Popular", isFavorite = 0, isPopular = 1, pageOrder = 1, runtimeMinutes = null)
+
             db.execSQL(
                 "INSERT INTO `remote_keys` (`movieId`,`prevKey`,`nextKey`,`type`) VALUES (1,NULL,2,'POPULAR')",
+            )
+            db.execSQL(
+                "INSERT INTO `movie_search_results` (`queryKey`,`movieId`,`pageOrder`) VALUES ('matrix',1,0)",
             )
         }
         helper.close()
