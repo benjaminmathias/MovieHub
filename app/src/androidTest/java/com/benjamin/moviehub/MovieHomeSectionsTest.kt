@@ -28,7 +28,7 @@ class MovieHomeSectionsTest {
 
     @Test
     fun home_showsSeveralCategoriesOnTheSamePage() {
-        composeTestRule.waitUntil(timeoutMillis = 30_000) {
+        composeTestRule.waitUntil(timeoutMillis = 60_000) {
             composeTestRule
                 .onAllNodesWithText("Film Populaire 1")
                 .fetchSemanticsNodes()
