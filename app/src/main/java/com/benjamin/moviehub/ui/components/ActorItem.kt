@@ -51,7 +51,7 @@ fun ActorItem(
             )
             AsyncImage(
                 model = actor.profileUrl.takeIf(String::isNotBlank),
-                contentDescription = actor.profileUrl.takeIf(String::isNotBlank)?.let { actor.name },
+                contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )

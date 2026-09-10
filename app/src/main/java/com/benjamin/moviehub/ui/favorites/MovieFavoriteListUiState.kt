@@ -11,6 +11,6 @@ sealed class MovieFavoriteListUiState {
     ) : MovieFavoriteListUiState()
 
     data class Error(
-        @StringRes val errorMessage: Int,
+        @param:StringRes val errorMessage: Int,
     ) : MovieFavoriteListUiState()
 }

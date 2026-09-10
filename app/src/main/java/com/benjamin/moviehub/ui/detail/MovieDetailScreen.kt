@@ -43,6 +43,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
@@ -69,7 +70,7 @@ fun MovieDetailScreen(
     val listState = rememberLazyListState()
     val density = LocalDensity.current
     // 0f (sur le hero) -> 1f (contenu scrollé) : évite le flash opaque dès 1px scrollé.
-    val toolbarProgress by remember {
+    val toolbarProgress by remember(density) {
         derivedStateOf {
             if (listState.firstVisibleItemIndex > 0) {
                 1f
@@ -128,7 +129,10 @@ fun MovieDetailScreen(
                             Modifier
                                 .weight(1f)
                                 .padding(horizontal = 4.dp)
-                                .graphicsLayer { alpha = toolbarProgress },
+                                .graphicsLayer { alpha = toolbarProgress }
+                                .then(
+                                    if (toolbarVisible) Modifier else Modifier.clearAndSetSemantics {},
+                                ),
                     )
                 } else {
                     Spacer(modifier = Modifier.weight(1f))

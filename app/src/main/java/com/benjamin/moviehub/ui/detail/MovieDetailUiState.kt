@@ -13,6 +13,6 @@ sealed class MovieDetailUiState {
     ) : MovieDetailUiState()
 
     data class Error(
-        @StringRes val errorMessage: Int,
+        @param:StringRes val errorMessage: Int,
     ) : MovieDetailUiState()
 }

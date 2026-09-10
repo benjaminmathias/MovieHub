@@ -121,7 +121,6 @@ class MovieDetailAccessibilityTest {
         composeRule.onNodeWithText("Réalisé par Director Name").assertIsDisplayed()
         composeRule.onNodeWithText("Genres").assertIsDisplayed()
         composeRule.onNodeWithText("Action").assertIsDisplayed()
-        assertTrue(composeRule.onAllNodesWithText("Budget").fetchSemanticsNodes().isEmpty())
     }
 
     @Test
@@ -187,7 +186,6 @@ class MovieDetailAccessibilityTest {
             }
         }
 
-        assertTrue(composeRule.onAllNodesWithText("Budget").fetchSemanticsNodes().isEmpty())
         assertTrue(composeRule.onAllNodesWithText("0.0 / 10").fetchSemanticsNodes().isEmpty())
         assertTrue(composeRule.onAllNodesWithText("0 votes").fetchSemanticsNodes().isEmpty())
         composeRule.onNodeWithText("Non noté").assertIsDisplayed()

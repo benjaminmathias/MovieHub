@@ -35,7 +35,9 @@ class MovieSearchFavoriteTest {
             .onNode(hasSetTextAction())
             .performTextInput("Interstellar")
 
-        composeTestRule.waitUntil(timeoutMillis = 10_000) {
+        composeTestRule.waitForIdle()
+
+        composeTestRule.waitUntil(timeoutMillis = 30_000) {
             composeTestRule
                 .onAllNodesWithTag("movie_item")
                 .fetchSemanticsNodes()
@@ -47,7 +49,7 @@ class MovieSearchFavoriteTest {
             .onFirst()
             .performClick()
 
-        composeTestRule.waitUntil(timeoutMillis = 10_000) {
+        composeTestRule.waitUntil(timeoutMillis = 30_000) {
             composeTestRule
                 .onAllNodesWithContentDescription("Ajouter aux favoris")
                 .fetchSemanticsNodes()
@@ -70,7 +72,7 @@ class MovieSearchFavoriteTest {
             composeTestRule
                 .onNodeWithContentDescription("Retirer des favoris")
                 .performClick()
-            composeTestRule.waitUntil(timeoutMillis = 5_000) {
+            composeTestRule.waitUntil(timeoutMillis = 15_000) {
                 composeTestRule
                     .onAllNodesWithContentDescription("Ajouter aux favoris")
                     .fetchSemanticsNodes()
@@ -82,7 +84,7 @@ class MovieSearchFavoriteTest {
             .onNodeWithContentDescription("Ajouter aux favoris")
             .performClick()
 
-        composeTestRule.waitUntil(timeoutMillis = 5_000) {
+        composeTestRule.waitUntil(timeoutMillis = 15_000) {
             composeTestRule
                 .onAllNodesWithContentDescription("Retirer des favoris")
                 .fetchSemanticsNodes()

@@ -152,7 +152,9 @@ fun MovieDetailContent(
 
         if (movie.overview.isNotBlank()) {
             item(key = "synopsis") {
-                DetailSection(title = stringResource(R.string.synopsis)) {
+                DetailSection(
+                    title = stringResource(R.string.synopsis),
+                ) {
                     // Colonne dédiée : sans elle, les deux enfants se superposeraient
                     // dans le Box de DetailSection (le bouton tombait dans le texte).
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -198,6 +200,7 @@ fun MovieDetailContent(
             item(key = "cast") {
                 DetailSection(
                     title = stringResource(R.string.cast_principal),
+                    topPadding = 0.dp,
                     fullBleed = true,
                 ) {
                     LazyRow(
@@ -520,11 +523,12 @@ private fun DetailSection(
     title: String,
     modifier: Modifier = Modifier,
     horizontalPadding: Dp = 16.dp,
+    topPadding: Dp = 12.dp,
     fullBleed: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     Column(
-        modifier = modifier.fillMaxWidth().padding(vertical = 12.dp),
+        modifier = modifier.fillMaxWidth().padding(top = topPadding, bottom = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
