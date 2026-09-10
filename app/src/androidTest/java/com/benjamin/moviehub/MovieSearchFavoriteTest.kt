@@ -4,7 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
-import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -35,15 +35,15 @@ class MovieSearchFavoriteTest {
             .onNode(hasSetTextAction())
             .performTextInput("Interstellar")
 
-        composeTestRule.waitUntil(timeoutMillis = 15_000) {
+        composeTestRule.waitUntil(timeoutMillis = 10_000) {
             composeTestRule
-                .onAllNodesWithText("Interstellar")
+                .onAllNodesWithTag("movie_item")
                 .fetchSemanticsNodes()
-                .size >= 2
+                .isNotEmpty()
         }
 
         composeTestRule
-            .onAllNodesWithText("Interstellar")
+            .onAllNodesWithTag("movie_item")
             .onFirst()
             .performClick()
 

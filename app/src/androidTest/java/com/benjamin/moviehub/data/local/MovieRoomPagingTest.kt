@@ -10,11 +10,8 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.benjamin.moviehub.data.paging.MovieRemoteMediator
 import com.benjamin.moviehub.data.paging.SearchMovieRemoteMediator
-import com.benjamin.moviehub.data.remote.ActorDto
-import com.benjamin.moviehub.data.remote.MovieApiService
-import com.benjamin.moviehub.data.remote.MovieCreditsDto
-import com.benjamin.moviehub.data.remote.MovieDto
-import com.benjamin.moviehub.data.remote.MovieResponse
+import com.benjamin.moviehub.data.remote.FakeMovieApiService
+import com.benjamin.moviehub.data.remote.movieDto
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -22,18 +19,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-
-private fun movieDto(id: Int) =
-    MovieDto(
-        id = id,
-        title = "Movie $id",
-        description = "Overview",
-        posterPath = null,
-        backdropPath = null,
-        voteAverage = 7.0,
-        releaseDate = "2020-01-01",
-        genreIds = emptyList(),
-    )
 
 @RunWith(AndroidJUnit4::class)
 @OptIn(ExperimentalPagingApi::class)
@@ -183,36 +168,4 @@ class MovieRoomPagingTest {
         isPopular = isPopular,
         isSearchResult = isSearchResult,
     )
-
-    private class FakeMovieApiService(
-        private val popularPages: Map<Int, List<MovieDto>>,
-        private val searchPages: Map<String, Map<Int, List<MovieDto>>> = emptyMap(),
-    ) : MovieApiService {
-        val popularPagesRequested = mutableListOf<Int>()
-        val searchPagesRequested = mutableListOf<Int>()
-
-        override suspend fun getPopularMovies(
-            page: Int,
-        ): MovieResponse {
-            popularPagesRequested += page
-            return MovieResponse(popularPages[page].orEmpty())
-        }
-
-        override suspend fun searchMovies(
-            query: String,
-            page: Int,
-        ): MovieResponse {
-            searchPagesRequested += page
-            val requestedPages = searchPages[query.trim().lowercase()] ?: popularPages
-            return MovieResponse(requestedPages[page].orEmpty())
-        }
-
-        override suspend fun getMovieDetails(
-            movieId: Int,
-        ): MovieDto = movieDto(movieId)
-
-        override suspend fun getMovieCredits(
-            movieId: Int,
-        ): MovieCreditsDto = MovieCreditsDto(emptyList<ActorDto>())
-    }
 }

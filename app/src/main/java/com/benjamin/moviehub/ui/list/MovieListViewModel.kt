@@ -28,7 +28,7 @@ class MovieListViewModel
         @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
         val pagedMovies =
             _searchQuery
-                .debounce(500L)
+                .debounce { query -> if (query.isEmpty()) 0L else 500L }
                 .map(String::trim)
                 .distinctUntilChanged()
                 .flatMapLatest { query ->

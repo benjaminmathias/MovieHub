@@ -1,7 +1,6 @@
-# MovieHub 🎬
+# MovieHub
 
-MovieHub est une application Android permettant d'afficher les films populaires et d'en rechercher via l'API TMDB.
-L'application est **Offline-First** avec une gestion de la pagination.
+MovieHub est une application Android qui affiche les films populaires et permet de rechercher des films via l'API TMDB. L'application est **Offline-First** avec pagination infinie.
 
 <p align="center">
   <img src="screenshots/home_popular.png" width="200" />
@@ -9,47 +8,64 @@ L'application est **Offline-First** avec une gestion de la pagination.
   <img src="screenshots/search_result.png" width="200" />
 </p>
 
-## 🚀 Fonctionnalités Clés
+## Fonctionnalités
 
-* **Architecture Offline-First** : Utilisation de Room comme *Single Source of Truth* (SSOT). L'application fonctionne parfaitement sans connexion réseau grâce au cache local.
-* **Pagination Infinie** : Implémentation de Paging 3 avec `RemoteMediator` pour gérer la synchronisation API/Base de données.
-* **Recherche Réactive** : Recherche instantanée avec *Debounce* et gestion des états vides/erreurs.
-* **Gestion des Favoris** : Sauvegarde locale des films favoris.
-* **Image Caching** : Optimisation réseau et mémoire avec Coil (Cache disque agressif).
+- **Offline-First** : Room comme *Single Source of Truth* (SSOT). L'application fonctionne sans connexion grâce au cache local.
+- **Pagination infinie** : Paging 3 avec `RemoteMediator` pour synchroniser l'API et la base de données.
+- **Recherche réactive** : recherche instantanée avec debounce et gestion des états vide / erreur / hors-ligne.
+- **Favoris** : sauvegarde locale, suppression par balayage avec action d'accessibilité dédiée.
+- **Détail riche** : synopsis, note, durée, genres, réalisateur et distribution.
+- **Thème** : clair / sombre / système, mémorisé via DataStore.
+- **Mise en cache des images** : Coil (mémoire + disque), nettoyable depuis les paramètres.
 
-## 🛠 Tech Stack
+## Stack technique
 
-* **Langage** : Kotlin
-* **UI** : Jetpack Compose (Material 3)
-* **Navigation** : Navigation 3
-* **Architecture** : MVVM + Clean Architecture (Domain/Data/UI layers)
-* **Injection de dépendance** : Hilt
-* **Réseau** : Retrofit
-* **Base de données** : Room
-* **Pagination** : Paging 3 (avec RemoteMediator)
-* **Images** : Coil
-* **Programmation Asynchrone** : Coroutines + Flow
+| Domaine | Technologie |
+|---|---|
+| Langage | Kotlin |
+| UI | Jetpack Compose (Material 3) |
+| Navigation | Navigation 3 |
+| Architecture | MVVM + couches data / domain / ui |
+| Injection | Hilt |
+| Réseau | Retrofit + OkHttp |
+| Persistance | Room |
+| Pagination | Paging 3 (`RemoteMediator`) |
+| Images | Coil |
+| Asynchrone | Coroutines + Flow |
 
-## 🏗 Choix d'Architecture
+## Architecture
+
+Le code est séparé en trois couches :
+
+1. **ui** — Compose + ViewModel ; chaque écran expose un état scellé (`Loading` / `Success` / `Error`) via un `StateFlow`.
+2. **domain** — modèles (`Movie`, `Actor`, `MovieCredits`) et contrats de repository.
+3. **data** — Retrofit, Room, mappers et implémentations des repositories.
 
 ### Single Source of Truth (SSOT)
-L'application ne montre jamais directement les données venant de l'API.
-1.  Le `RemoteMediator` récupère les données réseau.
-2.  Il fusionne intelligemment les données (préserve les favoris locaux via une stratégie de *Merge*).
-3.  Il sauvegarde dans Room.
-4.  L'UI observe uniquement la base de données Room.
-Cela garantit une cohérence totale des données et permet le support hors-ligne natif.
 
-### Gestion des États (State Management)
-Chaque écran expose un `UiState` scellé (Loading, Success, Error) via un `StateFlow`, consommé par l'UI de manière réactive.
+L'UI n'affiche jamais les données de l'API directement :
 
-## ⚙️ Installation Locale (Prérequis)
+1. Le `RemoteMediator` récupère les données réseau.
+2. Il les fusionne avec l'existant (les favoris locaux sont préservés via une stratégie de *merge*).
+3. Il écrit dans Room.
+4. L'UI observe uniquement Room.
 
-L'application utilise The Movie Database (TMDB) comme source de données. Pour des raisons de sécurité, la clé API n'est pas versionnée. Pour compiler le projet localement :
+Cela garantit une cohérence des données et un support hors-ligne natif.
+
+## Tests
+
+Trois niveaux de tests :
+
+- **Unitaires** (`src/test`) : mappers, repository et ViewModels (coroutines, debounce, favoris, détail).
+- **Instrumentés** (`src/androidTest`) : navigation, recherche/favoris et médiateurs de pagination, exécutés avec une **fausse API déterministe** (`FakeMovieApiService`) sans dépendance réseau.
+- **Room/Paging** : synchronisation API ↔ base vérifiée sur une base en mémoire.
+
+## Installation
+
+L'application utilise The Movie Database (TMDB) comme source de données. La clé API n'est pas versionnée :
 
 1. Clonez ce dépôt.
-2. Créez un compte gratuit sur [TMDB](https://www.themoviedb.org/settings/api) pour générer une clé API (API Read Access Token / v3 auth).
-3. À la racine du projet, ouvrez ou créez le fichier `local.properties`.
-4. Ajoutez la ligne suivante en remplaçant par votre clé :
+2. Créez un compte gratuit sur [TMDB](https://www.themoviedb.org/settings/api) pour générer une clé.
+3. À la racine du projet, créez (ou ouvrez) le fichier `local.properties` et ajoutez :
    `TMDB_API_KEY=votre_cle_api_ici`
-5. Synchronisez Gradle et exécutez le projet.
+4. Synchronisez Gradle et lancez le projet.
