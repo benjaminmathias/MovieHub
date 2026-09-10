@@ -63,9 +63,7 @@ private fun toTmdbImageUrl(
  */
 fun MovieDto.toEntity(
     isFavorite: Boolean = false,
-    isPopular: Boolean = false,
     isSearchResult: Boolean = false,
-    pageOrder: Int = -1,
     runtimeMinutesOverride: Int? = null,
 ): MovieEntity {
     val finalGenreIds =
@@ -83,9 +81,7 @@ fun MovieDto.toEntity(
         releaseDate = this.releaseDate ?: "",
         genreIds = finalGenreIds,
         isFavorite = isFavorite,
-        isPopular = isPopular,
         isSearchResult = isSearchResult,
-        pageOrder = pageOrder,
         runtimeMinutes = runtimeMinutesOverride ?: runtimeMinutes,
     )
 }
@@ -130,15 +126,13 @@ fun MovieEntity.toDomain(): Movie =
         genreIds = genreIds,
         genres = genreIds.mapNotNull { tmdbGenreNames[it] },
         runtimeMinutes = runtimeMinutes,
+        posterPathSmall = toTmdbImageUrl(posterPath, "w185"),
     )
 
 /**
  * Convert a Movie (Domain model) to a MovieEntity (DB entity)
  */
-fun Movie.toEntity(
-    isFavorite: Boolean,
-    isPopular: Boolean,
-): MovieEntity =
+fun Movie.toEntity(isFavorite: Boolean): MovieEntity =
     MovieEntity(
         id = this.id,
         title = this.title,
@@ -149,6 +143,5 @@ fun Movie.toEntity(
         voteAverage = this.voteAverage,
         genreIds = this.genreIds,
         isFavorite = isFavorite,
-        isPopular = isPopular,
         runtimeMinutes = runtimeMinutes,
     )

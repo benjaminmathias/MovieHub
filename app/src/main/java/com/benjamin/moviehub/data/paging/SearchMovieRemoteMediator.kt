@@ -71,9 +71,7 @@ class SearchMovieRemoteMediator(
 
                         dto.toEntity(
                             isFavorite = localMovie?.isFavorite ?: false,
-                            isPopular = localMovie?.isPopular ?: false,
                             isSearchResult = true,
-                            pageOrder = localMovie?.takeIf { it.isPopular }?.pageOrder ?: -1,
                             runtimeMinutesOverride = localMovie?.runtimeMinutes,
                         )
                     }

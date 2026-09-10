@@ -14,4 +14,6 @@ data class Movie(
     val genres: List<String>,
     val runtimeMinutes: Int? = null,
     val voteCount: Int? = null,
+    /** Small poster variant used by the compact home rows. */
+    val posterPathSmall: String? = null,
 )

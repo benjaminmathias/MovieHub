@@ -8,12 +8,15 @@ import com.benjamin.moviehub.data.remote.MovieApiService
 import com.benjamin.moviehub.data.remote.MovieDto
 import com.benjamin.moviehub.data.remote.MovieResponse
 import com.benjamin.moviehub.domain.model.Movie
+import com.benjamin.moviehub.domain.model.MovieCategory
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -80,7 +83,6 @@ class MovieRepositoryTest {
             assertEquals(true, entitySlot.captured.isFavorite)
             assertEquals("/poster.jpg", entitySlot.captured.posterPath)
             assertEquals("/backdrop.jpg", entitySlot.captured.backdropPath)
-            assertEquals(false, entitySlot.captured.isPopular)
             assertEquals(false, entitySlot.captured.isSearchResult)
         }
 
@@ -114,5 +116,31 @@ class MovieRepositoryTest {
             assertEquals("https://image.tmdb.org/t/p/w500/poster.jpg", result.single().posterPath)
             assertEquals("https://www.themoviedb.org/movie/9", result.single().webUrl)
             coVerify(exactly = 0) { dao.insertMovie(any()) }
+        }
+
+    @Test
+    fun `get hero movie maps the first cached category movie`() =
+        runBlocking {
+            val apiService = mockk<MovieApiService>()
+            val database = mockk<MovieDatabase>()
+            val dao = mockk<MovieDao>()
+            val repository = MovieRepositoryImpl(apiService, database, dao)
+            val entity =
+                MovieEntity(
+                    id = 5,
+                    title = "Hero",
+                    overview = "Overview",
+                    posterPath = "/poster.jpg",
+                    backdropPath = "/backdrop.jpg",
+                    voteAverage = 8.0,
+                    releaseDate = "2024-01-01",
+                )
+            coEvery { dao.getHeroMovieFlow(MovieCategory.POPULAR.key) } returns flowOf(entity)
+
+            val result = repository.getHeroMovie(MovieCategory.POPULAR).first()
+
+            assertEquals(5, result?.id)
+            assertEquals("https://image.tmdb.org/t/p/w500/poster.jpg", result?.posterPath)
+            assertEquals("https://image.tmdb.org/t/p/w185/poster.jpg", result?.posterPathSmall)
         }
 }

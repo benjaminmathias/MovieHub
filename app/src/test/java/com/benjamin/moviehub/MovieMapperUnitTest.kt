@@ -93,15 +93,6 @@ class MovieMapperUnitTest {
     }
 
     @Test
-    fun `toEntity should map page order correctly`() {
-        val dto = createFakeDto(id = 500)
-        val entity = dto.toEntity(pageOrder = 10)
-
-        assertEquals(10, entity.pageOrder)
-        assertEquals(500, entity.id)
-    }
-
-    @Test
     fun `toEntity should extract genre IDs from genre objects when genreIds is null`() {
         val detailDto =
             MovieDto(
@@ -183,5 +174,12 @@ class MovieMapperUnitTest {
 
         assertEquals(1, result.actors.size)
         assertEquals("Director Name", result.director)
+    }
+
+    @Test
+    fun `toDomain exposes a small poster variant`() {
+        val domain = createFakeEntity().copy(posterPath = "/pic.jpg").toDomain()
+
+        assertEquals("https://image.tmdb.org/t/p/w185/pic.jpg", domain.posterPathSmall)
     }
 }

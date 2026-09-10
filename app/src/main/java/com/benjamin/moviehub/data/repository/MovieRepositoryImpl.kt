@@ -17,6 +17,7 @@ import com.benjamin.moviehub.data.paging.PREFETCH_DISTANCE
 import com.benjamin.moviehub.data.paging.SearchMovieRemoteMediator
 import com.benjamin.moviehub.data.remote.MovieApiService
 import com.benjamin.moviehub.domain.model.Movie
+import com.benjamin.moviehub.domain.model.MovieCategory
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -34,7 +35,10 @@ class MovieRepositoryImpl
         private val movieDao: MovieDao,
     ) : MovieRepository {
         @OptIn(ExperimentalPagingApi::class)
-        override fun getPagedMovies(query: String?): Flow<PagingData<Movie>> {
+        override fun getPagedMovies(
+            query: String?,
+            category: MovieCategory,
+        ): Flow<PagingData<Movie>> {
             val effectiveQuery = query?.trim()
             val isSearch = !effectiveQuery.isNullOrEmpty()
             val queryKey = effectiveQuery?.let(SearchQueryKey::normalize)
@@ -51,13 +55,13 @@ class MovieRepositoryImpl
                     if (isSearch) {
                         SearchMovieRemoteMediator(apiService, database, requireNotNull(effectiveQuery))
                     } else {
-                        MovieRemoteMediator(apiService, database)
+                        MovieRemoteMediator(apiService, database, category)
                     },
                 pagingSourceFactory = {
                     if (isSearch) {
                         movieDao.searchMoviesPaging(requireNotNull(queryKey))
                     } else {
-                        movieDao.getPopularMoviesPaging()
+                        movieDao.getCategoryMoviesPaging(category.key)
                     }
                 },
             ).flow
@@ -65,6 +69,12 @@ class MovieRepositoryImpl
                     pagingData.map { entity -> entity.toDomain() }
                 }
         }
+
+        override fun getHeroMovie(category: MovieCategory): Flow<Movie?> =
+            movieDao
+                .getHeroMovieFlow(category.key)
+                .map { entity -> entity?.toDomain() }
+                .flowOn(Dispatchers.IO)
 
         override suspend fun getMovieDetails(movieId: Int): Movie {
             return try {
@@ -92,7 +102,7 @@ class MovieRepositoryImpl
             movie: Movie,
             isFavorite: Boolean,
         ) {
-            movieDao.setFavorite(movie.toEntity(isFavorite = isFavorite, isPopular = false), isFavorite)
+            movieDao.setFavorite(movie.toEntity(isFavorite = isFavorite), isFavorite)
         }
 
         override fun getFavoriteMovies(): Flow<List<Movie>> =

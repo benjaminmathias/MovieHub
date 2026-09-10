@@ -2,6 +2,7 @@ package com.benjamin.moviehub.domain.repository
 
 import androidx.paging.PagingData
 import com.benjamin.moviehub.domain.model.Movie
+import com.benjamin.moviehub.domain.model.MovieCategory
 import com.benjamin.moviehub.domain.model.MovieCredits
 import kotlinx.coroutines.flow.Flow
 
@@ -10,9 +11,17 @@ import kotlinx.coroutines.flow.Flow
  */
 interface MovieRepository {
     /**
-     * Get paged movies from the API, default ones or through query
+     * Get paged movies from the API, a home [category] by default or through [query].
+     *
+     * A non-blank [query] takes precedence and returns search results regardless of [category].
      */
-    fun getPagedMovies(query: String? = null): Flow<PagingData<Movie>>
+    fun getPagedMovies(
+        query: String? = null,
+        category: MovieCategory = MovieCategory.POPULAR,
+    ): Flow<PagingData<Movie>>
+
+    /** First movie of a home [category], used by the hero banner. Emits null until it is cached. */
+    fun getHeroMovie(category: MovieCategory = MovieCategory.POPULAR): Flow<Movie?>
 
     /**
      * Get movie details from the API and store it in the db the first time

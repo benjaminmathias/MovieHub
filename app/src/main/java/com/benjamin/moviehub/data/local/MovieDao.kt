@@ -30,9 +30,7 @@ interface MovieDao {
         val mergedMovie =
             movie.copy(
                 isFavorite = localMovie?.isFavorite ?: movie.isFavorite,
-                isPopular = localMovie?.isPopular ?: movie.isPopular,
                 isSearchResult = localMovie?.isSearchResult ?: movie.isSearchResult,
-                pageOrder = localMovie?.pageOrder ?: movie.pageOrder,
                 runtimeMinutes = movie.runtimeMinutes ?: localMovie?.runtimeMinutes,
             )
 
@@ -66,9 +64,36 @@ interface MovieDao {
     @Query("SELECT * FROM movies WHERE isFavorite = 1 ORDER BY title COLLATE NOCASE ASC, id ASC")
     fun getFavoriteMoviesFlow(): Flow<List<MovieEntity>>
 
-    // --- PAGINATION (SOURCES) ---
-    @Query("SELECT * FROM movies WHERE isPopular = 1 ORDER BY pageOrder ASC, id ASC")
-    fun getPopularMoviesPaging(): PagingSource<Int, MovieEntity>
+    // --- CATEGORIES (ASSOCIATION + PAGINATION) ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCategoryMovies(items: List<MovieCategoryEntity>)
+
+    @Query("DELETE FROM movie_categories WHERE category = :category")
+    suspend fun clearCategoryMovies(category: String)
+
+    @Query(
+        """
+        SELECT movies.* FROM movies
+        INNER JOIN movie_categories ON movies.id = movie_categories.movieId
+        WHERE movie_categories.category = :category
+        ORDER BY movie_categories.pageOrder ASC, movies.id ASC
+        """,
+    )
+    fun getCategoryMoviesPaging(category: String): PagingSource<Int, MovieEntity>
+
+    @Query("SELECT movieId FROM movie_categories WHERE category = :category ORDER BY pageOrder ASC")
+    suspend fun getCategoryMovieIds(category: String): List<Int>
+
+    @Query(
+        """
+        SELECT movies.* FROM movies
+        INNER JOIN movie_categories ON movies.id = movie_categories.movieId
+        WHERE movie_categories.category = :category
+        ORDER BY movie_categories.pageOrder ASC, movies.id ASC
+        LIMIT 1
+        """,
+    )
+    fun getHeroMovieFlow(category: String): Flow<MovieEntity?>
 
     @Query(
         """
@@ -111,16 +136,13 @@ interface MovieDao {
         DELETE FROM movies
         WHERE isSearchResult = 1
           AND isFavorite = 0
-          AND isPopular = 0
           AND id NOT IN (:preserveMovieIds)
           AND id NOT IN (SELECT movieId FROM movie_search_results)
+          AND id NOT IN (SELECT movieId FROM movie_categories)
         """,
     )
     suspend fun clearOrphanSearchMovies(preserveMovieIds: List<Int>)
 
     @Query("SELECT movieId FROM movie_search_results WHERE queryKey = :queryKey ORDER BY pageOrder ASC")
     suspend fun getSearchResultMovieIds(queryKey: String): List<Int>
-
-    @Query("UPDATE movies SET isPopular = 0, pageOrder = -1 WHERE isPopular = 1")
-    suspend fun clearPopularMovies()
 }

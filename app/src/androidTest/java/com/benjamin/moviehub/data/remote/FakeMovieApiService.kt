@@ -13,13 +13,34 @@ class FakeMovieApiService(
     private val details: Map<Int, MovieDto> = emptyMap(),
     private val credits: Map<Int, MovieCreditsDto> = emptyMap(),
     private val recommendations: Map<Int, List<MovieDto>> = emptyMap(),
+    private val nowPlayingPages: Map<Int, List<MovieDto>> = defaultNowPlayingPages,
+    private val upcomingPages: Map<Int, List<MovieDto>> = defaultUpcomingPages,
+    private val topRatedPages: Map<Int, List<MovieDto>> = defaultTopRatedPages,
 ) : MovieApiService {
     val popularPagesRequested = mutableListOf<Int>()
     val searchPagesRequested = mutableListOf<Int>()
+    val nowPlayingPagesRequested = mutableListOf<Int>()
+    val upcomingPagesRequested = mutableListOf<Int>()
+    val topRatedPagesRequested = mutableListOf<Int>()
 
     override suspend fun getPopularMovies(page: Int): MovieResponse {
         popularPagesRequested += page
         return MovieResponse(popularPages[page].orEmpty())
+    }
+
+    override suspend fun getNowPlayingMovies(page: Int): MovieResponse {
+        nowPlayingPagesRequested += page
+        return MovieResponse(nowPlayingPages[page].orEmpty())
+    }
+
+    override suspend fun getUpcomingMovies(page: Int): MovieResponse {
+        upcomingPagesRequested += page
+        return MovieResponse(upcomingPages[page].orEmpty())
+    }
+
+    override suspend fun getTopRatedMovies(page: Int): MovieResponse {
+        topRatedPagesRequested += page
+        return MovieResponse(topRatedPages[page].orEmpty())
     }
 
     override suspend fun searchMovies(
@@ -42,6 +63,15 @@ class FakeMovieApiService(
     companion object {
         val defaultPopularPages: Map<Int, List<MovieDto>> =
             mapOf(1 to (1..5).map { movieDto(id = it, title = "Film Populaire $it") })
+
+        val defaultNowPlayingPages: Map<Int, List<MovieDto>> =
+            mapOf(1 to (1..5).map { movieDto(id = 100 + it, title = "Film En Salle $it") })
+
+        val defaultUpcomingPages: Map<Int, List<MovieDto>> =
+            mapOf(1 to (1..5).map { movieDto(id = 200 + it, title = "Film Prochainement $it") })
+
+        val defaultTopRatedPages: Map<Int, List<MovieDto>> =
+            mapOf(1 to (1..5).map { movieDto(id = 300 + it, title = "Film Mieux Note $it") })
 
         val defaultSearchPages: Map<String, Map<Int, List<MovieDto>>> =
             mapOf("interstellar" to mapOf(1 to listOf(movieDto(id = 157336, title = "Interstellar"))))
