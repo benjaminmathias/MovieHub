@@ -12,6 +12,9 @@ sealed interface Route : NavKey {
     data object FavoriteList : Route
 
     @Serializable
+    data object Search : Route
+
+    @Serializable
     data class Detail(
         val movieId: Int,
     ) : Route

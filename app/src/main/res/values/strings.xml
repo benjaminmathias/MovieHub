@@ -1,7 +1,12 @@
 <resources>
     <string name="app_name">MovieHub</string>
 
-    <string name="movie_hub_popular">Films Populaires</string>
+    <string name="category_popular">Populaires</string>
+    <string name="category_now_playing">En salle</string>
+    <string name="category_upcoming">Prochainement</string>
+    <string name="category_top_rated">Mieux notés</string>
+    <string name="spotlight_badge">À LA UNE</string>
+    <string name="view_details">Voir les détails</string>
     <string name="error_prefix">Erreur : %1$s</string>
     <string name="home_tab">Accueil</string>
     <string name="favorite_tab">Favoris</string>
@@ -10,7 +15,6 @@
     <string name="search_label">Rechercher un film</string>
     <string name="clear_search">Effacer</string>
     <string name="error_loading_movies">Impossible de charger les films.</string>
-    <string name="no_movie_available">Aucun film disponible</string>
     <string name="empty_search_results">Aucun résultat pour "%1$s"</string>
     <string name="retry">Réessayer</string>
 

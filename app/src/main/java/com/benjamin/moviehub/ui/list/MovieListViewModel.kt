@@ -2,18 +2,20 @@ package com.benjamin.moviehub.ui.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.benjamin.moviehub.domain.model.Movie
+import com.benjamin.moviehub.domain.model.MovieCategory
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -22,20 +24,37 @@ class MovieListViewModel
     constructor(
         private val repository: MovieRepository,
     ) : ViewModel() {
-        private val _searchQuery = MutableStateFlow("")
-        val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+        private val _favoriteActionErrors = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+        val favoriteActionErrors = _favoriteActionErrors.asSharedFlow()
 
-        @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
-        val pagedMovies =
-            _searchQuery
-                .debounce { query -> if (query.isEmpty()) 0L else 500L }
-                .map(String::trim)
-                .distinctUntilChanged()
-                .flatMapLatest { query ->
-                    repository.getPagedMovies(query)
-                }.cachedIn(viewModelScope)
+        /** One cached paging flow per home category, all shown on the same home screen. */
+        val categoryMovies: Map<MovieCategory, Flow<PagingData<Movie>>> =
+            MovieCategory.entries.associateWith { category ->
+                repository.getPagedMovies(query = null, category = category).cachedIn(viewModelScope)
+            }
 
-        fun onSearchQueryChanged(newQuery: String) {
-            _searchQuery.value = newQuery
+        /** Featured movie shown in the hero banner (first item of the popular feed). */
+        val heroMovie: StateFlow<Movie?> =
+            repository
+                .getHeroMovie(MovieCategory.POPULAR)
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5_000),
+                    initialValue = null,
+                )
+
+        fun onToggleFavorite(
+            movie: Movie,
+            isFavorite: Boolean,
+        ) {
+            viewModelScope.launch {
+                try {
+                    repository.toggleFavorite(movie, isFavorite)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    _favoriteActionErrors.tryEmit(Unit)
+                }
+            }
         }
     }

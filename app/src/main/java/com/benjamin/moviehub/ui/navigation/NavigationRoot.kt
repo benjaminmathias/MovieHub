@@ -40,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -59,6 +60,8 @@ import com.benjamin.moviehub.ui.favorites.FavoriteScreen
 import com.benjamin.moviehub.ui.favorites.FavoriteViewModel
 import com.benjamin.moviehub.ui.list.MovieListScreen
 import com.benjamin.moviehub.ui.list.MovieListViewModel
+import com.benjamin.moviehub.ui.search.SearchScreen
+import com.benjamin.moviehub.ui.search.SearchViewModel
 import com.benjamin.moviehub.ui.settings.SettingsScreen
 
 private data class BottomNavItem(
@@ -166,6 +169,15 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                                     MovieListEntry(
                                         onOpenDetails = { id -> openMovieDetails(id) },
                                         onOpenSettings = { backStack.add(Route.Settings) },
+                                        onOpenSearch = { backStack.add(Route.Search) },
+                                        snackbarHostState = snackbarHostState,
+                                    )
+                                }
+
+                                entry<Route.Search> {
+                                    SearchEntry(
+                                        onBack = { backStack.removeLastOrNull() },
+                                        onOpenDetails = { id -> openMovieDetails(id) },
                                     )
                                 }
 
@@ -207,16 +219,43 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
 private fun MovieListEntry(
     onOpenDetails: (Int) -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenSearch: () -> Unit,
+    snackbarHostState: SnackbarHostState,
 ) {
     val viewModel: MovieListViewModel = hiltViewModel()
-    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val heroMovie by viewModel.heroMovie.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    LaunchedEffect(viewModel) {
+        viewModel.favoriteActionErrors.collect {
+            snackbarHostState.showSnackbar(context.getString(R.string.error_updating_favorite))
+        }
+    }
 
     MovieListScreen(
-        pagedMovies = viewModel.pagedMovies,
+        categoryMovies = viewModel.categoryMovies,
+        heroMovie = heroMovie,
+        onMovieClick = onOpenDetails,
+        onToggleFavorite = viewModel::onToggleFavorite,
+        onSearchClick = onOpenSearch,
+        onSettingsClick = onOpenSettings,
+    )
+}
+
+@Composable
+private fun SearchEntry(
+    onBack: () -> Unit,
+    onOpenDetails: (Int) -> Unit,
+) {
+    val viewModel: SearchViewModel = hiltViewModel()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+
+    SearchScreen(
+        searchResults = viewModel.searchResults,
         searchQuery = searchQuery,
         onSearchChanged = viewModel::onSearchQueryChanged,
         onMovieClick = onOpenDetails,
-        onSettingsClick = onOpenSettings,
+        onBack = onBack,
     )
 }
 

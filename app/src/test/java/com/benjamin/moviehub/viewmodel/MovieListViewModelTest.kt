@@ -1,21 +1,27 @@
 package com.benjamin.moviehub.viewmodel
 
 import androidx.paging.PagingData
+import com.benjamin.moviehub.domain.model.Movie
+import com.benjamin.moviehub.domain.model.MovieCategory
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import com.benjamin.moviehub.ui.list.MovieListViewModel
 import com.benjamin.moviehub.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.runs
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MovieListViewModelTest {
@@ -27,60 +33,84 @@ class MovieListViewModelTest {
 
     @Before
     fun setup() {
-        coEvery { repository.getPagedMovies(any()) } returns flowOf(PagingData.empty())
+        coEvery { repository.getPagedMovies(any(), any()) } returns flowOf(PagingData.empty())
+        coEvery { repository.getHeroMovie(any()) } returns flowOf(null)
         viewModel = MovieListViewModel(repository)
     }
 
     @Test
-    fun `search query should be debounced`() =
+    fun `category movies expose the four home categories`() {
+        assertEquals(MovieCategory.entries.toSet(), viewModel.categoryMovies.keys)
+    }
+
+    @Test
+    fun `each home category is loaded independently`() =
         runTest {
-            val job =
-                launch {
-                    viewModel.pagedMovies.collect()
-                }
+            val jobs = viewModel.categoryMovies.values.map { flow -> launch { flow.collect() } }
 
-            // On tape "A", puis "Av", puis "Ava"
-            viewModel.onSearchQueryChanged("A")
-            advanceTimeBy(100)
-            viewModel.onSearchQueryChanged("Av")
-            advanceTimeBy(100)
-            viewModel.onSearchQueryChanged("Ava")
+            MovieCategory.entries.forEach { category ->
+                coVerify { repository.getPagedMovies(null, category) }
+            }
 
-            // À ce stade (200ms écoulées), le repo ne doit pas avoir été appelé avec "A" ou "Av"
-            // On avance le temps pour dépasser les 500ms du dernier changement
-            advanceTimeBy(600)
+            jobs.forEach { it.cancel() }
+        }
 
-            // Le repo doit avoir été appelé avec la dernière valeur "Ava"
-            coVerify { repository.getPagedMovies("Ava") }
+    @Test
+    fun `hero movie is loaded from the popular feed`() =
+        runTest {
+            val hero = movie()
+            coEvery { repository.getHeroMovie(MovieCategory.POPULAR) } returns flowOf(hero)
+            val heroViewModel = MovieListViewModel(repository)
 
-            // On vérifie qu'il n'a pas été appelé pour les étapes intermédiaires
-            coVerify(exactly = 0) { repository.getPagedMovies("A") }
-            coVerify(exactly = 0) { repository.getPagedMovies("Av") }
+            val job = launch { heroViewModel.heroMovie.collect() }
+            advanceUntilIdle()
+
+            assertEquals(hero, heroViewModel.heroMovie.value)
+            coVerify { repository.getHeroMovie(MovieCategory.POPULAR) }
 
             job.cancel()
         }
 
     @Test
-    fun `identical query is not reloaded`() =
+    fun `toggle favorite is persisted through the repository`() =
         runTest {
-            val job = launch { viewModel.pagedMovies.collect() }
-            viewModel.onSearchQueryChanged("Ava")
-            advanceTimeBy(600)
-            viewModel.onSearchQueryChanged("Ava")
-            advanceTimeBy(600)
-            coVerify(exactly = 1) { repository.getPagedMovies("Ava") }
-            job.cancel()
+            val target = movie()
+            coEvery { repository.toggleFavorite(target, true) } just runs
+
+            viewModel.onToggleFavorite(target, true)
+            advanceUntilIdle()
+
+            coVerify { repository.toggleFavorite(target, true) }
         }
 
     @Test
-    fun `blank search query is treated as popular movies`() =
+    fun `toggle favorite failure emits an error`() =
         runTest {
-            val job = launch { viewModel.pagedMovies.collect() }
+            val target = movie()
+            coEvery { repository.toggleFavorite(target, true) } throws IOException("offline")
+            val errors = mutableListOf<Unit>()
+            val job = launch { viewModel.favoriteActionErrors.collect { errors += it } }
+            advanceUntilIdle()
 
-            viewModel.onSearchQueryChanged("   ")
-            advanceTimeBy(600)
+            viewModel.onToggleFavorite(target, true)
+            advanceUntilIdle()
 
-            coVerify(exactly = 1) { repository.getPagedMovies("") }
+            assertEquals(1, errors.size)
             job.cancel()
         }
+
+    private fun movie() =
+        Movie(
+            id = 42,
+            title = "Hero",
+            overview = "o",
+            posterPath = "/p.jpg",
+            backdropPath = "/b.jpg",
+            voteAverage = 8.0,
+            releaseDate = "2024-01-01",
+            webUrl = null,
+            isFavorite = false,
+            genreIds = emptyList(),
+            genres = emptyList(),
+        )
 }
