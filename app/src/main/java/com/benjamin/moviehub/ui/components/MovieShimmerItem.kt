@@ -20,6 +20,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.valentinilk.shimmer.shimmer
+import com.benjamin.moviehub.core.theme.ContentHorizontalPadding
+import com.benjamin.moviehub.core.theme.PosterAspectRatio
 
 @Composable
 fun PosterMovieShimmerItem(modifier: Modifier = Modifier) {
@@ -33,7 +35,7 @@ fun PosterMovieShimmerItem(modifier: Modifier = Modifier) {
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .aspectRatio(2f / 3f)
+                        .aspectRatio(PosterAspectRatio)
                         .background(MaterialTheme.colorScheme.surfaceVariant),
             )
             Column(
@@ -62,7 +64,7 @@ fun PosterMovieShimmerItem(modifier: Modifier = Modifier) {
 @Composable
 fun CompactMovieShimmerItem(modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).shimmer(),
+        modifier = modifier.fillMaxWidth().padding(horizontal = ContentHorizontalPadding, vertical = 4.dp).shimmer(),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
@@ -102,4 +104,41 @@ fun CompactMovieShimmerItem(modifier: Modifier = Modifier) {
             }
         }
     }
+}
+
+@Composable
+fun RowMovieShimmerItem(modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.shimmer(),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        Column {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(PosterAspectRatio)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+            )
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                ShimmerBlock(Modifier.fillMaxWidth())
+                ShimmerBlock(Modifier.fillMaxWidth(0.8f))
+                ShimmerBlock(Modifier.fillMaxWidth(0.5f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShimmerBlock(modifier: Modifier) {
+    Box(
+        modifier =
+            modifier
+                .heightIn(min = 14.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp)),
+    )
 }

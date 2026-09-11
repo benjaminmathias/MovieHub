@@ -63,10 +63,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.benjamin.moviehub.R
+import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.domain.model.Actor
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
@@ -74,6 +76,7 @@ import com.benjamin.moviehub.ui.components.ActorItem
 import com.benjamin.moviehub.ui.components.MovieGenreTag
 import com.benjamin.moviehub.ui.components.PosterMovieItem
 import com.benjamin.moviehub.ui.components.PosterMovieShimmerItem
+import com.benjamin.moviehub.ui.components.previewMovie
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -108,24 +111,12 @@ fun MovieDetailContent(
             ),
     ) {
         item(key = "header") {
-            // Le bloc résumé chevauche légèrement le hero : pas d'espace mort,
-            // le fondu bas du hero assure la lisibilité sur la zone de recouvrement.
-            Box(modifier = Modifier.fillMaxWidth()) {
-                MovieDetailHero(backdropPath = movie.backdropPath)
-                Column(modifier = Modifier.padding(top = HeroHeight - SummaryOverlap)) {
-                    MovieDetailSummary(
-                        movie = movie,
-                        director = credits.director?.takeIf { it.isNotBlank() },
-                    )
-                    if (onToggleFavorite != null || onOpenTmdb != null) {
-                        MovieDetailActions(
-                            movie = movie,
-                            onToggleFavorite = onToggleFavorite,
-                            onOpenTmdb = onOpenTmdb,
-                        )
-                    }
-                }
-            }
+            MovieDetailHeader(
+                movie = movie,
+                director = credits.director?.takeIf(String::isNotBlank),
+                onToggleFavorite = onToggleFavorite,
+                onOpenTmdb = onOpenTmdb,
+            )
         }
 
         if (movie.genres.isNotEmpty()) {
@@ -270,306 +261,6 @@ private fun RecommendationsSection(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun MovieDetailHero(backdropPath: String?) {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(HeroHeight)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .testTag("detail_hero"),
-    ) {
-        // Placeholder sous l'image : visible pendant le chargement Coil
-        // ou si aucun backdrop n'est disponible.
-        Icon(
-            imageVector = Icons.Filled.Movie,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.outlineVariant,
-            modifier = Modifier.align(Alignment.Center).size(48.dp),
-        )
-        AsyncImage(
-            model = backdropPath?.takeIf(String::isNotBlank),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop,
-            alignment = Alignment.Center,
-        )
-
-        // Scrim haut : lisibilité des boutons toolbar sur image claire.
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .align(Alignment.TopCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            colors =
-                                listOf(
-                                    Color.Black.copy(alpha = 0.32f),
-                                    Color.Transparent,
-                                ),
-                        ),
-                    ),
-        )
-
-        // Fondu bas vers la surface pour une transition hero -> contenu.
-        // Assez haut (140dp) pour couvrir la zone de chevauchement du résumé.
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(140.dp)
-                    .align(Alignment.BottomCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            colors =
-                                listOf(
-                                    Color.Transparent,
-                                    MaterialTheme.colorScheme.surface,
-                                ),
-                        ),
-                    ),
-        )
-    }
-}
-
-@Composable
-private fun MovieDetailSummary(
-    movie: Movie,
-    director: String?,
-) {
-    val year = movie.releaseDate.take(4).takeIf { it.length == 4 }
-    val runtime =
-        movie.runtimeMinutes?.takeIf { it > 0 }?.let { minutes ->
-            stringResource(R.string.runtime_format, minutes / 60, minutes % 60)
-        }
-    val metadata = listOfNotNull(year, runtime)
-
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                // Textes à gauche alignés à 16dp comme le reste du contenu,
-                // poster à droite : les deux partent du même top, sur la même ligne.
-                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 0.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.Top,
-    ) {
-        Column(
-            modifier = Modifier.weight(1f).heightIn(min = PosterHeight),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Column(
-                modifier = Modifier.padding(top = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text(
-                    text = movie.title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (metadata.isNotEmpty() || director != null) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        if (metadata.isNotEmpty()) {
-                            Text(
-                                text = metadata.joinToString(" • "),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        director?.let {
-                            Text(
-                                text = stringResource(R.string.director_format, it),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.weight(1f))
-            MovieDetailRating(movie)
-        }
-
-        Surface(
-            modifier =
-                Modifier
-                    .width(PosterWidth)
-                    .aspectRatio(2f / 3f)
-                    .testTag("detail_poster"),
-            shape = MaterialTheme.shapes.medium,
-            tonalElevation = 2.dp,
-            shadowElevation = 4.dp,
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center,
-            ) {
-                AsyncImage(
-                    model = movie.posterPath?.takeIf(String::isNotBlank),
-                    contentDescription =
-                        movie.posterPath
-                            ?.takeIf(String::isNotBlank)
-                            ?.let { stringResource(R.string.poster_description, movie.title) },
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun MovieDetailActions(
-    movie: Movie,
-    onToggleFavorite: (() -> Unit)?,
-    onOpenTmdb: (() -> Unit)?,
-) {
-    val favoriteLabel =
-        stringResource(
-            if (movie.isFavorite) R.string.remove_favorite else R.string.favorite,
-        )
-    val favoriteScale by animateFloatAsState(
-        targetValue = if (movie.isFavorite) 1.25f else 1f,
-        animationSpec =
-            spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessMedium,
-            ),
-        label = "favoritePop",
-    )
-    BoxWithConstraints(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
-    ) {
-        val stackActions = LocalDensity.current.fontScale >= 1.3f || maxWidth < 360.dp
-
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            maxItemsInEachRow = if (stackActions) 1 else 2,
-        ) {
-            onToggleFavorite?.let { toggleFavorite ->
-                Button(
-                    onClick = toggleFavorite,
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .height(52.dp)
-                            .testTag("detail_favorite")
-                            .semantics { this.contentDescription = favoriteLabel },
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription = null,
-                            modifier =
-                                Modifier
-                                    .size(20.dp)
-                                    .graphicsLayer {
-                                        scaleX = favoriteScale
-                                        scaleY = favoriteScale
-                                    },
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = favoriteLabel,
-                            style = MaterialTheme.typography.labelLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-            }
-
-            onOpenTmdb?.let { openTmdb ->
-                OutlinedButton(
-                    onClick = openTmdb,
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                    modifier = Modifier.weight(1f).height(52.dp).testTag("detail_tmdb"),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.open_tmdb),
-                            style = MaterialTheme.typography.labelLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MovieDetailRating(movie: Movie) {
-    Row(
-        modifier = Modifier.padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Icon(
-            imageVector = Icons.Default.Star,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.tertiary,
-            modifier = Modifier.size(18.dp),
-        )
-        if (movie.voteAverage > 0) {
-            Text(
-                text = stringResource(R.string.rating_out_of_ten, movie.voteAverage),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.tertiary,
-                maxLines = 1,
-            )
-            movie.voteCount?.takeIf { it > 0 }?.let { voteCount ->
-                Text(
-                    text =
-                        stringResource(
-                            R.string.vote_count,
-                            NumberFormat.getIntegerInstance(Locale.FRANCE).format(voteCount),
-                        ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        } else {
-            Text(
-                text = stringResource(R.string.rating_not_available),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
 private fun DetailSection(
     title: String,
     modifier: Modifier = Modifier,
@@ -598,5 +289,16 @@ private fun DetailSection(
                 content()
             }
         }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun MovieDetailContentPreview() {
+    MovieHubTheme {
+        MovieDetailContent(
+            movie = previewMovie().copy(runtimeMinutes = 124, voteCount = 1200),
+            credits = MovieCredits(director = "James Cameron"),
+        )
     }
 }

@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -23,17 +22,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewFontScale
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.benjamin.moviehub.R
+import com.benjamin.moviehub.core.theme.ContentHorizontalPadding
+import com.benjamin.moviehub.core.theme.MovieHubTheme
+import com.benjamin.moviehub.core.theme.PosterAspectRatio
 import com.benjamin.moviehub.domain.model.Movie
 
 @Composable
@@ -61,15 +61,11 @@ fun PosterMovieItem(
     ) {
         Column {
             Box(
-                modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f).clip(MaterialTheme.shapes.medium),
+                modifier = Modifier.fillMaxWidth().aspectRatio(PosterAspectRatio),
             ) {
-                AsyncImage(
-                    model = movie.posterPath?.takeIf(String::isNotBlank),
-                    placeholder = androidx.compose.ui.res.painterResource(R.drawable.ic_launcher_foreground),
-                    error = androidx.compose.ui.res.painterResource(R.drawable.ic_launcher_foreground),
-                    contentDescription = stringResource(R.string.poster_description, movie.title),
-                    modifier = Modifier.fillMaxWidth().fillMaxHeight(),
-                    contentScale = ContentScale.Crop,
+                MoviePosterArtwork(
+                    model = movie.posterPath,
+                    modifier = Modifier.matchParentSize(),
                 )
 
                 if (movie.isFavorite) {
@@ -125,7 +121,7 @@ fun CompactMovieItem(
             modifier
                 .testTag("movie_item")
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp)
+                .padding(horizontal = ContentHorizontalPadding, vertical = 4.dp)
                 .semantics {
                     stateDescription = favoriteStateDescription
                 },
@@ -136,13 +132,10 @@ fun CompactMovieItem(
             modifier = Modifier.fillMaxWidth().heightIn(min = posterHeight + 16.dp).padding(8.dp),
             verticalAlignment = Alignment.Top,
         ) {
-            AsyncImage(
-                model = movie.posterPath?.takeIf(String::isNotBlank),
-                placeholder = androidx.compose.ui.res.painterResource(R.drawable.ic_launcher_foreground),
-                error = androidx.compose.ui.res.painterResource(R.drawable.ic_launcher_foreground),
-                contentDescription = stringResource(R.string.poster_description, movie.title),
-                modifier = Modifier.size(width = posterWidth, height = posterHeight).clip(RoundedCornerShape(4.dp)),
-                contentScale = ContentScale.Crop,
+            MoviePosterArtwork(
+                model = movie.posterPath,
+                modifier = Modifier.size(width = posterWidth, height = posterHeight),
+                shape = RoundedCornerShape(4.dp),
             )
 
             Column(
@@ -193,26 +186,33 @@ private fun MovieMetadata(movie: Movie) {
     }
 }
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
-fun MovieItemPreview() {
-    val fakeMovie =
-        Movie(
-            id = 1,
-            title = "Avatar : De feu et de cendres",
-            posterPath = "",
-            voteAverage = 7.3,
-            releaseDate = "2025-12-20",
-            isFavorite = true,
-            overview = "Test",
-            backdropPath = "",
-            webUrl = "",
-            genreIds = emptyList(),
-            genres = emptyList(),
-        )
-
-    PosterMovieItem(
-        movie = fakeMovie,
-        onMovieClick = {},
-    )
+private fun PosterMovieItemPreview() {
+    MovieHubTheme {
+        PosterMovieItem(movie = previewMovie(), onMovieClick = {})
+    }
 }
+
+@PreviewFontScale
+@Composable
+private fun CompactMovieItemPreview() {
+    MovieHubTheme {
+        CompactMovieItem(movie = previewMovie(), onMovieClick = {})
+    }
+}
+
+internal fun previewMovie() =
+    Movie(
+        id = 1,
+        title = "Avatar : De feu et de cendres",
+        posterPath = "",
+        voteAverage = 7.3,
+        releaseDate = "2025-12-20",
+        isFavorite = true,
+        overview = "Test",
+        backdropPath = "",
+        webUrl = "",
+        genreIds = emptyList(),
+        genres = emptyList(),
+    )

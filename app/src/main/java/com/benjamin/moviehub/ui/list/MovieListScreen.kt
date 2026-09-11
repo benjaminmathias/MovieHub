@@ -47,7 +47,7 @@ import com.benjamin.moviehub.ui.components.ErrorRetryItem
 import com.benjamin.moviehub.ui.components.HeroMovieBanner
 import com.benjamin.moviehub.ui.components.HeroMovieShimmer
 import com.benjamin.moviehub.ui.components.RowMovieItem
-import com.benjamin.moviehub.ui.components.RowMovieItemWidth
+import com.benjamin.moviehub.core.theme.HomeMovieCardWidth
 import com.benjamin.moviehub.ui.components.RowMovieShimmerItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -254,7 +254,7 @@ private fun CategoryRowList(
                     movie = movie,
                     onMovieClick = onMovieClick,
                     onToggleFavorite = onToggleFavorite,
-                    modifier = Modifier.width(RowMovieItemWidth),
+                    modifier = Modifier.width(HomeMovieCardWidth),
                 )
             }
         }
@@ -271,7 +271,7 @@ private fun CategoryRowList(
 
             LoadState.Loading -> {
                 item {
-                    RowMovieShimmerItem(modifier = Modifier.width(RowMovieItemWidth))
+                    RowMovieShimmerItem(modifier = Modifier.width(HomeMovieCardWidth))
                 }
             }
 
@@ -289,7 +289,7 @@ private fun CategoryRowLoadingShimmer() {
         userScrollEnabled = false,
     ) {
         items(3) {
-            RowMovieShimmerItem(modifier = Modifier.width(RowMovieItemWidth))
+            RowMovieShimmerItem(modifier = Modifier.width(HomeMovieCardWidth))
         }
     }
 }

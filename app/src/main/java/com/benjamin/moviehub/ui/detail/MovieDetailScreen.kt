@@ -37,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -71,7 +72,7 @@ fun MovieDetailScreen(
     val listState = rememberLazyListState()
     val density = LocalDensity.current
     // 0f (sur le hero) -> 1f (contenu scrollé) : évite le flash opaque dès 1px scrollé.
-    val toolbarProgress by remember(density) {
+    val toolbarProgress = remember(density) {
         derivedStateOf {
             if (listState.firstVisibleItemIndex > 0) {
                 1f
@@ -81,7 +82,9 @@ fun MovieDetailScreen(
             }
         }
     }
-    val toolbarVisible = toolbarProgress > 0.7f
+    val toolbarVisible by remember {
+        derivedStateOf { toolbarProgress.value > 0.7f }
+    }
     val detailTitle = (uiState as? MovieDetailUiState.Success)?.movie?.title.orEmpty()
 
     LaunchedEffect(favoriteActionErrors, favoriteErrorMessage) {
@@ -93,67 +96,16 @@ fun MovieDetailScreen(
     Box(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).testTag("detail_screen"),
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = toolbarProgress))
-                    .statusBarsPadding()
-                    .zIndex(1f)
-                    .semantics {
-                        isTraversalGroup = true
-                        traversalIndex = -1f
-                    },
-        ) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                DetailControlButton(
-                    contentDescription = stringResource(R.string.back),
-                    onClick = onBackClick,
-                    elevated = !toolbarVisible,
-                ) {
-                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                }
-                if (detailTitle.isNotBlank()) {
-                    Text(
-                        text = detailTitle,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier =
-                            Modifier
-                                .weight(1f)
-                                .padding(horizontal = 4.dp)
-                                .graphicsLayer { alpha = toolbarProgress }
-                                .then(
-                                    if (toolbarVisible) Modifier else Modifier.clearAndSetSemantics {},
-                                ),
-                    )
-                } else {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-                if (uiState is MovieDetailUiState.Success) {
-                    DetailControlButton(
-                        contentDescription = stringResource(R.string.share),
-                        onClick = { shareMovie(context, uiState.movie) },
-                        elevated = !toolbarVisible,
-                    ) {
-                        Icon(imageVector = Icons.Outlined.Share, contentDescription = null)
-                    }
-                }
-            }
-            if (toolbarVisible) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
-            } else {
-                Spacer(modifier = Modifier.height(1.dp))
-            }
-        }
+        DetailToolbar(
+            title = detailTitle,
+            toolbarVisible = toolbarVisible,
+            progressProvider = { toolbarProgress.value },
+            onBackClick = onBackClick,
+            onShareClick =
+                (uiState as? MovieDetailUiState.Success)?.let { success ->
+                    { shareMovie(context, success.movie) }
+                },
+        )
 
         when (uiState) {
             MovieDetailUiState.Loading -> {
@@ -198,6 +150,73 @@ fun MovieDetailScreen(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
         )
+    }
+}
+
+@Composable
+private fun DetailToolbar(
+    title: String,
+    toolbarVisible: Boolean,
+    progressProvider: () -> Float,
+    onBackClick: () -> Unit,
+    onShareClick: (() -> Unit)?,
+) {
+    val toolbarColor = MaterialTheme.colorScheme.surface
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .drawBehind { drawRect(toolbarColor.copy(alpha = progressProvider())) }
+                .statusBarsPadding()
+                .zIndex(1f)
+                .semantics {
+                    isTraversalGroup = true
+                    traversalIndex = -1f
+                },
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            DetailControlButton(
+                contentDescription = stringResource(R.string.back),
+                onClick = onBackClick,
+                elevated = !toolbarVisible,
+            ) {
+                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+            }
+            if (title.isNotBlank()) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .padding(horizontal = 4.dp)
+                            .graphicsLayer { alpha = progressProvider() }
+                            .then(if (toolbarVisible) Modifier else Modifier.clearAndSetSemantics {}),
+                )
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
+            }
+            onShareClick?.let { share ->
+                DetailControlButton(
+                    contentDescription = stringResource(R.string.share),
+                    onClick = share,
+                    elevated = !toolbarVisible,
+                ) {
+                    Icon(imageVector = Icons.Outlined.Share, contentDescription = null)
+                }
+            }
+        }
+        if (toolbarVisible) {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+        } else {
+            Spacer(modifier = Modifier.height(1.dp))
+        }
     }
 }
 

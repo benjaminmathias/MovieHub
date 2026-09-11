@@ -174,9 +174,7 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                 }
 
                 entry<Route.Settings> {
-                    SettingsScreen(
-                        onBackClick = { backStack.removeLastOrNull() },
-                    )
+                    SettingsEntry(onBack = { backStack.removeLastOrNull() })
                 }
             }
 
@@ -285,116 +283,6 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
     }
 }
 
-@Composable
-private fun MovieListEntry(
-    onOpenDetails: (Int) -> Unit,
-    onOpenSettings: () -> Unit,
-    onOpenSearch: () -> Unit,
-    snackbarHostState: SnackbarHostState,
-) {
-    val viewModel: MovieListViewModel = hiltViewModel()
-    val heroMovie by viewModel.heroMovie.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-
-    LaunchedEffect(viewModel) {
-        viewModel.favoriteActionErrors.collect {
-            snackbarHostState.showSnackbar(context.getString(R.string.error_updating_favorite))
-        }
-    }
-
-    MovieListScreen(
-        categoryMovies = viewModel.categoryMovies,
-        heroMovie = heroMovie,
-        onMovieClick = onOpenDetails,
-        onToggleFavorite = viewModel::onToggleFavorite,
-        onSearchClick = onOpenSearch,
-        onSettingsClick = onOpenSettings,
-    )
-}
-
-@Composable
-private fun SearchEntry(
-    onBack: () -> Unit,
-    onOpenDetails: (Int) -> Unit,
-) {
-    val viewModel: SearchViewModel = hiltViewModel()
-    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
-
-    SearchScreen(
-        searchResults = viewModel.searchResults,
-        searchQuery = searchQuery,
-        onSearchChanged = viewModel::onSearchQueryChanged,
-        onMovieClick = onOpenDetails,
-        onBack = onBack,
-    )
-}
-
-@Composable
-private fun DiscoverEntry(
-    onOpenDetails: (Int) -> Unit,
-) {
-    val viewModel: DiscoverViewModel = hiltViewModel()
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-
-    DiscoverScreen(
-        state = state,
-        discoverResults = viewModel.discoverResults,
-        onGenreSelected = viewModel::onGenreSelected,
-        onReleaseYearSelected = viewModel::onReleaseYearSelected,
-        onMinimumRatingSelected = viewModel::onMinimumRatingSelected,
-        onSortSelected = viewModel::onSortSelected,
-        onBeginFilterEditing = viewModel::beginFilterEditing,
-        onApplyFilters = viewModel::applyFilters,
-        onResetFilters = viewModel::resetFilters,
-        onDiscardFilterEdits = viewModel::discardFilterEdits,
-        onRetryGenres = viewModel::retryGenres,
-        onMovieClick = onOpenDetails,
-    )
-}
-
-@Composable
-private fun MovieDetailEntry(
-    movieId: Int,
-    onBack: () -> Unit,
-    onOpenRecommendation: (Int) -> Unit,
-) {
-    val viewModel: MovieDetailViewModel = hiltViewModel()
-    val detailsUiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    LaunchedEffect(movieId) {
-        viewModel.loadMovieDetails(movieId)
-    }
-
-    MovieDetailScreen(
-        uiState = detailsUiState,
-        onBackClick = onBack,
-        onToggleFavorite = viewModel::toggleFavorite,
-        onRetry = { viewModel.loadMovieDetails(movieId) },
-        favoriteActionErrors = viewModel.favoriteActionErrors,
-        onRecommendationClick = onOpenRecommendation,
-    )
-}
-
-@Composable
-private fun FavoriteListEntry(
-    onBack: () -> Unit,
-    onOpenSettings: () -> Unit,
-    onOpenDetails: (Int) -> Unit,
-) {
-    val viewModel: FavoriteViewModel = hiltViewModel()
-    val favoriteUiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    FavoriteScreen(
-        state = favoriteUiState,
-        onBackClick = onBack,
-        onSettingsClick = onOpenSettings,
-        onMovieClick = onOpenDetails,
-        onRemoveFavorite = { movie -> viewModel.onToggleFavorite(movie) },
-        onRetry = viewModel::onRetry,
-        favoriteActionErrors = viewModel.favoriteActionErrors,
-    )
-}
-
 private fun AnimatedContentTransitionScope<*>.forwardTransition(): ContentTransform =
     (
         slideInHorizontally(
@@ -446,7 +334,7 @@ private fun RowScope.MovieBottomNavigationItem(
     NavigationBarItem(
         selected = selected,
         onClick = onClick,
-        icon = { Icon(visuals.icon, contentDescription = visuals.label) },
+        icon = { Icon(visuals.icon, contentDescription = null) },
         label = { Text(visuals.label) },
         colors =
             NavigationBarItemDefaults.colors(
@@ -470,7 +358,7 @@ private fun MovieRailNavigationItem(
     NavigationRailItem(
         selected = selected,
         onClick = onClick,
-        icon = { Icon(visuals.icon, contentDescription = visuals.label) },
+        icon = { Icon(visuals.icon, contentDescription = null) },
         label = { Text(visuals.label) },
         colors =
             NavigationRailItemDefaults.colors(

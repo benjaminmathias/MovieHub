@@ -32,35 +32,33 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.PreviewFontScale
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.benjamin.moviehub.BuildConfig
 import com.benjamin.moviehub.R
+import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.core.util.AppTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    currentTheme: AppTheme,
+    isClearing: Boolean,
+    snackbarHostState: SnackbarHostState,
+    onThemeSelected: (AppTheme) -> Unit,
+    onClearImageCache: () -> Unit,
     onBackClick: () -> Unit,
-    viewModel: SettingsViewModel = hiltViewModel(),
+    modifier: Modifier = Modifier,
 ) {
-    val currentTheme by viewModel.currentTheme.collectAsStateWithLifecycle()
-    val isClearing by viewModel.isClearing.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val imageCacheClearedMessage = stringResource(R.string.image_cache_cleared)
-    val imageCacheClearFailedMessage = stringResource(R.string.image_cache_clear_failed)
-    val themeUpdateFailedMessage = stringResource(R.string.theme_update_failed)
-
     Scaffold(
+        modifier = modifier,
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.settings_title)) },
@@ -94,7 +92,7 @@ fun SettingsScreen(
                     Column(modifier = Modifier.padding(16.dp)) {
                         ThemeSelector(
                             currentTheme = currentTheme,
-                            onThemeSelected = viewModel::updateTheme,
+                            onThemeSelected = onThemeSelected,
                         )
                     }
                 }
@@ -112,7 +110,7 @@ fun SettingsScreen(
                             subtitle = stringResource(R.string.clear_image_cache_description),
                             icon = Icons.Default.Delete,
                             enabled = !isClearing,
-                            onClick = viewModel::clearImageCache,
+                            onClick = onClearImageCache,
                         )
                         if (isClearing) {
                             Row(
@@ -149,19 +147,21 @@ fun SettingsScreen(
             }
         }
     }
+}
 
-    LaunchedEffect(viewModel.imageCacheMessages) {
-        viewModel.imageCacheMessages.collect { cleared ->
-            snackbarHostState.showSnackbar(
-                if (cleared) imageCacheClearedMessage else imageCacheClearFailedMessage,
-            )
-        }
-    }
-
-    LaunchedEffect(viewModel.themeUpdateErrors) {
-        viewModel.themeUpdateErrors.collect {
-            snackbarHostState.showSnackbar(themeUpdateFailedMessage)
-        }
+@PreviewLightDark
+@PreviewFontScale
+@Composable
+private fun SettingsScreenPreview() {
+    MovieHubTheme {
+        SettingsScreen(
+            currentTheme = AppTheme.SYSTEM,
+            isClearing = false,
+            snackbarHostState = remember { SnackbarHostState() },
+            onThemeSelected = {},
+            onClearImageCache = {},
+            onBackClick = {},
+        )
     }
 }
 

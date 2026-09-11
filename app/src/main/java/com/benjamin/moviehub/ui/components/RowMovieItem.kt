@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -25,22 +24,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.benjamin.moviehub.R
+import com.benjamin.moviehub.core.theme.PosterAspectRatio
+import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.domain.model.Movie
-import com.valentinilk.shimmer.shimmer
-
-/** Fixed width used by the compact cards shown in the home category rows. */
-val RowMovieItemWidth = 160.dp
 
 @Composable
 fun RowMovieItem(
@@ -66,14 +61,10 @@ fun RowMovieItem(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column {
-            Box(modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f)) {
-                AsyncImage(
+            Box(modifier = Modifier.fillMaxWidth().aspectRatio(PosterAspectRatio)) {
+                MoviePosterArtwork(
                     model = (movie.posterPathSmall?.takeIf(String::isNotBlank) ?: movie.posterPath),
-                    placeholder = painterResource(R.drawable.ic_launcher_foreground),
-                    error = painterResource(R.drawable.ic_launcher_foreground),
-                    contentDescription = stringResource(R.string.poster_description, movie.title),
-                    modifier = Modifier.fillMaxWidth(),
-                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize(),
                 )
 
                 IconButton(
@@ -110,6 +101,16 @@ fun RowMovieItem(
                 modifier = Modifier.fillMaxWidth().padding(10.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
+                Text(
+                    text = movie.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    minLines = 2,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
                 Row(
                     modifier = Modifier.fillMaxWidth().heightIn(min = 18.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -131,16 +132,6 @@ fun RowMovieItem(
                     }
                 }
 
-                Text(
-                    text = movie.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    minLines = 2,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
                 val genres = movie.genres.take(2).joinToString(" • ")
                 if (genres.isNotBlank()) {
                     Text(
@@ -156,47 +147,14 @@ fun RowMovieItem(
     }
 }
 
+@PreviewLightDark
 @Composable
-fun RowMovieShimmerItem(modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier.shimmer(),
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-    ) {
-        Column {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(2f / 3f)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-            )
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 14.dp)
-                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp)),
-                )
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth(0.8f)
-                            .heightIn(min = 14.dp)
-                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp)),
-                )
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth(0.5f)
-                            .heightIn(min = 14.dp)
-                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp)),
-                )
-            }
-        }
+private fun RowMovieItemPreview() {
+    MovieHubTheme {
+        RowMovieItem(
+            movie = previewMovie(),
+            onMovieClick = {},
+            onToggleFavorite = { _, _ -> },
+        )
     }
 }
