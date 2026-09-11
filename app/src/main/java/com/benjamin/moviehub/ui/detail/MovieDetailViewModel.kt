@@ -49,8 +49,10 @@ class MovieDetailViewModel
                     val movie = repository.getMovieDetails(movieId)
 
                     _uiState.value = MovieDetailUiState.Success(movie, MovieCredits())
-                    updateCredits(movieId, creditsDeferred.await())
-                    updateRecommendations(movieId, recommendationsDeferred.await())
+                    val credits = creditsDeferred.await()
+                    updateSuccess(movieId) { it.copy(credits = credits) }
+                    val recommendations = recommendationsDeferred.await()
+                    updateSuccess(movieId) { it.copy(recommendations = recommendations) }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -75,7 +77,7 @@ class MovieDetailViewModel
                         throw e
                     } catch (e: Exception) {
                         _favoriteActionErrors.tryEmit(Unit)
-                        rollbackFavorite(requestedMovie.id, newStatus, currentState)
+                        rollbackFavorite(requestedMovie.id, newStatus)
                     }
                 }
             }
@@ -90,13 +92,13 @@ class MovieDetailViewModel
                 MovieCredits()
             }
 
-        private fun updateCredits(
+        private fun updateSuccess(
             movieId: Int,
-            credits: MovieCredits,
+            transform: (MovieDetailUiState.Success) -> MovieDetailUiState.Success,
         ) {
             val latest = _uiState.value as? MovieDetailUiState.Success ?: return
             if (latest.movie.id == movieId) {
-                _uiState.value = latest.copy(credits = credits)
+                _uiState.value = transform(latest)
             }
         }
 
@@ -114,24 +116,16 @@ class MovieDetailViewModel
                 MovieRecommendationsUiState.Error
             }
 
-        private fun updateRecommendations(
-            movieId: Int,
-            recommendations: MovieRecommendationsUiState,
-        ) {
-            val latest = _uiState.value as? MovieDetailUiState.Success ?: return
-            if (latest.movie.id == movieId) {
-                _uiState.value = latest.copy(recommendations = recommendations)
-            }
-        }
-
         private fun rollbackFavorite(
             movieId: Int,
             attemptedStatus: Boolean,
-            previousState: MovieDetailUiState.Success,
         ) {
-            val latest = _uiState.value as? MovieDetailUiState.Success ?: return
-            if (latest.movie.id == movieId && latest.movie.isFavorite == attemptedStatus) {
-                _uiState.value = previousState
+            updateSuccess(movieId) { latest ->
+                if (latest.movie.isFavorite == attemptedStatus) {
+                    latest.copy(movie = latest.movie.copy(isFavorite = !attemptedStatus))
+                } else {
+                    latest
+                }
             }
         }
     }

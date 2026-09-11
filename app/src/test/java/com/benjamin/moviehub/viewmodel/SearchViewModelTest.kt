@@ -1,7 +1,6 @@
 package com.benjamin.moviehub.viewmodel
 
 import androidx.paging.PagingData
-import com.benjamin.moviehub.domain.model.MovieCategory
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import com.benjamin.moviehub.ui.search.SearchViewModel
 import com.benjamin.moviehub.util.MainDispatcherRule
@@ -28,7 +27,7 @@ class SearchViewModelTest {
 
     @Before
     fun setup() {
-        coEvery { repository.getPagedMovies(any(), any()) } returns flowOf(PagingData.empty())
+        coEvery { repository.searchMovies(any()) } returns flowOf(PagingData.empty())
         viewModel = SearchViewModel(repository)
     }
 
@@ -44,9 +43,9 @@ class SearchViewModelTest {
             viewModel.onSearchQueryChanged("Ava")
             advanceTimeBy(600)
 
-            coVerify { repository.getPagedMovies("Ava", MovieCategory.POPULAR) }
-            coVerify(exactly = 0) { repository.getPagedMovies("A", any()) }
-            coVerify(exactly = 0) { repository.getPagedMovies("Av", any()) }
+            coVerify { repository.searchMovies("Ava") }
+            coVerify(exactly = 0) { repository.searchMovies("A") }
+            coVerify(exactly = 0) { repository.searchMovies("Av") }
 
             job.cancel()
         }
@@ -57,7 +56,7 @@ class SearchViewModelTest {
             val job = launch { viewModel.searchResults.collect() }
             viewModel.onSearchQueryChanged("   ")
             advanceTimeBy(600)
-            coVerify(exactly = 0) { repository.getPagedMovies("", any()) }
+            coVerify(exactly = 0) { repository.searchMovies("") }
             job.cancel()
         }
 }

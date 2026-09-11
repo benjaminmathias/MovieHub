@@ -33,7 +33,7 @@ class MovieListViewModelTest {
 
     @Before
     fun setup() {
-        coEvery { repository.getPagedMovies(any(), any()) } returns flowOf(PagingData.empty())
+        coEvery { repository.getCategoryMovies(any()) } returns flowOf(PagingData.empty())
         coEvery { repository.getHeroMovie(any()) } returns flowOf(null)
         viewModel = MovieListViewModel(repository)
     }
@@ -49,7 +49,7 @@ class MovieListViewModelTest {
             val jobs = viewModel.categoryMovies.values.map { flow -> launch { flow.collect() } }
 
             MovieCategory.entries.forEach { category ->
-                coVerify { repository.getPagedMovies(null, category) }
+                coVerify { repository.getCategoryMovies(category) }
             }
 
             jobs.forEach { it.cancel() }

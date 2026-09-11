@@ -83,7 +83,7 @@ class MovieRemoteMediator(
                 val localMovies = MediatorPagingHelper.preservedByIds(movieDao, movieIds)
 
                 val movieEntities =
-                    movies.mapIndexed { index, dto ->
+                    movies.map { dto ->
                         val localMovie = localMovies[dto.id]
 
                         dto.toEntity(

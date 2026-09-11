@@ -66,7 +66,7 @@ class SearchMovieRemoteMediator(
                     )
 
                 val movieEntities =
-                    movies.mapIndexed { index, dto ->
+                    movies.map { dto ->
                         val localMovie = localMovies[dto.id]
 
                         dto.toEntity(

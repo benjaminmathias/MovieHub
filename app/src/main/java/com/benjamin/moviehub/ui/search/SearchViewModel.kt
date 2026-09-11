@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.benjamin.moviehub.domain.model.Movie
-import com.benjamin.moviehub.domain.model.MovieCategory
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -38,7 +37,7 @@ class SearchViewModel
                 .distinctUntilChanged()
                 .filter(String::isNotEmpty)
                 .flatMapLatest { query ->
-                    repository.getPagedMovies(query = query, category = MovieCategory.POPULAR)
+                    repository.searchMovies(query)
                 }.cachedIn(viewModelScope)
 
         fun onSearchQueryChanged(newQuery: String) {

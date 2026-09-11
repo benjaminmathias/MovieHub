@@ -76,6 +76,30 @@ class MovieRoomPagingTest {
         }
 
     @Test
+    fun upsertMovieDetails_preservesLocalFavoriteSearchFlagAndRuntime() =
+        runBlocking {
+            val dao = database.movieDao()
+            dao.insertMovie(
+                movieEntity(
+                    id = 42,
+                    isFavorite = true,
+                    isSearchResult = true,
+                    runtimeMinutes = 137,
+                ),
+            )
+
+            val refreshed = movieEntity(id = 42).copy(title = "Refreshed", runtimeMinutes = null)
+
+            val merged = dao.upsertMovieDetails(refreshed)
+
+            assertEquals("Refreshed", merged.title)
+            assertEquals(true, merged.isFavorite)
+            assertEquals(true, merged.isSearchResult)
+            assertEquals(137, merged.runtimeMinutes)
+            assertEquals(merged, dao.getMovieById(42))
+        }
+
+    @Test
     fun refreshingSearch_onlyReplacesCurrentQueryCache() =
         runBlocking {
             val api =

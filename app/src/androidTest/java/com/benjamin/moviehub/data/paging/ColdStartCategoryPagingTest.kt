@@ -59,7 +59,7 @@ class ColdStartCategoryPagingTest {
             val job =
                 launch(Dispatchers.Main) {
                     repository
-                        .getPagedMovies(query = null, category = MovieCategory.UPCOMING)
+                        .getCategoryMovies(MovieCategory.UPCOMING)
                         .collect { differ.submitData(it) }
                 }
 
@@ -84,7 +84,7 @@ class ColdStartCategoryPagingTest {
             val job =
                 launch(Dispatchers.Main) {
                     repository
-                        .getPagedMovies(query = null, category = MovieCategory.UPCOMING)
+                        .getCategoryMovies(MovieCategory.UPCOMING)
                         .collect { differ.submitData(it) }
                 }
 
@@ -109,7 +109,7 @@ class ColdStartCategoryPagingTest {
             val job =
                 launch(Dispatchers.Main) {
                     repository
-                        .getPagedMovies(query = null, category = MovieCategory.UPCOMING)
+                        .getCategoryMovies(MovieCategory.UPCOMING)
                         .collect { differ.submitData(it) }
                 }
 

@@ -172,6 +172,35 @@ class MovieDetailViewModelTest {
         }
 
     @Test
+    fun `failed favorite toggle keeps late credits`() =
+        runTest {
+            val creditsGate = CompletableDeferred<MovieCredits>()
+            val toggleGate = CompletableDeferred<Unit>()
+            coEvery { repository.getMovieDetails(1) } returns movie
+            coEvery { repository.getMovieCredits(1) } coAnswers { creditsGate.await() }
+            coEvery { repository.toggleFavorite(movie, true) } coAnswers {
+                toggleGate.await()
+                throw IllegalStateException()
+            }
+            val viewModel = MovieDetailViewModel(repository)
+
+            viewModel.loadMovieDetails(1)
+            runCurrent()
+            viewModel.toggleFavorite()
+            runCurrent()
+
+            creditsGate.complete(MovieCredits(director = "Director"))
+            runCurrent()
+
+            toggleGate.complete(Unit)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as MovieDetailUiState.Success
+            assertEquals(false, state.movie.isFavorite)
+            assertEquals("Director", state.credits.director)
+        }
+
+    @Test
     fun `recommendations stay loading until the remote call resolves`() =
         runTest {
             val recommendationsGate = CompletableDeferred<List<Movie>>()

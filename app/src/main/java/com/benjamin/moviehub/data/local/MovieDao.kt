@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
+import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -108,7 +109,7 @@ interface MovieDao {
     )
     fun searchMoviesPaging(queryKey: String): PagingSource<Int, MovieEntity>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsertMovies(movies: List<MovieEntity>)
 
     // --- GESTION DES CLÉS (REMOTE KEYS) ---

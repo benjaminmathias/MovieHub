@@ -12,15 +12,11 @@ import kotlinx.coroutines.flow.Flow
  * Repository interface for managing movies data
  */
 interface MovieRepository {
-    /**
-     * Get paged movies from the API, a home [category] by default or through [query].
-     *
-     * A non-blank [query] takes precedence and returns search results regardless of [category].
-     */
-    fun getPagedMovies(
-        query: String? = null,
-        category: MovieCategory = MovieCategory.POPULAR,
-    ): Flow<PagingData<Movie>>
+    /** Get a paged feed for a home [category]. */
+    fun getCategoryMovies(category: MovieCategory): Flow<PagingData<Movie>>
+
+    /** Get paged search results for [query]. */
+    fun searchMovies(query: String): Flow<PagingData<Movie>>
 
     /** Get a network-backed paged feed for the currently applied Discover filters. */
     fun getDiscoverMovies(filters: DiscoverFilters): Flow<PagingData<Movie>>

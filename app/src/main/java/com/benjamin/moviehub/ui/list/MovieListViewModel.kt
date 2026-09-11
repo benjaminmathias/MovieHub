@@ -30,7 +30,7 @@ class MovieListViewModel
         /** One cached paging flow per home category, all shown on the same home screen. */
         val categoryMovies: Map<MovieCategory, Flow<PagingData<Movie>>> =
             MovieCategory.entries.associateWith { category ->
-                repository.getPagedMovies(query = null, category = category).cachedIn(viewModelScope)
+                repository.getCategoryMovies(category).cachedIn(viewModelScope)
             }
 
         /** Featured movie shown in the hero banner (first item of the popular feed). */
