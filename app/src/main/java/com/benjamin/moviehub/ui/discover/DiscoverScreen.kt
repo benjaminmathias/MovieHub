@@ -6,14 +6,11 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.clickable
@@ -61,7 +58,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -197,7 +193,6 @@ fun DiscoverScreen(
                 filterSheetVisible = false
                 onDiscardFilterEdits()
             },
-            contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false),
         ) {
             DiscoverFilterSheet(
@@ -257,73 +252,60 @@ private fun DiscoverFilterSheet(
     var customYearMode by rememberSaveable {
         mutableStateOf(filters.releaseYear != null && filters.releaseYear !in recentYears)
     }
-    var customYearText by rememberSaveable(filters.releaseYear) {
+    var customYearText by rememberSaveable {
         mutableStateOf(filters.releaseYear?.takeIf { it !in recentYears }?.toString().orEmpty())
     }
     val customYearValue = customYearText.toIntOrNull()
     val customYearInvalid =
         customYearMode &&
-            customYearText.isNotEmpty() &&
             (customYearText.length != 4 || customYearValue !in 1870..currentYear)
     val canApply = !customYearInvalid && filters != state.appliedFilters
-
-    val navigationInsets = WindowInsets.navigationBars.asPaddingValues()
-    val bottomNavigationSpacing =
-        if (LocalConfiguration.current.screenWidthDp > LocalConfiguration.current.screenHeightDp) {
-            navigationInsets.calculateBottomPadding()
-        } else {
-            maxOf(navigationInsets.calculateBottomPadding(), 48.dp)
-        }
-    val sheetContentHeight =
-        (LocalConfiguration.current.screenHeightDp.dp / 2 - 48.dp).coerceAtLeast(240.dp)
-    val bodyHeight = (sheetContentHeight - bottomNavigationSpacing - 74.dp).coerceAtLeast(160.dp)
 
     Column(
         modifier =
             modifier
                 .fillMaxWidth()
-                .height(sheetContentHeight)
                 .imePadding()
-                .padding(bottom = bottomNavigationSpacing)
                 .testTag("discover_filter_sheet"),
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 4.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.discover_filters),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = stringResource(R.string.discover_filter_sheet_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+            IconButton(
+                onClick = onClose,
+                modifier = Modifier.testTag("discover_close_filters"),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = stringResource(R.string.close_filters),
+                )
+            }
+        }
+
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(bodyHeight)
+                    .weight(1f, fill = false)
                     .testTag("discover_filter_body")
                     .verticalScroll(rememberScrollState())
-                    .padding(start = 16.dp, end = 16.dp, bottom = 74.dp),
+                    .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                    verticalAlignment = Alignment.Top,
-            ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.discover_filters),
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = stringResource(R.string.discover_filter_sheet_description),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp),
-                        )
-                    }
-                    IconButton(
-                        onClick = onClose,
-                        modifier = Modifier.testTag("discover_close_filters"),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = stringResource(R.string.close_filters),
-                        )
-                    }
-                }
 
                 DiscoverFilterSection(
                     title = stringResource(R.string.discover_genre),
@@ -360,7 +342,10 @@ private fun DiscoverFilterSheet(
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.weight(1f),
                             )
-                            TextButton(onClick = onRetryGenres) {
+                            TextButton(
+                                onClick = onRetryGenres,
+                                modifier = Modifier.testTag("discover_retry_genres"),
+                            ) {
                                 Text(stringResource(R.string.retry))
                             }
                         }

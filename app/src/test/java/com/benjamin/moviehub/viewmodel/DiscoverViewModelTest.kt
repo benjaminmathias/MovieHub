@@ -3,6 +3,7 @@ package com.benjamin.moviehub.viewmodel
 import androidx.paging.PagingData
 import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
+import com.benjamin.moviehub.domain.model.MovieGenre
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import com.benjamin.moviehub.ui.discover.DiscoverViewModel
 import com.benjamin.moviehub.util.MainDispatcherRule
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import java.io.IOException
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
@@ -32,9 +34,51 @@ class DiscoverViewModelTest {
     @Before
     fun setup() {
         every { repository.getDiscoverMovies(any()) } returns flowOf(PagingData.empty())
-        coEvery { repository.getMovieGenres() } returns emptyList()
+        every { repository.getFavoriteMovieIds() } returns flowOf(emptySet())
+        coEvery {
+            repository.getMovieGenres()
+        } returns listOf(MovieGenre(id = 28, name = "Action"), MovieGenre(id = 18, name = "Drame"))
         viewModel = DiscoverViewModel(repository)
     }
+
+    @Test
+    fun `genres success clears loading and exposes genres`() =
+        runTest {
+            advanceUntilIdle()
+
+            assertEquals(false, viewModel.uiState.value.isLoadingGenres)
+            assertEquals(false, viewModel.uiState.value.hasGenreError)
+            assertEquals(
+                listOf(MovieGenre(id = 28, name = "Action"), MovieGenre(id = 18, name = "Drame")),
+                viewModel.uiState.value.genres,
+            )
+        }
+
+    @Test
+    fun `genres error is exposed and retry can recover`() =
+        runTest {
+            var shouldFail = true
+            coEvery {
+                repository.getMovieGenres()
+            } coAnswers {
+                if (shouldFail) throw IOException("offline")
+                listOf(MovieGenre(id = 28, name = "Action"))
+            }
+
+            viewModel.retryGenres()
+            advanceUntilIdle()
+
+            assertEquals(false, viewModel.uiState.value.isLoadingGenres)
+            assertEquals(true, viewModel.uiState.value.hasGenreError)
+
+            shouldFail = false
+            viewModel.retryGenres()
+            advanceUntilIdle()
+
+            assertEquals(false, viewModel.uiState.value.isLoadingGenres)
+            assertEquals(false, viewModel.uiState.value.hasGenreError)
+            assertEquals(listOf(MovieGenre(id = 28, name = "Action")), viewModel.uiState.value.genres)
+        }
 
     @Test
     fun `default filters are empty and sorted by popularity`() {

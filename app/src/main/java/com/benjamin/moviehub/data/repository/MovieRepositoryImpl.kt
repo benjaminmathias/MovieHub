@@ -137,6 +137,12 @@ class MovieRepositoryImpl
                     entities.map { it.toDomain() }
                 }.flowOn(Dispatchers.IO)
 
+        override fun getFavoriteMovieIds(): Flow<Set<Int>> =
+            movieDao
+                .getFavoriteMovieIdsFlow()
+                .map { ids -> ids.toSet() }
+                .flowOn(Dispatchers.IO)
+
         override suspend fun getMovieCredits(movieId: Int) =
             apiService.getMovieCredits(movieId).toDomain()
 

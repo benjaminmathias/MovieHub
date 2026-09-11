@@ -6,8 +6,11 @@ import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.remote.MovieApiService
 import com.benjamin.moviehub.data.remote.isEndOfPagination
 import com.benjamin.moviehub.domain.model.DiscoverFilters
+import com.benjamin.moviehub.domain.model.DiscoverSortOption
 import com.benjamin.moviehub.domain.model.Movie
 import kotlinx.coroutines.CancellationException
+
+private const val RATING_MINIMUM_VOTE_COUNT = 200
 
 class DiscoverMoviePagingSource(
     private val apiService: MovieApiService,
@@ -22,6 +25,8 @@ class DiscoverMoviePagingSource(
                     genreId = filters.genreId,
                     releaseYear = filters.releaseYear,
                     minimumVoteAverage = filters.minimumVoteAverage,
+                    minimumVoteCount =
+                        RATING_MINIMUM_VOTE_COUNT.takeIf { filters.sort == DiscoverSortOption.RATING },
                     sortBy = filters.sort.queryValue,
                     page = page,
                 )

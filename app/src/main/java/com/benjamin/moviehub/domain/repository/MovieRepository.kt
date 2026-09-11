@@ -50,6 +50,9 @@ interface MovieRepository {
      */
     fun getFavoriteMovies(): Flow<List<Movie>>
 
+    /** Observe the local favorite IDs used to enrich network-backed feeds. */
+    fun getFavoriteMovieIds(): Flow<Set<Int>>
+
     /** Get movie credits from the API. Throws on network error; callers show details without credits. */
     suspend fun getMovieCredits(movieId: Int): MovieCredits
 

@@ -30,6 +30,7 @@ interface MovieApiService {
         @Query("with_genres") genreId: Int?,
         @Query("primary_release_year") releaseYear: Int?,
         @Query("vote_average.gte") minimumVoteAverage: Double?,
+        @Query("vote_count.gte") minimumVoteCount: Int?,
         @Query("sort_by") sortBy: String,
         @Query("page") page: Int,
     ): MovieResponse

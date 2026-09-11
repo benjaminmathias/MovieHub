@@ -64,6 +64,9 @@ interface MovieDao {
     @Query("SELECT * FROM movies WHERE isFavorite = 1 ORDER BY title COLLATE NOCASE ASC, id ASC")
     fun getFavoriteMoviesFlow(): Flow<List<MovieEntity>>
 
+    @Query("SELECT id FROM movies WHERE isFavorite = 1 ORDER BY id ASC")
+    fun getFavoriteMovieIdsFlow(): Flow<List<Int>>
+
     // --- CATEGORIES (ASSOCIATION + PAGINATION) ---
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCategoryMovies(items: List<MovieCategoryEntity>)

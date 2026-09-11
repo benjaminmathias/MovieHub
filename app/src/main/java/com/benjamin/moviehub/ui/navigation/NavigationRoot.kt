@@ -39,7 +39,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -49,8 +52,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.ui.NavDisplay
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.ui.detail.MovieDetailScreen
@@ -75,6 +80,12 @@ private data class BottomNavItem(
     val labelRes: Int,
 )
 
+private enum class TopLevelTab {
+    HOME,
+    DISCOVER,
+    FAVORITES,
+}
+
 private val bottomNavItems =
     listOf(
         BottomNavItem(Route.List, Icons.Default.Home, Icons.Outlined.Home, R.string.home_tab),
@@ -84,7 +95,16 @@ private val bottomNavItems =
 
 @Composable
 fun NavigationRoot(networkStatus: ConnectivityStatus) {
-    val backStack = rememberNavBackStack(Route.List)
+    val homeBackStack = rememberNavBackStack(Route.List)
+    val discoverBackStack = rememberNavBackStack(Route.Discover)
+    val favoritesBackStack = rememberNavBackStack(Route.FavoriteList)
+    var selectedTab by rememberSaveable { mutableStateOf(TopLevelTab.HOME) }
+    val backStack =
+        when (selectedTab) {
+            TopLevelTab.HOME -> homeBackStack
+            TopLevelTab.DISCOVER -> discoverBackStack
+            TopLevelTab.FAVORITES -> favoritesBackStack
+        }
     val currentRoute = backStack.lastOrNull()
     val snackbarHostState = remember { SnackbarHostState() }
     val isOffline = networkStatus == ConnectivityStatus.LOST || networkStatus == ConnectivityStatus.UNAVAILABLE
@@ -94,11 +114,16 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
         val showTopLevelNavigation =
             currentRoute is Route.List || currentRoute is Route.Discover || currentRoute is Route.FavoriteList
         fun navigateToTopLevel(route: Route) {
-            if (currentRoute == route) return
-            while (backStack.size > 1) {
-                backStack.removeLastOrNull()
+            val tab =
+                when (route) {
+                    Route.List -> TopLevelTab.HOME
+                    Route.Discover -> TopLevelTab.DISCOVER
+                    Route.FavoriteList -> TopLevelTab.FAVORITES
+                    else -> return
+                }
+            if (selectedTab != tab) {
+                selectedTab = tab
             }
-            if (route != Route.List) backStack.add(route)
         }
 
         fun openMovieDetails(movieId: Int) {
@@ -107,6 +132,90 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                 backStack.add(route)
             }
         }
+
+        val entryProvider =
+            entryProvider<NavKey> {
+                entry<Route.List> {
+                    MovieListEntry(
+                        onOpenDetails = { id -> openMovieDetails(id) },
+                        onOpenSettings = { backStack.add(Route.Settings) },
+                        onOpenSearch = { backStack.add(Route.Search) },
+                        snackbarHostState = snackbarHostState,
+                    )
+                }
+
+                entry<Route.Discover> {
+                    DiscoverEntry(
+                        onOpenDetails = { id -> openMovieDetails(id) },
+                    )
+                }
+
+                entry<Route.Search> {
+                    SearchEntry(
+                        onBack = { backStack.removeLastOrNull() },
+                        onOpenDetails = { id -> openMovieDetails(id) },
+                    )
+                }
+
+                entry<Route.Detail> { key ->
+                    MovieDetailEntry(
+                        movieId = key.movieId,
+                        onBack = { backStack.removeLastOrNull() },
+                        onOpenRecommendation = { id -> openMovieDetails(id) },
+                    )
+                }
+
+                entry<Route.FavoriteList> {
+                    FavoriteListEntry(
+                        onBack = { backStack.removeLastOrNull() },
+                        onOpenSettings = { backStack.add(Route.Settings) },
+                        onOpenDetails = { id -> openMovieDetails(id) },
+                    )
+                }
+
+                entry<Route.Settings> {
+                    SettingsScreen(
+                        onBackClick = { backStack.removeLastOrNull() },
+                    )
+                }
+            }
+
+        val homeEntries =
+            rememberDecoratedNavEntries(
+                backStack = homeBackStack,
+                entryProvider = entryProvider,
+                entryDecorators =
+                    listOf(
+                        rememberSaveableStateHolderNavEntryDecorator(),
+                        rememberViewModelStoreNavEntryDecorator(),
+                    ),
+            )
+        val discoverEntries =
+            rememberDecoratedNavEntries(
+                backStack = discoverBackStack,
+                entryProvider = entryProvider,
+                entryDecorators =
+                    listOf(
+                        rememberSaveableStateHolderNavEntryDecorator(),
+                        rememberViewModelStoreNavEntryDecorator(),
+                    ),
+            )
+        val favoritesEntries =
+            rememberDecoratedNavEntries(
+                backStack = favoritesBackStack,
+                entryProvider = entryProvider,
+                entryDecorators =
+                    listOf(
+                        rememberSaveableStateHolderNavEntryDecorator(),
+                        rememberViewModelStoreNavEntryDecorator(),
+                    ),
+            )
+        val entries =
+            when (selectedTab) {
+                TopLevelTab.HOME -> homeEntries
+                TopLevelTab.DISCOVER -> discoverEntries
+                TopLevelTab.FAVORITES -> favoritesEntries
+            }
 
         NetworkStatusEffect(networkStatus, snackbarHostState)
 
@@ -160,66 +269,15 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                     modifier = Modifier.weight(1f).fillMaxSize(),
                 ) {
                     NavDisplay(
-                        backStack = backStack,
+                        entries = entries,
                         onBack = {
                             when {
-                                currentRoute is Route.FavoriteList -> backStack.removeLastOrNull()
                                 backStack.size > 1 -> backStack.removeLastOrNull()
+                                selectedTab != TopLevelTab.HOME -> selectedTab = TopLevelTab.HOME
                             }
                         },
                         transitionSpec = { forwardTransition() },
                         popTransitionSpec = { backTransition() },
-                        entryProvider =
-                            entryProvider {
-                                entry<Route.List> {
-                                    MovieListEntry(
-                                        onOpenDetails = { id -> openMovieDetails(id) },
-                                        onOpenSettings = { backStack.add(Route.Settings) },
-                                        onOpenSearch = { backStack.add(Route.Search) },
-                                        snackbarHostState = snackbarHostState,
-                                    )
-                                }
-
-                                entry<Route.Discover> {
-                                    DiscoverEntry(
-                                        onOpenDetails = { id -> openMovieDetails(id) },
-                                    )
-                                }
-
-                                entry<Route.Search> {
-                                    SearchEntry(
-                                        onBack = { backStack.removeLastOrNull() },
-                                        onOpenDetails = { id -> openMovieDetails(id) },
-                                    )
-                                }
-
-                                entry<Route.Detail> { key ->
-                                    MovieDetailEntry(
-                                        movieId = key.movieId,
-                                        onBack = { backStack.removeLastOrNull() },
-                                        onOpenRecommendation = { id -> openMovieDetails(id) },
-                                    )
-                                }
-
-                                entry<Route.FavoriteList> {
-                                    FavoriteListEntry(
-                                        onBack = { backStack.removeLastOrNull() },
-                                        onOpenSettings = { backStack.add(Route.Settings) },
-                                        onOpenDetails = { id -> openMovieDetails(id) },
-                                    )
-                                }
-
-                                entry<Route.Settings> {
-                                    SettingsScreen(
-                                        onBackClick = { backStack.removeLastOrNull() },
-                                    )
-                                }
-                            },
-                        entryDecorators =
-                            listOf(
-                                rememberSaveableStateHolderNavEntryDecorator(),
-                                rememberViewModelStoreNavEntryDecorator(),
-                            ),
                     )
                 }
             }

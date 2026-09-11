@@ -1,6 +1,6 @@
 # MovieHub
 
-MovieHub est une application Android qui affiche les films populaires et permet de rechercher des films via l'API TMDB. L'application est **Offline-First** avec pagination infinie.
+MovieHub est une application Android qui affiche les films populaires et permet de rechercher et filtrer des films via l'API TMDB. Home et Search sont **Offline-First** avec pagination infinie ; Discover utilise une pagination réseau adaptée à ses filtres dynamiques.
 
 <p align="center">
   <img src="screenshots/home_popular.png" width="200" />
@@ -10,8 +10,8 @@ MovieHub est une application Android qui affiche les films populaires et permet 
 
 ## Fonctionnalités
 
-- **Offline-First** : Room comme *Single Source of Truth* (SSOT). L'application fonctionne sans connexion grâce au cache local.
-- **Pagination infinie** : Paging 3 avec `RemoteMediator` pour synchroniser l'API et la base de données.
+- **Offline-First** : Room comme *Single Source of Truth* (SSOT) pour Home et Search. L'application fonctionne sans connexion grâce au cache local.
+- **Pagination infinie** : Paging 3 avec `RemoteMediator` pour Home/Search et `PagingSource` réseau pour Discover.
 - **Recherche réactive** : recherche instantanée avec debounce et gestion des états vide / erreur / hors-ligne.
 - **Favoris** : sauvegarde locale, suppression par balayage avec action d'accessibilité dédiée.
 - **Détail riche** : synopsis, note, durée, genres, réalisateur et distribution.
@@ -29,7 +29,7 @@ MovieHub est une application Android qui affiche les films populaires et permet 
 | Injection | Hilt |
 | Réseau | Retrofit + OkHttp |
 | Persistance | Room |
-| Pagination | Paging 3 (`RemoteMediator`) |
+| Pagination | Paging 3 (`RemoteMediator` + `PagingSource` réseau) |
 | Images | Coil |
 | Asynchrone | Coroutines + Flow |
 
@@ -43,22 +43,33 @@ Le code est séparé en trois couches :
 
 ### Single Source of Truth (SSOT)
 
-L'UI n'affiche jamais les données de l'API directement :
+L'architecture dépend de l'écran :
 
-1. Le `RemoteMediator` récupère les données réseau.
-2. Il les fusionne avec l'existant (les favoris locaux sont préservés via une stratégie de *merge*).
-3. Il écrit dans Room.
-4. L'UI observe uniquement Room.
+- **Home / Search** : l'API est synchronisée par `RemoteMediator` dans Room. Room est la source de vérité, ce qui fournit un cache local et un support hors-ligne.
+- **Discover** : les filtres dynamiques alimentent un `PagingSource` réseau. Les pages ne sont pas persistées dans Room ; les résultats sont seulement enrichis avec le flux local des IDs favoris afin de garder l'indicateur cohérent avec les autres écrans.
 
-Cela garantit une cohérence des données et un support hors-ligne natif.
+Discover reste donc network-backed par choix : persister chaque combinaison de filtres ajouterait une complexité disproportionnée pour ce projet.
+
+### Pagination
+
+MovieHub utilise les deux formes de Paging 3 :
+
+- `RemoteMediator` + Room pour les flux Home et Search persistés.
+- `PagingSource` réseau pour Discover, dont les résultats dépendent des filtres courants et ne sont pas mis en cache durablement.
 
 ## Tests
 
 Trois niveaux de tests :
 
 - **Unitaires** (`src/test`) : mappers, repository et ViewModels (coroutines, debounce, favoris, détail).
-- **Instrumentés** (`src/androidTest`) : navigation, recherche/favoris et médiateurs de pagination, exécutés avec une **fausse API déterministe** (`FakeMovieApiService`) sans dépendance réseau.
+- **Instrumentés** (`src/androidTest`) : navigation, recherche/favoris, Discover et médiateurs de pagination, exécutés avec une **fausse API déterministe** (`FakeMovieApiService`) sans dépendance réseau.
 - **Room/Paging** : synchronisation API ↔ base vérifiée sur une base en mémoire.
+
+Les tests instrumentés se lancent localement avec un émulateur ou appareil connecté :
+
+```bash
+./gradlew connectedDebugAndroidTest
+```
 
 ## Installation
 

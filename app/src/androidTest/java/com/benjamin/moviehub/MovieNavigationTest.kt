@@ -5,7 +5,9 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
@@ -41,5 +43,27 @@ class MovieNavigationTest {
         }
 
         composeTestRule.onNodeWithTag("detail_screen").assertIsDisplayed()
+    }
+
+    @Test
+    fun discoverTab_keepsAppliedFiltersAfterSwitchingTabs() {
+        composeTestRule.onNodeWithText("Découvrir").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 8000) {
+            composeTestRule.onAllNodesWithTag("discover_filter_button").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule.onNodeWithTag("discover_filter_button").performClick()
+        composeTestRule.onNodeWithTag("discover_year_section").performClick()
+        composeTestRule.onNodeWithTag("discover_year_option_other").performClick()
+        composeTestRule.onNodeWithTag("discover_custom_year").performTextInput("2020")
+        composeTestRule.onNodeWithTag("discover_apply_filters").performClick()
+        composeTestRule.onNodeWithTag("discover_filter_count").assertIsDisplayed()
+
+        composeTestRule.onNodeWithText("Accueil").performClick()
+        composeTestRule.onNodeWithText("Découvrir").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 8000) {
+            composeTestRule.onAllNodesWithTag("discover_filter_count").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithTag("discover_filter_count").assertIsDisplayed()
     }
 }

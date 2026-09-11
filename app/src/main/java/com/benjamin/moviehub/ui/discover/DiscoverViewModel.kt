@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.paging.map
 import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
 import com.benjamin.moviehub.domain.model.Movie
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -46,7 +48,12 @@ class DiscoverViewModel
             _uiState
                 .map { it.appliedFilters }
                 .distinctUntilChanged()
-                .flatMapLatest(repository::getDiscoverMovies)
+                .flatMapLatest { filters ->
+                    val networkResults = repository.getDiscoverMovies(filters).cachedIn(viewModelScope)
+                    combine(networkResults, repository.getFavoriteMovieIds()) { pagingData, favoriteIds ->
+                        pagingData.map { movie -> movie.copy(isFavorite = movie.id in favoriteIds) }
+                    }
+                }
                 .cachedIn(viewModelScope)
 
         init {

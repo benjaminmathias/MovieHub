@@ -57,6 +57,7 @@ class FakeMovieApiService(
         genreId: Int?,
         releaseYear: Int?,
         minimumVoteAverage: Double?,
+        minimumVoteCount: Int?,
         sortBy: String,
         page: Int,
     ): MovieResponse {

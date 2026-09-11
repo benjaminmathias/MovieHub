@@ -4,20 +4,28 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
+import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import androidx.paging.Pager
+import androidx.paging.PagingSource
+import androidx.paging.PagingState
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieGenre
 import kotlinx.coroutines.flow.flowOf
+import java.util.Calendar
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -158,6 +166,139 @@ class DiscoverScreenTest {
     }
 
     @Test
+    fun invalidCustomYearsDisableApply() {
+        var state by mutableStateOf(initialState())
+        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+
+        composeRule.setContent {
+            MovieHubTheme {
+                DiscoverScreen(
+                    state = state,
+                    discoverResults = flowOf(PagingData.empty()),
+                    onGenreSelected = {},
+                    onReleaseYearSelected = { year ->
+                        state = state.copy(draftFilters = state.draftFilters.copy(releaseYear = year))
+                    },
+                    onMinimumRatingSelected = {},
+                    onSortSelected = {},
+                    onBeginFilterEditing = {},
+                    onApplyFilters = {},
+                    onResetFilters = {},
+                    onDiscardFilterEdits = {},
+                    onRetryGenres = {},
+                    onMovieClick = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("discover_filter_button").performClick()
+        composeRule.onNodeWithTag("discover_year_section").performClick()
+        composeRule.onNodeWithTag("discover_year_option_other").performClick()
+        val yearField = composeRule.onNodeWithTag("discover_custom_year")
+
+        yearField.performTextInput("202")
+        composeRule.onNodeWithTag("discover_apply_filters").assertIsNotEnabled()
+        yearField.performTextClearance()
+        yearField.performTextInput((currentYear + 1).toString())
+        composeRule.onNodeWithTag("discover_apply_filters").assertIsNotEnabled()
+        yearField.performTextClearance()
+        yearField.performTextInput("1869")
+        composeRule.onNodeWithTag("discover_apply_filters").assertIsNotEnabled()
+    }
+
+    @Test
+    fun validCustomYearUpdatesDraftAndEnablesApply() {
+        var state by mutableStateOf(initialState())
+        val validYear = Calendar.getInstance().get(Calendar.YEAR) - 1
+
+        composeRule.setContent {
+            MovieHubTheme {
+                DiscoverScreen(
+                    state = state,
+                    discoverResults = flowOf(PagingData.empty()),
+                    onGenreSelected = {},
+                    onReleaseYearSelected = { year ->
+                        state = state.copy(draftFilters = state.draftFilters.copy(releaseYear = year))
+                    },
+                    onMinimumRatingSelected = {},
+                    onSortSelected = {},
+                    onBeginFilterEditing = {},
+                    onApplyFilters = {},
+                    onResetFilters = {},
+                    onDiscardFilterEdits = {},
+                    onRetryGenres = {},
+                    onMovieClick = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("discover_filter_button").performClick()
+        composeRule.onNodeWithTag("discover_year_section").performClick()
+        composeRule.onNodeWithTag("discover_year_option_other").performClick()
+        composeRule.onNodeWithTag("discover_custom_year").performTextInput(validYear.toString())
+
+        composeRule.runOnIdle {
+            assertEquals(validYear, state.draftFilters.releaseYear)
+        }
+        composeRule.onNodeWithTag("discover_apply_filters").assertIsEnabled()
+    }
+
+    @Test
+    fun genreErrorShowsRetryAndInvokesCallback() {
+        var retryCalled = false
+
+        composeRule.setContent {
+            MovieHubTheme {
+                DiscoverScreen(
+                    state = initialState().copy(genres = emptyList(), hasGenreError = true),
+                    discoverResults = flowOf(PagingData.empty()),
+                    onGenreSelected = {},
+                    onReleaseYearSelected = {},
+                    onMinimumRatingSelected = {},
+                    onSortSelected = {},
+                    onBeginFilterEditing = {},
+                    onApplyFilters = {},
+                    onResetFilters = {},
+                    onDiscardFilterEdits = {},
+                    onRetryGenres = { retryCalled = true },
+                    onMovieClick = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("discover_filter_button").performClick()
+        composeRule.onNodeWithTag("discover_genre_section").performClick()
+        composeRule.onNodeWithTag("discover_retry_genres").assertIsDisplayed().performClick()
+
+        composeRule.runOnIdle { assertTrue(retryCalled) }
+    }
+
+    @Test
+    fun initialPagingErrorShowsRetry() {
+        composeRule.setContent {
+            MovieHubTheme {
+                DiscoverScreen(
+                    state = initialState(),
+                    discoverResults = Pager(PagingConfig(pageSize = 1)) { ErrorPagingSource() }.flow,
+                    onGenreSelected = {},
+                    onReleaseYearSelected = {},
+                    onMinimumRatingSelected = {},
+                    onSortSelected = {},
+                    onBeginFilterEditing = {},
+                    onApplyFilters = {},
+                    onResetFilters = {},
+                    onDiscardFilterEdits = {},
+                    onRetryGenres = {},
+                    onMovieClick = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Impossible de charger les films.").assertIsDisplayed()
+        composeRule.onNodeWithText("Réessayer").assertIsDisplayed().performClick()
+    }
+
+    @Test
     fun closingSheetDiscardsDraftChanges() {
         var state by mutableStateOf(initialState())
 
@@ -254,4 +395,11 @@ class DiscoverScreenTest {
             genreIds = emptyList(),
             genres = emptyList(),
         )
+
+    private class ErrorPagingSource : PagingSource<Int, Movie>() {
+        override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Movie> =
+            LoadResult.Error(IllegalStateException("test error"))
+
+        override fun getRefreshKey(state: PagingState<Int, Movie>): Int? = null
+    }
 }
