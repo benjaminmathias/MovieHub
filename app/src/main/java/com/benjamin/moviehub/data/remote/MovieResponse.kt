@@ -7,6 +7,10 @@ data class MovieResponse(
     @SerializedName("total_pages") val totalPages: Int? = null,
 )
 
+data class MovieGenresResponse(
+    @SerializedName("genres") val genres: List<GenreDto> = emptyList(),
+)
+
 fun MovieResponse.isEndOfPagination(
     page: Int,
     pageSize: Int,

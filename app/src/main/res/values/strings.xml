@@ -9,7 +9,35 @@
     <string name="view_details">Voir les détails</string>
     <string name="error_prefix">Erreur : %1$s</string>
     <string name="home_tab">Accueil</string>
+    <string name="discover_tab">Découvrir</string>
     <string name="favorite_tab">Favoris</string>
+
+    <string name="discover_title">Découvrir des films</string>
+    <string name="discover_filters">Filtres</string>
+    <string name="discover_filter_sheet_description">Affinez les résultats avant de les appliquer.</string>
+    <string name="discover_active_filters">Filtres actifs : %1$s</string>
+    <string name="close_filters">Fermer les filtres</string>
+    <string name="discover_section_open">Section ouverte</string>
+    <string name="discover_section_closed">Section fermée</string>
+    <string name="discover_genre">Genre</string>
+    <string name="discover_all_genres">Tous les genres</string>
+    <string name="discover_selected_genre">Genre sélectionné</string>
+    <string name="discover_genres_loading">Chargement des genres…</string>
+    <string name="discover_year">Année</string>
+    <string name="discover_all_years">Toutes les années</string>
+    <string name="discover_other_year">Autre année</string>
+    <string name="discover_year_hint">Saisissez une année entre %1$d et %2$d.</string>
+    <string name="discover_year_error">Choisissez une année entre %1$d et %2$d.</string>
+    <string name="discover_min_rating">Note min.</string>
+    <string name="discover_any_rating">Toutes les notes</string>
+    <string name="discover_sort">Tri</string>
+    <string name="discover_sort_popularity">Popularité</string>
+    <string name="discover_sort_rating">Note</string>
+    <string name="discover_sort_release_date">Date de sortie</string>
+    <string name="discover_apply">Appliquer</string>
+    <string name="discover_reset">Réinitialiser</string>
+    <string name="discover_empty_results">Aucun film ne correspond à ces filtres.</string>
+    <string name="discover_genres_error">Impossible de charger les genres.</string>
 
     <string name="search_placeholder">Rechercher un film…</string>
     <string name="search_label">Rechercher un film</string>

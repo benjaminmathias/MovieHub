@@ -1,9 +1,11 @@
 package com.benjamin.moviehub.domain.repository
 
 import androidx.paging.PagingData
+import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCategory
 import com.benjamin.moviehub.domain.model.MovieCredits
+import com.benjamin.moviehub.domain.model.MovieGenre
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -19,6 +21,12 @@ interface MovieRepository {
         query: String? = null,
         category: MovieCategory = MovieCategory.POPULAR,
     ): Flow<PagingData<Movie>>
+
+    /** Get a network-backed paged feed for the currently applied Discover filters. */
+    fun getDiscoverMovies(filters: DiscoverFilters): Flow<PagingData<Movie>>
+
+    /** Get TMDB's localized movie genres. */
+    suspend fun getMovieGenres(): List<MovieGenre>
 
     /** First movie of a home [category], used by the hero banner. Emits null until it is cached. */
     fun getHeroMovie(category: MovieCategory = MovieCategory.POPULAR): Flow<Movie?>

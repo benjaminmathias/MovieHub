@@ -25,6 +25,18 @@ interface MovieApiService {
         @Query("page") page: Int,
     ): MovieResponse
 
+    @GET("discover/movie")
+    suspend fun discoverMovies(
+        @Query("with_genres") genreId: Int?,
+        @Query("primary_release_year") releaseYear: Int?,
+        @Query("vote_average.gte") minimumVoteAverage: Double?,
+        @Query("sort_by") sortBy: String,
+        @Query("page") page: Int,
+    ): MovieResponse
+
+    @GET("genre/movie/list")
+    suspend fun getMovieGenres(): MovieGenresResponse
+
     @GET("movie/{movie_id}")
     suspend fun getMovieDetails(
         @Path("movie_id") movieId: Int,

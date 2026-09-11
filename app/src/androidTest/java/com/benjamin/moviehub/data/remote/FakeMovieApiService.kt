@@ -27,6 +27,7 @@ class FakeMovieApiService(
     val nowPlayingPagesRequested = mutableListOf<Int>()
     val upcomingPagesRequested = mutableListOf<Int>()
     val topRatedPagesRequested = mutableListOf<Int>()
+    val discoverPagesRequested = mutableListOf<Int>()
 
     override suspend fun getPopularMovies(page: Int): MovieResponse {
         popularPagesRequested += page
@@ -51,6 +52,27 @@ class FakeMovieApiService(
         failIfRequested()
         return MovieResponse(topRatedPages[page].orEmpty())
     }
+
+    override suspend fun discoverMovies(
+        genreId: Int?,
+        releaseYear: Int?,
+        minimumVoteAverage: Double?,
+        sortBy: String,
+        page: Int,
+    ): MovieResponse {
+        discoverPagesRequested += page
+        failIfRequested()
+        return MovieResponse(popularPages[page].orEmpty())
+    }
+
+    override suspend fun getMovieGenres(): MovieGenresResponse =
+        MovieGenresResponse(
+            genres =
+                listOf(
+                    GenreDto(id = 28, name = "Action"),
+                    GenreDto(id = 18, name = "Drame"),
+                ),
+        )
 
     override suspend fun searchMovies(
         query: String,

@@ -14,10 +14,13 @@ import com.benjamin.moviehub.data.paging.INITIAL_LOAD_SIZE
 import com.benjamin.moviehub.data.paging.MovieRemoteMediator
 import com.benjamin.moviehub.data.paging.PAGE_SIZE
 import com.benjamin.moviehub.data.paging.PREFETCH_DISTANCE
+import com.benjamin.moviehub.data.paging.DiscoverMoviePagingSource
 import com.benjamin.moviehub.data.paging.SearchMovieRemoteMediator
 import com.benjamin.moviehub.data.remote.MovieApiService
+import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCategory
+import com.benjamin.moviehub.domain.model.MovieGenre
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -69,6 +72,28 @@ class MovieRepositoryImpl
                     pagingData.map { entity -> entity.toDomain() }
                 }
         }
+
+        override fun getDiscoverMovies(filters: DiscoverFilters): Flow<PagingData<Movie>> =
+            Pager(
+                config =
+                    PagingConfig(
+                        pageSize = PAGE_SIZE,
+                        prefetchDistance = PREFETCH_DISTANCE,
+                        initialLoadSize = INITIAL_LOAD_SIZE,
+                        enablePlaceholders = false,
+                    ),
+                pagingSourceFactory = { DiscoverMoviePagingSource(apiService, filters) },
+            ).flow
+
+        override suspend fun getMovieGenres(): List<MovieGenre> =
+            apiService
+                .getMovieGenres()
+                .genres
+                .mapNotNull { genre ->
+                    genre.name?.trim()?.takeIf(String::isNotEmpty)?.let { name ->
+                        MovieGenre(id = genre.id, name = name)
+                    }
+                }
 
         override fun getHeroMovie(category: MovieCategory): Flow<Movie?> =
             movieDao

@@ -20,8 +20,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -56,6 +58,8 @@ import com.benjamin.moviehub.ui.detail.MovieDetailViewModel
 import com.benjamin.moviehub.ui.components.NetworkSnackbar
 import com.benjamin.moviehub.ui.components.NetworkStatusEffect
 import com.benjamin.moviehub.domain.connectivity.ConnectivityStatus
+import com.benjamin.moviehub.ui.discover.DiscoverScreen
+import com.benjamin.moviehub.ui.discover.DiscoverViewModel
 import com.benjamin.moviehub.ui.favorites.FavoriteScreen
 import com.benjamin.moviehub.ui.favorites.FavoriteViewModel
 import com.benjamin.moviehub.ui.list.MovieListScreen
@@ -74,6 +78,7 @@ private data class BottomNavItem(
 private val bottomNavItems =
     listOf(
         BottomNavItem(Route.List, Icons.Default.Home, Icons.Outlined.Home, R.string.home_tab),
+        BottomNavItem(Route.Discover, Icons.Default.Explore, Icons.Outlined.Explore, R.string.discover_tab),
         BottomNavItem(Route.FavoriteList, Icons.Default.Favorite, Icons.Outlined.FavoriteBorder, R.string.favorite_tab),
     )
 
@@ -86,13 +91,14 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val useNavigationRail = maxWidth >= 600.dp
-        val showTopLevelNavigation = currentRoute is Route.List || currentRoute is Route.FavoriteList
+        val showTopLevelNavigation =
+            currentRoute is Route.List || currentRoute is Route.Discover || currentRoute is Route.FavoriteList
         fun navigateToTopLevel(route: Route) {
-            when {
-                currentRoute == route -> Unit
-                route == Route.List && currentRoute is Route.FavoriteList -> backStack.removeLastOrNull()
-                else -> backStack.add(route)
+            if (currentRoute == route) return
+            while (backStack.size > 1) {
+                backStack.removeLastOrNull()
             }
+            if (route != Route.List) backStack.add(route)
         }
 
         fun openMovieDetails(movieId: Int) {
@@ -171,6 +177,12 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                                         onOpenSettings = { backStack.add(Route.Settings) },
                                         onOpenSearch = { backStack.add(Route.Search) },
                                         snackbarHostState = snackbarHostState,
+                                    )
+                                }
+
+                                entry<Route.Discover> {
+                                    DiscoverEntry(
+                                        onOpenDetails = { id -> openMovieDetails(id) },
                                     )
                                 }
 
@@ -256,6 +268,29 @@ private fun SearchEntry(
         onSearchChanged = viewModel::onSearchQueryChanged,
         onMovieClick = onOpenDetails,
         onBack = onBack,
+    )
+}
+
+@Composable
+private fun DiscoverEntry(
+    onOpenDetails: (Int) -> Unit,
+) {
+    val viewModel: DiscoverViewModel = hiltViewModel()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    DiscoverScreen(
+        state = state,
+        discoverResults = viewModel.discoverResults,
+        onGenreSelected = viewModel::onGenreSelected,
+        onReleaseYearSelected = viewModel::onReleaseYearSelected,
+        onMinimumRatingSelected = viewModel::onMinimumRatingSelected,
+        onSortSelected = viewModel::onSortSelected,
+        onBeginFilterEditing = viewModel::beginFilterEditing,
+        onApplyFilters = viewModel::applyFilters,
+        onResetFilters = viewModel::resetFilters,
+        onDiscardFilterEdits = viewModel::discardFilterEdits,
+        onRetryGenres = viewModel::retryGenres,
+        onMovieClick = onOpenDetails,
     )
 }
 
