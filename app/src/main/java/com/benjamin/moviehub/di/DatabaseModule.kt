@@ -3,6 +3,7 @@ package com.benjamin.moviehub.di
 import android.content.Context
 import androidx.room.Room
 import com.benjamin.moviehub.data.local.MIGRATION_1_2
+import com.benjamin.moviehub.data.local.MIGRATION_2_3
 import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.local.MovieDatabase
 import dagger.Module
@@ -25,7 +26,7 @@ object DatabaseModule {
                 context,
                 MovieDatabase::class.java,
                 "movie_hub_db",
-            ).addMigrations(MIGRATION_1_2)
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
 
     @Provides

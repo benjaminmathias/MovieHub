@@ -41,14 +41,16 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.benjamin.moviehub.R
+import com.benjamin.moviehub.core.theme.HomeMovieCardWidth
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCategory
 import com.benjamin.moviehub.ui.components.ErrorRetryItem
 import com.benjamin.moviehub.ui.components.HeroMovieBanner
 import com.benjamin.moviehub.ui.components.HeroMovieShimmer
 import com.benjamin.moviehub.ui.components.RowMovieItem
-import com.benjamin.moviehub.core.theme.HomeMovieCardWidth
 import com.benjamin.moviehub.ui.components.RowMovieShimmerItem
+import com.benjamin.moviehub.ui.components.isInitialError
+import com.benjamin.moviehub.ui.components.isInitialLoading
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
@@ -206,20 +208,9 @@ private fun CategoryRow(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
         )
 
-        val refreshLoadState = lazyPagingItems.loadState.refresh
-        val mediatorLoadState = lazyPagingItems.loadState.mediator?.refresh
-        val isInitialLoading =
-            (refreshLoadState is LoadState.Loading ||
-                mediatorLoadState == null ||
-                mediatorLoadState is LoadState.Loading) &&
-                lazyPagingItems.itemCount == 0
-        val isError =
-            (refreshLoadState is LoadState.Error || mediatorLoadState is LoadState.Error) &&
-                lazyPagingItems.itemCount == 0
-
         when {
-            isInitialLoading -> CategoryRowLoadingShimmer()
-            isError ->
+            lazyPagingItems.isInitialLoading -> CategoryRowLoadingShimmer()
+            lazyPagingItems.isInitialError ->
                 ErrorRetryItem(
                     message = stringResource(R.string.error_loading_movies),
                     onRetry = { lazyPagingItems.retry() },

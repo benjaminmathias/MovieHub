@@ -11,6 +11,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,7 +33,7 @@ class MovieDatabaseMigrationTest {
     }
 
     @Test
-    fun migrate1To2_preservesMovieAndMigratesPopularMembership() =
+    fun migrate1To3_preservesMovieAndMigratesPopularMembership() =
         runBlocking {
             createVersionOneDatabase(includeRuntimeColumn = true)
 
@@ -47,7 +48,7 @@ class MovieDatabaseMigrationTest {
 
                 // Legacy popular order is preserved in the association table.
                 assertEquals(listOf(3, 1), dao.getCategoryMovieIds("POPULAR"))
-                assertEquals(1, dao.getRemoteKeysCountByType("POPULAR"))
+                assertEquals(2, dao.getRemoteKey("POPULAR")?.nextKey)
 
                 // Existing search associations survive the movies table rebuild.
                 assertEquals(listOf(1), dao.getSearchResultMovieIds("matrix"))
@@ -57,7 +58,7 @@ class MovieDatabaseMigrationTest {
         }
 
     @Test
-    fun migrate1To2_withoutRuntimeColumn_opensAndPreservesData() =
+    fun migrate1To3_withoutRuntimeColumn_opensAndPreservesData() =
         runBlocking {
             createVersionOneDatabase(includeRuntimeColumn = false)
 
@@ -72,8 +73,30 @@ class MovieDatabaseMigrationTest {
                 assertEquals(null, favorite?.runtimeMinutes)
 
                 assertEquals(listOf(3, 1), dao.getCategoryMovieIds("POPULAR"))
-                assertEquals(1, dao.getRemoteKeysCountByType("POPULAR"))
+                assertEquals(2, dao.getRemoteKey("POPULAR")?.nextKey)
                 assertEquals(listOf(1), dao.getSearchResultMovieIds("matrix"))
+            } finally {
+                database.close()
+            }
+        }
+
+    @Test
+    fun migrate2To3_collapsesRemoteKeysAndDropsSearchFlag() =
+        runBlocking {
+            createVersionTwoDatabase()
+
+            val database = openMigratedDatabase()
+            try {
+                val dao = database.movieDao()
+
+                // A feed that reached its last page (NULL nextKey) stays exhausted.
+                assertEquals(null, dao.getRemoteKey("POPULAR")?.nextKey)
+                // A partially loaded feed keeps its next page.
+                assertEquals(4, dao.getRemoteKey("UPCOMING")?.nextKey)
+                assertEquals("Kept", dao.getMovieById(1)?.title)
+                assertTrue(dao.getMovieById(1)?.isFavorite == true)
+
+                assertTrue("isSearchResult" !in movieColumns(database))
             } finally {
                 database.close()
             }
@@ -82,7 +105,7 @@ class MovieDatabaseMigrationTest {
     private fun openMigratedDatabase(): MovieDatabase =
         Room
             .databaseBuilder(context, MovieDatabase::class.java, dbName)
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
 
     private fun createVersionOneDatabase(includeRuntimeColumn: Boolean) {
@@ -158,5 +181,79 @@ class MovieDatabaseMigrationTest {
             )
         }
         helper.close()
+    }
+
+    private fun createVersionTwoDatabase() {
+        val helper =
+            FrameworkSQLiteOpenHelperFactory().create(
+                SupportSQLiteOpenHelper.Configuration
+                    .builder(context)
+                    .name(dbName)
+                    .callback(
+                        object : SupportSQLiteOpenHelper.Callback(2) {
+                            override fun onCreate(db: SupportSQLiteDatabase) {
+                                db.execSQL(
+                                    "CREATE TABLE IF NOT EXISTS `movies` (" +
+                                        "`id` INTEGER NOT NULL, `title` TEXT NOT NULL, `overview` TEXT NOT NULL, " +
+                                        "`posterPath` TEXT, `backdropPath` TEXT, `voteAverage` REAL NOT NULL, " +
+                                        "`releaseDate` TEXT NOT NULL, `genreIds` TEXT NOT NULL, " +
+                                        "`isFavorite` INTEGER NOT NULL, `isSearchResult` INTEGER NOT NULL, " +
+                                        "`runtimeMinutes` INTEGER, PRIMARY KEY(`id`))",
+                                )
+                                db.execSQL(
+                                    "CREATE TABLE IF NOT EXISTS `remote_keys` (" +
+                                        "`movieId` INTEGER NOT NULL, `prevKey` INTEGER, `nextKey` INTEGER, " +
+                                        "`type` TEXT NOT NULL, PRIMARY KEY(`movieId`, `type`))",
+                                )
+                                db.execSQL(
+                                    "CREATE TABLE IF NOT EXISTS `movie_search_results` (" +
+                                        "`queryKey` TEXT NOT NULL, `movieId` INTEGER NOT NULL, " +
+                                        "`pageOrder` INTEGER NOT NULL, PRIMARY KEY(`queryKey`, `movieId`))",
+                                )
+                                db.execSQL(
+                                    "CREATE TABLE IF NOT EXISTS `movie_categories` (" +
+                                        "`movieId` INTEGER NOT NULL, `category` TEXT NOT NULL, " +
+                                        "`pageOrder` INTEGER NOT NULL, PRIMARY KEY(`movieId`, `category`))",
+                                )
+                                db.execSQL(
+                                    "CREATE INDEX IF NOT EXISTS `index_movie_categories_category_pageOrder` " +
+                                        "ON `movie_categories` (`category`, `pageOrder`)",
+                                )
+                            }
+
+                            override fun onUpgrade(
+                                db: SupportSQLiteDatabase,
+                                oldVersion: Int,
+                                newVersion: Int,
+                            ) = Unit
+                        },
+                    ).build(),
+            )
+
+        helper.writableDatabase.use { db ->
+            db.execSQL(
+                "INSERT INTO `movies` (" +
+                    "`id`,`title`,`overview`,`posterPath`,`backdropPath`,`voteAverage`,`releaseDate`," +
+                    "`genreIds`,`isFavorite`,`isSearchResult`,`runtimeMinutes`) " +
+                    "VALUES (1,'Kept','o',NULL,NULL,7.0,'2020-01-01','28',1,1,137)",
+            )
+            // Same feed: an early page (nextKey=2) then the final page (nextKey NULL) -> exhausted.
+            db.execSQL("INSERT INTO `remote_keys` (`movieId`,`prevKey`,`nextKey`,`type`) VALUES (1,NULL,2,'POPULAR')")
+            db.execSQL("INSERT INTO `remote_keys` (`movieId`,`prevKey`,`nextKey`,`type`) VALUES (2,1,NULL,'POPULAR')")
+            // Another feed still has a next page.
+            db.execSQL("INSERT INTO `remote_keys` (`movieId`,`prevKey`,`nextKey`,`type`) VALUES (3,NULL,4,'UPCOMING')")
+        }
+        helper.close()
+    }
+
+    private fun movieColumns(database: MovieDatabase): Set<String> {
+        val columns = mutableSetOf<String>()
+        database.openHelper.writableDatabase.query("PRAGMA table_info(`movies`)").use { cursor ->
+            val nameIndex = cursor.getColumnIndex("name")
+            while (cursor.moveToNext()) {
+                columns += cursor.getString(nameIndex)
+            }
+        }
+        return columns
     }
 }

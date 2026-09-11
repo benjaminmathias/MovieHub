@@ -81,6 +81,53 @@ internal val MIGRATION_1_2 =
         }
     }
 
+/**
+ * Collapses `remote_keys` to a single pagination cursor per feed and drops the
+ * now-unused `isSearchResult` flag from `movies`.
+ *
+ * The per-feed cursor is the highest page reached: a NULL `nextKey` is only ever
+ * written on a feed's final page, so any NULL row means the feed is exhausted.
+ * Dropping `isSearchResult` is safe because search membership is already tracked
+ * by `movie_search_results`.
+ */
+internal val MIGRATION_2_3 =
+    object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `remote_keys_new` (" +
+                    "`type` TEXT NOT NULL, `nextKey` INTEGER, PRIMARY KEY(`type`))",
+            )
+            db.execSQL(
+                "INSERT OR REPLACE INTO `remote_keys_new` (`type`, `nextKey`) " +
+                    "SELECT `type`, CASE " +
+                    "WHEN SUM(CASE WHEN `nextKey` IS NULL THEN 1 ELSE 0 END) > 0 THEN NULL " +
+                    "ELSE MAX(`nextKey`) END " +
+                    "FROM `remote_keys` GROUP BY `type`",
+            )
+            db.execSQL("DROP TABLE `remote_keys`")
+            db.execSQL("ALTER TABLE `remote_keys_new` RENAME TO `remote_keys`")
+
+            if ("isSearchResult" !in columnNames(db, "movies")) return
+
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `movies_new` (" +
+                    "`id` INTEGER NOT NULL, `title` TEXT NOT NULL, `overview` TEXT NOT NULL, " +
+                    "`posterPath` TEXT, `backdropPath` TEXT, `voteAverage` REAL NOT NULL, " +
+                    "`releaseDate` TEXT NOT NULL, `genreIds` TEXT NOT NULL, " +
+                    "`isFavorite` INTEGER NOT NULL, `runtimeMinutes` INTEGER, PRIMARY KEY(`id`))",
+            )
+            db.execSQL(
+                "INSERT OR REPLACE INTO `movies_new` (" +
+                    "`id`, `title`, `overview`, `posterPath`, `backdropPath`, `voteAverage`, " +
+                    "`releaseDate`, `genreIds`, `isFavorite`, `runtimeMinutes`) " +
+                    "SELECT `id`, `title`, `overview`, `posterPath`, `backdropPath`, `voteAverage`, " +
+                    "`releaseDate`, `genreIds`, `isFavorite`, `runtimeMinutes` FROM `movies`",
+            )
+            db.execSQL("DROP TABLE `movies`")
+            db.execSQL("ALTER TABLE `movies_new` RENAME TO `movies`")
+        }
+    }
+
 private fun columnNames(
     db: SupportSQLiteDatabase,
     table: String,

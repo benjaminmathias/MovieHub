@@ -39,6 +39,9 @@ import com.benjamin.moviehub.ui.components.CompactMovieShimmerItem
 import com.benjamin.moviehub.ui.components.EmptyStateView
 import com.benjamin.moviehub.ui.components.ErrorRetryItem
 import com.benjamin.moviehub.ui.components.MovieSearchBar
+import com.benjamin.moviehub.ui.components.isEmptyAfterEndOfPagination
+import com.benjamin.moviehub.ui.components.isInitialError
+import com.benjamin.moviehub.ui.components.isInitialLoading
 import kotlinx.coroutines.flow.Flow
 
 @Composable
@@ -105,29 +108,13 @@ private fun SearchResults(
     }
 
     val lazyPagingItems = searchResults.collectAsLazyPagingItems()
-    val combinedLoadStates = lazyPagingItems.loadState
-    val refreshLoadState = combinedLoadStates.refresh
-    val mediatorLoadState = combinedLoadStates.mediator?.refresh
-    val isMediatorLoadingOrNull = mediatorLoadState == null || mediatorLoadState is LoadState.Loading
-    val isInitialLoading =
-        (refreshLoadState is LoadState.Loading || isMediatorLoadingOrNull) &&
-            lazyPagingItems.itemCount == 0
-    val isAppendEndOfPagination =
-        (combinedLoadStates.append as? LoadState.NotLoading)?.endOfPaginationReached == true
-    val isEmpty =
-        refreshLoadState is LoadState.NotLoading &&
-            isAppendEndOfPagination &&
-            lazyPagingItems.itemCount == 0
-    val isError =
-        (refreshLoadState is LoadState.Error || mediatorLoadState is LoadState.Error) &&
-            lazyPagingItems.itemCount == 0
 
     when {
-        isInitialLoading -> {
+        lazyPagingItems.isInitialLoading -> {
             SearchLoadingShimmer()
         }
 
-        isError -> {
+        lazyPagingItems.isInitialError -> {
             EmptyStateView(
                 message = stringResource(R.string.error_loading_movies),
                 icon = Icons.Default.CloudOff,
@@ -135,7 +122,7 @@ private fun SearchResults(
             )
         }
 
-        isEmpty -> {
+        lazyPagingItems.isEmptyAfterEndOfPagination -> {
             EmptyStateView(
                 message = stringResource(R.string.empty_search_results, searchQuery.trim()),
                 icon = Icons.Default.SearchOff,

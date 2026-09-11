@@ -9,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,16 +44,18 @@ class MovieDetailViewModel
                 _uiState.value = MovieDetailUiState.Loading
 
                 try {
-                    // Throws on movie failure and cancels the secondary children automatically.
-                    val creditsDeferred = async { loadCredits(movieId) }
-                    val recommendationsDeferred = async { loadRecommendations(movieId) }
-                    val movie = repository.getMovieDetails(movieId)
+                    coroutineScope {
+                        val creditsDeferred = async { loadCredits(movieId) }
+                        val recommendationsDeferred = async { loadRecommendations(movieId) }
+                        // A main failure throws out of the scope and cancels both async children.
+                        val movie = repository.getMovieDetails(movieId)
 
-                    _uiState.value = MovieDetailUiState.Success(movie, MovieCredits())
-                    val credits = creditsDeferred.await()
-                    updateSuccess(movieId) { it.copy(credits = credits) }
-                    val recommendations = recommendationsDeferred.await()
-                    updateSuccess(movieId) { it.copy(recommendations = recommendations) }
+                        _uiState.value = MovieDetailUiState.Success(movie, MovieCredits())
+                        val credits = creditsDeferred.await()
+                        updateSuccess(movieId) { it.copy(credits = credits) }
+                        val recommendations = recommendationsDeferred.await()
+                        updateSuccess(movieId) { it.copy(recommendations = recommendations) }
+                    }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {

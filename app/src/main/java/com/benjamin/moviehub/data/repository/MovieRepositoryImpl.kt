@@ -75,7 +75,6 @@ class MovieRepositoryImpl
 
         override suspend fun getMovieDetails(movieId: Int): Movie {
             return try {
-                // API call
                 val dto = apiService.getMovieDetails(movieId = movieId)
 
                 val remoteMovieEntity = dto.toEntity()

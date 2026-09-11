@@ -49,6 +49,9 @@ class DiscoverViewModel
                 .map { it.appliedFilters }
                 .distinctUntilChanged()
                 .flatMapLatest { filters ->
+                    // The page feed must stay cached here: favorite changes re-emit the same
+                    // PagingData mapped again, and submitting it to the differ would otherwise
+                    // collect its pageEventFlow a second time and crash.
                     val networkResults = repository.getDiscoverMovies(filters).cachedIn(viewModelScope)
                     combine(networkResults, repository.getFavoriteMovieIds()) { pagingData, favoriteIds ->
                         pagingData.map { movie -> movie.copy(isFavorite = movie.id in favoriteIds) }

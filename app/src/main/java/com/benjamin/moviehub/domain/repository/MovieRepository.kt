@@ -28,22 +28,18 @@ interface MovieRepository {
     fun getHeroMovie(category: MovieCategory = MovieCategory.POPULAR): Flow<Movie?>
 
     /**
-     * Get movie details from the API and store it in the db the first time
-     * Then pull from the db only if the API call fails or the movie already exist in it
+     * Fetch the movie from the API, upsert it locally (preserving local favorite and runtime),
+     * and fall back to the cached row when the network is unavailable.
      */
     suspend fun getMovieDetails(movieId: Int): Movie
 
-    /**
-     * Toggle the favorite status of a movie by saving in the db
-     */
+    /** Persist the favorite status of [movie] in the db. */
     suspend fun toggleFavorite(
         movie: Movie,
         isFavorite: Boolean,
     )
 
-    /**
-     * Get favorite movies from the db
-     */
+    /** Get favorite movies from the db. */
     fun getFavoriteMovies(): Flow<List<Movie>>
 
     /** Observe the local favorite IDs used to enrich network-backed feeds. */

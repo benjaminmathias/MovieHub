@@ -15,8 +15,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
@@ -32,12 +32,15 @@ class SearchViewModel
         @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
         val searchResults: Flow<PagingData<Movie>> =
             _searchQuery
-                .debounce { query -> if (query.isEmpty()) 0L else 500L }
+                .debounce { query -> if (query.isBlank()) 0L else 500L }
                 .map(String::trim)
                 .distinctUntilChanged()
-                .filter(String::isNotEmpty)
                 .flatMapLatest { query ->
-                    repository.searchMovies(query)
+                    if (query.isEmpty()) {
+                        flowOf(PagingData.empty())
+                    } else {
+                        repository.searchMovies(query)
+                    }
                 }.cachedIn(viewModelScope)
 
         fun onSearchQueryChanged(newQuery: String) {

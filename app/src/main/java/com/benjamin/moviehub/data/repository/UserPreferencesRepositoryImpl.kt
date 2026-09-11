@@ -19,7 +19,7 @@ import javax.inject.Inject
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 private val themeKey = stringPreferencesKey("app_theme")
 
-class UserPreferenceRepositoryImpl
+class UserPreferencesRepositoryImpl
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,

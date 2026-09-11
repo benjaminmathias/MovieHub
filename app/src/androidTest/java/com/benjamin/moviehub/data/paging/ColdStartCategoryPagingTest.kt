@@ -10,7 +10,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.benjamin.moviehub.data.local.MovieCategoryEntity
 import com.benjamin.moviehub.data.local.MovieDatabase
 import com.benjamin.moviehub.data.local.MovieEntity
-import com.benjamin.moviehub.data.local.MovieRemoteKey
+import com.benjamin.moviehub.data.local.RemoteKey
 import com.benjamin.moviehub.data.mapper.toEntity
 import com.benjamin.moviehub.data.remote.FakeMovieApiService
 import com.benjamin.moviehub.data.remote.movieDto
@@ -134,9 +134,7 @@ class ColdStartCategoryPagingTest {
                 ),
             ),
         )
-        dao.insertAllKeys(
-            listOf(MovieRemoteKey(500, prevKey = null, nextKey = null, type = MovieCategory.UPCOMING.key)),
-        )
+        dao.upsertRemoteKey(RemoteKey(type = MovieCategory.UPCOMING.key, nextKey = null))
     }
 
     private suspend fun awaitItems(

@@ -7,11 +7,11 @@ import androidx.room.TypeConverters
 @Database(
     entities = [
         MovieEntity::class,
-        MovieRemoteKey::class,
+        RemoteKey::class,
         MovieSearchResultEntity::class,
         MovieCategoryEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)

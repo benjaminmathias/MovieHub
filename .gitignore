@@ -19,3 +19,5 @@ local.properties
 apikeys.properties
 /.codex/
 /design-system/
+/moviehub-*.png
+/window*.xml

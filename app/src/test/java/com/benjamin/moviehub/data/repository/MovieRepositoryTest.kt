@@ -83,7 +83,6 @@ class MovieRepositoryTest {
             assertEquals(true, entitySlot.captured.isFavorite)
             assertEquals("/poster.jpg", entitySlot.captured.posterPath)
             assertEquals("/backdrop.jpg", entitySlot.captured.backdropPath)
-            assertEquals(false, entitySlot.captured.isSearchResult)
         }
 
     @Test

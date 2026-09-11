@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -52,7 +51,6 @@ fun FavoriteScreen(
     state: MovieFavoriteListUiState,
     onRemoveFavorite: (Movie) -> Unit,
     onMovieClick: (Int) -> Unit,
-    onBackClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onRetry: () -> Unit,
     favoriteActionErrors: Flow<Unit> = emptyFlow(),
@@ -70,11 +68,6 @@ fun FavoriteScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.favorite_tab)) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
-                    }
-                },
                 actions = {
                     IconButton(onClick = onSettingsClick) {
                         Icon(Icons.Default.Settings, stringResource(R.string.settings_title))

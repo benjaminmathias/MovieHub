@@ -8,10 +8,12 @@ import androidx.room.withTransaction
 import com.benjamin.moviehub.data.local.MovieDatabase
 import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.local.MovieSearchResultEntity
+import com.benjamin.moviehub.data.local.RemoteKey
 import com.benjamin.moviehub.data.local.SearchQueryKey
 import com.benjamin.moviehub.data.mapper.toEntity
 import com.benjamin.moviehub.data.remote.MovieApiService
 import com.benjamin.moviehub.data.remote.isEndOfPagination
+import kotlinx.coroutines.CancellationException
 
 @OptIn(ExperimentalPagingApi::class)
 class SearchMovieRemoteMediator(
@@ -31,14 +33,9 @@ class SearchMovieRemoteMediator(
             when (loadType) {
                 LoadType.REFRESH -> 1
                 LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
-                LoadType.APPEND -> {
-                    val remoteKeys = MediatorPagingHelper.remoteKeyForLastItem(state, movieDao, remoteKeyType)
-                    val nextKey =
-                        remoteKeys?.nextKey ?: return MediatorResult.Success(
-                            endOfPaginationReached = remoteKeys != null,
-                        )
-                    nextKey
-                }
+                LoadType.APPEND ->
+                    movieDao.getRemoteKey(remoteKeyType)?.nextKey
+                        ?: return MediatorResult.Success(endOfPaginationReached = true)
             }
 
         return try {
@@ -48,30 +45,20 @@ class SearchMovieRemoteMediator(
             val endOfPaginationReached = response.isEndOfPagination(page, state.config.pageSize)
 
             database.withTransaction {
-                val movieIds = movies.map { it.id }
-                val localMovies = MediatorPagingHelper.preservedByIds(movieDao, movieIds)
-
                 if (loadType == LoadType.REFRESH) {
+                    val previousResultIds = movieDao.getSearchResultMovieIds(queryKey)
                     movieDao.clearSearchResults(queryKey)
                     movieDao.clearRemoteKeysByType(remoteKeyType)
-                    movieDao.clearOrphanSearchMovies(movieIds)
+                    movieDao.deleteSearchOrphans(previousResultIds, movies.map { it.id })
                 }
 
-                val keys =
-                    MediatorPagingHelper.remoteKeys(
-                        movieIds,
-                        page,
-                        endOfPaginationReached,
-                        remoteKeyType,
-                    )
+                val localMovies = MediatorPagingHelper.preservedByIds(movieDao, movies.map { it.id })
 
                 val movieEntities =
                     movies.map { dto ->
                         val localMovie = localMovies[dto.id]
-
                         dto.toEntity(
                             isFavorite = localMovie?.isFavorite ?: false,
-                            isSearchResult = true,
                             runtimeMinutesOverride = localMovie?.runtimeMinutes,
                         )
                     }
@@ -83,12 +70,17 @@ class SearchMovieRemoteMediator(
                             pageOrder = MediatorPagingHelper.pageOrder(page, state.config.pageSize, index),
                         )
                     }
-                movieDao.insertAllKeys(keys)
+                movieDao.upsertRemoteKey(
+                    RemoteKey(
+                        type = remoteKeyType,
+                        nextKey = page.takeIf { !endOfPaginationReached }?.plus(1),
+                    ),
+                )
                 movieDao.insertSearchResults(searchResults)
                 movieDao.upsertMovies(movieEntities)
             }
             MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)
-        } catch (e: kotlinx.coroutines.CancellationException) {
+        } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             MediatorResult.Error(e)

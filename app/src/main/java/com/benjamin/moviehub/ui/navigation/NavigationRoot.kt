@@ -18,12 +18,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -37,7 +37,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,33 +44,20 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
-import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.ui.NavDisplay
 import com.benjamin.moviehub.R
-import com.benjamin.moviehub.ui.detail.MovieDetailScreen
-import com.benjamin.moviehub.ui.detail.MovieDetailViewModel
+import com.benjamin.moviehub.domain.connectivity.ConnectivityStatus
 import com.benjamin.moviehub.ui.components.NetworkSnackbar
 import com.benjamin.moviehub.ui.components.NetworkStatusEffect
-import com.benjamin.moviehub.domain.connectivity.ConnectivityStatus
-import com.benjamin.moviehub.ui.discover.DiscoverScreen
-import com.benjamin.moviehub.ui.discover.DiscoverViewModel
-import com.benjamin.moviehub.ui.favorites.FavoriteScreen
-import com.benjamin.moviehub.ui.favorites.FavoriteViewModel
-import com.benjamin.moviehub.ui.list.MovieListScreen
-import com.benjamin.moviehub.ui.list.MovieListViewModel
-import com.benjamin.moviehub.ui.search.SearchScreen
-import com.benjamin.moviehub.ui.search.SearchViewModel
-import com.benjamin.moviehub.ui.settings.SettingsScreen
 
 private data class BottomNavItem(
     val route: Route,
@@ -167,7 +153,6 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
 
                 entry<Route.FavoriteList> {
                     FavoriteListEntry(
-                        onBack = { backStack.removeLastOrNull() },
                         onOpenSettings = { backStack.add(Route.Settings) },
                         onOpenDetails = { id -> openMovieDetails(id) },
                     )
@@ -178,36 +163,9 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                 }
             }
 
-        val homeEntries =
-            rememberDecoratedNavEntries(
-                backStack = homeBackStack,
-                entryProvider = entryProvider,
-                entryDecorators =
-                    listOf(
-                        rememberSaveableStateHolderNavEntryDecorator(),
-                        rememberViewModelStoreNavEntryDecorator(),
-                    ),
-            )
-        val discoverEntries =
-            rememberDecoratedNavEntries(
-                backStack = discoverBackStack,
-                entryProvider = entryProvider,
-                entryDecorators =
-                    listOf(
-                        rememberSaveableStateHolderNavEntryDecorator(),
-                        rememberViewModelStoreNavEntryDecorator(),
-                    ),
-            )
-        val favoritesEntries =
-            rememberDecoratedNavEntries(
-                backStack = favoritesBackStack,
-                entryProvider = entryProvider,
-                entryDecorators =
-                    listOf(
-                        rememberSaveableStateHolderNavEntryDecorator(),
-                        rememberViewModelStoreNavEntryDecorator(),
-                    ),
-            )
+        val homeEntries = rememberDecoratedEntries(homeBackStack, entryProvider)
+        val discoverEntries = rememberDecoratedEntries(discoverBackStack, entryProvider)
+        val favoritesEntries = rememberDecoratedEntries(favoritesBackStack, entryProvider)
         val entries =
             when (selectedTab) {
                 TopLevelTab.HOME -> homeEntries
@@ -282,6 +240,21 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
         }
     }
 }
+
+@Composable
+private fun rememberDecoratedEntries(
+    backStack: List<NavKey>,
+    entryProvider: (NavKey) -> NavEntry<NavKey>,
+): List<NavEntry<NavKey>> =
+    rememberDecoratedNavEntries(
+        backStack = backStack,
+        entryDecorators =
+            listOf(
+                rememberSaveableStateHolderNavEntryDecorator(),
+                rememberViewModelStoreNavEntryDecorator(),
+            ),
+        entryProvider = entryProvider,
+    )
 
 private fun AnimatedContentTransitionScope<*>.forwardTransition(): ContentTransform =
     (

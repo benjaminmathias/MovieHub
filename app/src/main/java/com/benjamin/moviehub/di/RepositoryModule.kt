@@ -1,7 +1,7 @@
 package com.benjamin.moviehub.di
 
 import com.benjamin.moviehub.data.repository.MovieRepositoryImpl
-import com.benjamin.moviehub.data.repository.UserPreferenceRepositoryImpl
+import com.benjamin.moviehub.data.repository.UserPreferencesRepositoryImpl
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import com.benjamin.moviehub.domain.repository.UserPreferencesRepository
 import dagger.Binds
@@ -19,5 +19,5 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindUserPreferencesRepository(impl: UserPreferenceRepositoryImpl): UserPreferencesRepository
+    abstract fun bindUserPreferencesRepository(impl: UserPreferencesRepositoryImpl): UserPreferencesRepository
 }

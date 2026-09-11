@@ -63,7 +63,6 @@ private fun toTmdbImageUrl(
  */
 fun MovieDto.toEntity(
     isFavorite: Boolean = false,
-    isSearchResult: Boolean = false,
     runtimeMinutesOverride: Int? = null,
 ): MovieEntity {
     val finalGenreIds =
@@ -81,7 +80,6 @@ fun MovieDto.toEntity(
         releaseDate = this.releaseDate ?: "",
         genreIds = finalGenreIds,
         isFavorite = isFavorite,
-        isSearchResult = isSearchResult,
         runtimeMinutes = runtimeMinutesOverride ?: runtimeMinutes,
     )
 }

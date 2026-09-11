@@ -112,7 +112,6 @@ internal fun MovieDetailEntry(
 
 @Composable
 internal fun FavoriteListEntry(
-    onBack: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenDetails: (Int) -> Unit,
 ) {
@@ -121,7 +120,6 @@ internal fun FavoriteListEntry(
 
     FavoriteScreen(
         state = favoriteUiState,
-        onBackClick = onBack,
         onSettingsClick = onOpenSettings,
         onMovieClick = onOpenDetails,
         onRemoveFavorite = viewModel::onToggleFavorite,

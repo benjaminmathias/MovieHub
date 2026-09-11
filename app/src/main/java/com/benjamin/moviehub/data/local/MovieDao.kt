@@ -6,7 +6,6 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
-import androidx.room.Update
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
@@ -22,24 +21,16 @@ interface MovieDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovie(movie: MovieEntity)
 
-    @Update
-    suspend fun updateMovie(movie: MovieEntity)
-
     @Transaction
     suspend fun upsertMovieDetails(movie: MovieEntity): MovieEntity {
         val localMovie = getMovieById(movie.id)
         val mergedMovie =
             movie.copy(
                 isFavorite = localMovie?.isFavorite ?: movie.isFavorite,
-                isSearchResult = localMovie?.isSearchResult ?: movie.isSearchResult,
                 runtimeMinutes = movie.runtimeMinutes ?: localMovie?.runtimeMinutes,
             )
 
-        if (localMovie == null) {
-            insertMovie(mergedMovie)
-        } else {
-            updateMovie(mergedMovie)
-        }
+        upsertMovies(listOf(mergedMovie))
         return mergedMovie
     }
 
@@ -112,41 +103,42 @@ interface MovieDao {
     @Upsert
     suspend fun upsertMovies(movies: List<MovieEntity>)
 
-    // --- GESTION DES CLÉS (REMOTE KEYS) ---
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAllKeys(remoteKey: List<MovieRemoteKey>)
+    // --- CLÉS DE PAGINATION (UNE PAR FEED) ---
+    @Upsert
+    suspend fun upsertRemoteKey(remoteKey: RemoteKey)
 
-    @Query("SELECT * FROM remote_keys WHERE movieId = :movieId AND type = :type")
-    suspend fun getRemoteKeysForMovieId(
-        movieId: Int,
-        type: String,
-    ): MovieRemoteKey?
+    @Query("SELECT * FROM remote_keys WHERE type = :type")
+    suspend fun getRemoteKey(type: String): RemoteKey?
 
-    @Query("SELECT COUNT(*) FROM remote_keys WHERE type = :type")
-    suspend fun getRemoteKeysCountByType(type: String): Int
-
-    // --- MAINTENANCE ---
     @Query("DELETE FROM remote_keys WHERE type = :type")
     suspend fun clearRemoteKeysByType(type: String)
 
+    // --- RECHERCHE ---
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSearchResults(results: List<MovieSearchResultEntity>)
 
     @Query("DELETE FROM movie_search_results WHERE queryKey = :queryKey")
     suspend fun clearSearchResults(queryKey: String)
 
+    @Query("SELECT movieId FROM movie_search_results WHERE queryKey = :queryKey ORDER BY pageOrder ASC")
+    suspend fun getSearchResultMovieIds(queryKey: String): List<Int>
+
+    /**
+     * Removes movies that the refreshed search query no longer returns, while
+     * keeping favorites and movies still referenced by another search or category.
+     */
     @Query(
         """
         DELETE FROM movies
-        WHERE isSearchResult = 1
-          AND isFavorite = 0
+        WHERE isFavorite = 0
+          AND id IN (:previousResultIds)
           AND id NOT IN (:preserveMovieIds)
           AND id NOT IN (SELECT movieId FROM movie_search_results)
           AND id NOT IN (SELECT movieId FROM movie_categories)
         """,
     )
-    suspend fun clearOrphanSearchMovies(preserveMovieIds: List<Int>)
-
-    @Query("SELECT movieId FROM movie_search_results WHERE queryKey = :queryKey ORDER BY pageOrder ASC")
-    suspend fun getSearchResultMovieIds(queryKey: String): List<Int>
+    suspend fun deleteSearchOrphans(
+        previousResultIds: List<Int>,
+        preserveMovieIds: List<Int>,
+    )
 }
