@@ -23,14 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -52,8 +45,6 @@ import com.benjamin.moviehub.ui.components.RowMovieShimmerItem
 import com.benjamin.moviehub.ui.components.isInitialError
 import com.benjamin.moviehub.ui.components.isInitialLoading
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withTimeoutOrNull
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -112,30 +103,15 @@ private fun HomeContent(
     modifier: Modifier = Modifier,
 ) {
     val refreshState = rememberPullToRefreshState()
-    var refreshRequested by remember { mutableStateOf(false) }
-    val rowLoading = remember { mutableStateMapOf<MovieCategory, Boolean>() }
-
-    // One pending refresh per category. A row consumes its own entry when it composes, so a single
-    // pull refreshes each category once without re-triggering when a row is disposed and recreated.
-    val pendingRefreshes = remember { mutableStateMapOf<MovieCategory, Boolean>() }
-
-    // Keep the pull indicator up from the gesture until every loaded row settles.
-    LaunchedEffect(refreshRequested) {
-        if (!refreshRequested) return@LaunchedEffect
-        withTimeoutOrNull(3_000) {
-            snapshotFlow { rowLoading.values.any { it } }.first { it }
-            snapshotFlow { rowLoading.values.none { it } }.first { it }
+    val homeMovies =
+        MovieCategory.entries.associateWith { category ->
+            categoryMovies.getValue(category).collectAsLazyPagingItems()
         }
-        refreshRequested = false
-    }
 
     PullToRefreshBox(
         state = refreshState,
-        isRefreshing = refreshRequested,
-        onRefresh = {
-            refreshRequested = true
-            MovieCategory.entries.forEach { category -> pendingRefreshes[category] = true }
-        },
+        isRefreshing = homeMovies.values.any { it.loadState.refresh is LoadState.Loading },
+        onRefresh = { homeMovies.values.forEach { it.refresh() } },
         modifier = modifier,
     ) {
         LazyColumn(
@@ -158,12 +134,9 @@ private fun HomeContent(
                 item(key = category.key) {
                     CategoryRow(
                         category = category,
-                        movies = categoryMovies.getValue(category),
-                        refreshRequested = pendingRefreshes[category] == true,
-                        onRefreshHandled = { pendingRefreshes[category] = false },
+                        lazyPagingItems = homeMovies.getValue(category),
                         onMovieClick = onMovieClick,
                         onToggleFavorite = onToggleFavorite,
-                        onLoadingChanged = { loading -> rowLoading[category] = loading },
                     )
                 }
             }
@@ -174,32 +147,10 @@ private fun HomeContent(
 @Composable
 private fun CategoryRow(
     category: MovieCategory,
-    movies: Flow<PagingData<Movie>>,
-    refreshRequested: Boolean,
-    onRefreshHandled: () -> Unit,
+    lazyPagingItems: LazyPagingItems<Movie>,
     onMovieClick: (Int) -> Unit,
     onToggleFavorite: (Movie, Boolean) -> Unit,
-    onLoadingChanged: (Boolean) -> Unit,
 ) {
-    val lazyPagingItems = movies.collectAsLazyPagingItems()
-
-    LaunchedEffect(refreshRequested) {
-        if (refreshRequested) {
-            lazyPagingItems.refresh()
-            onRefreshHandled()
-        }
-    }
-
-    val isRowLoading =
-        lazyPagingItems.loadState.refresh is LoadState.Loading ||
-            lazyPagingItems.loadState.mediator?.refresh is LoadState.Loading
-    LaunchedEffect(isRowLoading) {
-        onLoadingChanged(isRowLoading)
-    }
-    DisposableEffect(category) {
-        onDispose { onLoadingChanged(false) }
-    }
-
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
         Text(
             text = stringResource(category.labelRes),

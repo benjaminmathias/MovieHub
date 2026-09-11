@@ -46,9 +46,9 @@ class SearchMovieRemoteMediator(
 
             database.withTransaction {
                 if (loadType == LoadType.REFRESH) {
-                    val previousResultIds = movieDao.getSearchResultMovieIds(queryKey)
-                    movieDao.clearSearchResults(queryKey)
-                    movieDao.clearRemoteKeysByType(remoteKeyType)
+                    val previousResultIds = movieDao.getAllSearchResultMovieIds()
+                    movieDao.clearSearchResults()
+                    movieDao.clearSearchRemoteKeys()
                     movieDao.deleteSearchOrphans(previousResultIds, movies.map { it.id })
                 }
 

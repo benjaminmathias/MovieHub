@@ -94,23 +94,38 @@ class MovieRoomPagingTest {
         }
 
     @Test
-    fun refreshingSearch_onlyReplacesCurrentQueryCache() =
+    fun refreshingSearch_keepsOnlyCurrentQueryCacheAndReferencedMovies() =
         runBlocking {
+            val dao = database.movieDao()
+            dao.upsertMovies(
+                listOf(
+                    movieEntity(200, isFavorite = true),
+                    movieEntity(300),
+                ),
+            )
+            dao.insertCategoryMovies(
+                listOf(MovieCategoryEntity(movieId = 300, category = MovieCategory.POPULAR.key, pageOrder = 0)),
+            )
             val api =
                 FakeMovieApiService(
                     popularPages = emptyMap(),
                     searchPages =
                         mapOf(
-                            "alpha" to mapOf(1 to listOf(movieDto(100))),
-                            "beta" to mapOf(1 to listOf(movieDto(200))),
+                            "alpha" to mapOf(1 to listOf(movieDto(100), movieDto(200), movieDto(300))),
+                            "beta" to mapOf(1 to listOf(movieDto(400))),
                         ),
                 )
 
             SearchMovieRemoteMediator(api, database, " alpha ").load(LoadType.REFRESH, emptyPagingState())
             SearchMovieRemoteMediator(api, database, "beta").load(LoadType.REFRESH, emptyPagingState())
 
-            assertEquals(listOf(100), database.movieDao().getSearchResultMovieIds("alpha"))
-            assertEquals(listOf(200), database.movieDao().getSearchResultMovieIds("beta"))
+            assertEquals(emptyList<Int>(), dao.getSearchResultMovieIds("alpha"))
+            assertEquals(listOf(400), dao.getSearchResultMovieIds("beta"))
+            assertEquals(null, dao.getMovieById(100))
+            assertEquals(true, dao.getMovieById(200)?.isFavorite)
+            assertEquals(300, dao.getMovieById(300)?.id)
+            assertEquals(null, dao.getRemoteKey("SEARCH:alpha"))
+            assertEquals(2, dao.getRemoteKey("SEARCH:beta")?.nextKey)
         }
 
     @Test

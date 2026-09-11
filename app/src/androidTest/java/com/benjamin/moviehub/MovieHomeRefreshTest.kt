@@ -33,9 +33,9 @@ class MovieHomeRefreshTest {
     }
 
     @Test
-    fun pullToRefresh_refreshesVisibleCategoryOnce_andScrollingBackDoesNotRefreshAgain() {
+    fun pullToRefresh_refreshesEveryCategoryOnce_andScrollingDoesNotRefreshAgain() {
         composeTestRule.waitUntil(timeoutMillis = 20_000) {
-            fakeApi.popularPagesRequested.contains(1)
+            categoryPageOneRequestCounts().values.all { it > 0 }
         }
         composeTestRule.waitUntil(timeoutMillis = 10_000) {
             composeTestRule
@@ -43,14 +43,16 @@ class MovieHomeRefreshTest {
                 .fetchSemanticsNodes()
                 .isNotEmpty()
         }
-        val popularRequestsAfterLoad = fakeApi.popularPagesRequested.count { it == 1 }
+        val requestsAfterLoad = categoryPageOneRequestCounts()
 
         composeTestRule.onNodeWithTag("home_sections").performTouchInput { swipeDown() }
 
         composeTestRule.waitUntil(timeoutMillis = 20_000) {
-            fakeApi.popularPagesRequested.count { it == 1 } == popularRequestsAfterLoad + 1
+            categoryPageOneRequestCounts().all { (category, count) ->
+                count == requestsAfterLoad.getValue(category) + 1
+            }
         }
-        val popularRequestsAfterRefresh = fakeApi.popularPagesRequested.count { it == 1 }
+        val requestsAfterRefresh = categoryPageOneRequestCounts()
 
         // Leave the popular row, then bring it back: recomposition must not refresh it again.
         composeTestRule.onNodeWithTag("home_sections").performScrollToNode(hasText("Prochainement"))
@@ -63,9 +65,17 @@ class MovieHomeRefreshTest {
         }
 
         assertEquals(
-            "Scrolling a category back into composition must not refresh it again",
-            popularRequestsAfterRefresh,
-            fakeApi.popularPagesRequested.count { it == 1 },
+            "Scrolling must not refresh any category again",
+            requestsAfterRefresh,
+            categoryPageOneRequestCounts(),
         )
     }
+
+    private fun categoryPageOneRequestCounts(): Map<String, Int> =
+        mapOf(
+            "popular" to fakeApi.popularPagesRequested.count { it == 1 },
+            "nowPlaying" to fakeApi.nowPlayingPagesRequested.count { it == 1 },
+            "upcoming" to fakeApi.upcomingPagesRequested.count { it == 1 },
+            "topRated" to fakeApi.topRatedPagesRequested.count { it == 1 },
+        )
 }

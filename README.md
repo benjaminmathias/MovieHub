@@ -37,7 +37,7 @@ MovieHub est une application Android qui affiche les films populaires et permet 
 
 Le code est séparé en trois couches :
 
-1. **ui** — Compose + ViewModel ; chaque écran expose un état scellé (`Loading` / `Success` / `Error`) via un `StateFlow`.
+1. **ui** — Compose + ViewModel ; Home et Search exposent des flux `PagingData`, Discover combine Paging avec un état de filtres, et Detail/Favorites utilisent des états UI explicites.
 2. **domain** — modèles (`Movie`, `Actor`, `MovieCredits`) et contrats de repository.
 3. **data** — Retrofit, Room, mappers et implémentations des repositories.
 

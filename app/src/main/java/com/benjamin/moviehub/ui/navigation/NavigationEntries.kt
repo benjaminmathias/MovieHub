@@ -5,7 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.benjamin.moviehub.R
@@ -31,11 +31,11 @@ internal fun MovieListEntry(
 ) {
     val viewModel: MovieListViewModel = hiltViewModel()
     val heroMovie by viewModel.heroMovie.collectAsStateWithLifecycle()
-    val context = LocalContext.current
+    val favoriteErrorMessage = stringResource(R.string.error_updating_favorite)
 
-    LaunchedEffect(viewModel) {
+    LaunchedEffect(viewModel, favoriteErrorMessage) {
         viewModel.favoriteActionErrors.collect {
-            snackbarHostState.showSnackbar(context.getString(R.string.error_updating_favorite))
+            snackbarHostState.showSnackbar(favoriteErrorMessage)
         }
     }
 
@@ -134,20 +134,20 @@ internal fun SettingsEntry(onBack: () -> Unit) {
     val currentTheme by viewModel.currentTheme.collectAsStateWithLifecycle()
     val isClearing by viewModel.isClearing.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val context = LocalContext.current
+    val imageCacheClearedMessage = stringResource(R.string.image_cache_cleared)
+    val imageCacheClearFailedMessage = stringResource(R.string.image_cache_clear_failed)
+    val themeUpdateFailedMessage = stringResource(R.string.theme_update_failed)
 
-    LaunchedEffect(viewModel.imageCacheMessages) {
+    LaunchedEffect(viewModel.imageCacheMessages, imageCacheClearedMessage, imageCacheClearFailedMessage) {
         viewModel.imageCacheMessages.collect { cleared ->
             snackbarHostState.showSnackbar(
-                context.getString(
-                    if (cleared) R.string.image_cache_cleared else R.string.image_cache_clear_failed,
-                ),
+                if (cleared) imageCacheClearedMessage else imageCacheClearFailedMessage,
             )
         }
     }
-    LaunchedEffect(viewModel.themeUpdateErrors) {
+    LaunchedEffect(viewModel.themeUpdateErrors, themeUpdateFailedMessage) {
         viewModel.themeUpdateErrors.collect {
-            snackbarHostState.showSnackbar(context.getString(R.string.theme_update_failed))
+            snackbarHostState.showSnackbar(themeUpdateFailedMessage)
         }
     }
 

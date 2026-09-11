@@ -117,15 +117,21 @@ interface MovieDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSearchResults(results: List<MovieSearchResultEntity>)
 
-    @Query("DELETE FROM movie_search_results WHERE queryKey = :queryKey")
-    suspend fun clearSearchResults(queryKey: String)
+    @Query("SELECT DISTINCT movieId FROM movie_search_results")
+    suspend fun getAllSearchResultMovieIds(): List<Int>
+
+    @Query("DELETE FROM movie_search_results")
+    suspend fun clearSearchResults()
+
+    @Query("DELETE FROM remote_keys WHERE type LIKE 'SEARCH:%'")
+    suspend fun clearSearchRemoteKeys()
 
     @Query("SELECT movieId FROM movie_search_results WHERE queryKey = :queryKey ORDER BY pageOrder ASC")
     suspend fun getSearchResultMovieIds(queryKey: String): List<Int>
 
     /**
-     * Removes movies that the refreshed search query no longer returns, while
-     * keeping favorites and movies still referenced by another search or category.
+     * Removes movies left behind by cleared searches while keeping the active results,
+     * favorites, and movies referenced by a Home category.
      */
     @Query(
         """

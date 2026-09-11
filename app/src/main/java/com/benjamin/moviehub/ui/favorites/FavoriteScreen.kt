@@ -139,6 +139,7 @@ private fun FavoriteSwipeItem(
         if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onRemoveFavorite(movie)
+            dismissState.reset()
         }
     }
     Box(
