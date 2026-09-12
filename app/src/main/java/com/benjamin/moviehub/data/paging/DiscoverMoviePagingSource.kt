@@ -16,6 +16,15 @@ class DiscoverMoviePagingSource(
     private val apiService: MovieApiService,
     private val filters: DiscoverFilters,
 ) : PagingSource<Int, Movie>() {
+    /**
+     * TMDB can return the same movie on two consecutive pages while the discover
+     * result set shifts between requests. Duplicate ids would collide with the
+     * grid's `key = { it.id }` and crash the LazyVerticalGrid, so drop repeats
+     * within this pagination generation. A new PagingSource instance (refresh or
+     * filter change) starts with a clean set.
+     */
+    private val seenIds = mutableSetOf<Int>()
+
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Movie> {
         val page = params.key ?: 1
 
@@ -31,7 +40,7 @@ class DiscoverMoviePagingSource(
                     page = page,
                 )
             LoadResult.Page(
-                data = response.movies.map { it.toDomain() },
+                data = response.movies.map { it.toDomain() }.filter { seenIds.add(it.id) },
                 prevKey = page.takeIf { it > 1 }?.minus(1),
                 nextKey = page.takeIf { !response.isEndOfPagination(page, params.loadSize) }?.plus(1),
             )

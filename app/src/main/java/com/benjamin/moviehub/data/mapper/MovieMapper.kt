@@ -130,7 +130,7 @@ fun MovieEntity.toDomain(): Movie =
         genreIds = genreIds,
         genres = genreIds.mapNotNull { tmdbGenreNames[it] },
         runtimeMinutes = runtimeMinutes,
-        posterPathSmall = toTmdbImageUrl(posterPath, "w185"),
+        posterPathSmall = toTmdbImageUrl(posterPath, "w342"),
     )
 
 /**

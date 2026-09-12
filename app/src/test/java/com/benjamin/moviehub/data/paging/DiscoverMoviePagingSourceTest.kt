@@ -53,6 +53,19 @@ class DiscoverMoviePagingSourceTest {
         }
 
     @Test
+    fun `duplicate ids across pages are dropped to keep grid keys unique`() =
+        runTest {
+            val apiService = mockApi(MovieResponse(movies = listOf(movieDto(1), movieDto(2)), totalPages = 3))
+            val pagingSource = source(apiService)
+
+            val first = pagingSource.load(refreshParams()) as PagingSource.LoadResult.Page
+            val second = pagingSource.load(appendParams(key = 1)) as PagingSource.LoadResult.Page
+
+            assertEquals(listOf(1, 2), first.data.map { it.id })
+            assertEquals(emptyList<Int>(), second.data.map { it.id })
+        }
+
+    @Test
     fun `network errors become paging errors`() =
         runTest {
             val apiService = mockk<MovieApiService>()

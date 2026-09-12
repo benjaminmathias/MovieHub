@@ -180,6 +180,6 @@ class MovieMapperUnitTest {
     fun `toDomain exposes a small poster variant`() {
         val domain = createFakeEntity().copy(posterPath = "/pic.jpg").toDomain()
 
-        assertEquals("https://image.tmdb.org/t/p/w185/pic.jpg", domain.posterPathSmall)
+        assertEquals("https://image.tmdb.org/t/p/w342/pic.jpg", domain.posterPathSmall)
     }
 }

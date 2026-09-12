@@ -187,6 +187,6 @@ class MovieRepositoryTest {
 
             assertEquals(5, result?.id)
             assertEquals("https://image.tmdb.org/t/p/w500/poster.jpg", result?.posterPath)
-            assertEquals("https://image.tmdb.org/t/p/w185/poster.jpg", result?.posterPathSmall)
+            assertEquals("https://image.tmdb.org/t/p/w342/poster.jpg", result?.posterPathSmall)
         }
 }
