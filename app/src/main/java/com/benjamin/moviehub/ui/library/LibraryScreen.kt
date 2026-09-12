@@ -67,7 +67,7 @@ fun LibraryScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.library_tab),
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 },
                 actions = { IconButton(onClick = onSettingsClick) { Icon(Icons.Default.Settings, stringResource(R.string.settings_title)) } },

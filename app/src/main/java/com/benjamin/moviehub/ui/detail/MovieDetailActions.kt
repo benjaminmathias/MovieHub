@@ -1,9 +1,12 @@
 package com.benjamin.moviehub.ui.detail
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.filled.Bookmark
@@ -29,6 +33,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
@@ -129,6 +135,10 @@ private fun LibraryAction(
     iconModifier: Modifier = Modifier,
 ) {
     val contentColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    val indicatorColor by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+        label = "libraryActionIndicator",
+    )
     Column(
         modifier =
             modifier
@@ -145,12 +155,17 @@ private fun LibraryAction(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = contentColor,
-            modifier = iconModifier.size(22.dp),
-        )
+        Box(
+            modifier = Modifier.size(32.dp).clip(CircleShape).background(indicatorColor),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = iconModifier.size(20.dp),
+            )
+        }
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,

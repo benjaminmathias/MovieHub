@@ -2,6 +2,7 @@ package com.benjamin.moviehub.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -41,7 +42,10 @@ fun MovieSearchBar(
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
         trailingIcon = {
             if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChanged("") }) {
+                IconButton(
+                    onClick = { onQueryChanged("") },
+                    modifier = Modifier.size(48.dp),
+                ) {
                     Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear_search))
                 }
             }

@@ -1,20 +1,20 @@
 package com.benjamin.moviehub.ui.discover
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -27,7 +27,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -92,22 +94,38 @@ fun DiscoverScreen(
                             }
                         },
                     ) {
-                        FilledTonalButton(
+                        IconButton(
                             onClick = {
                                 onBeginFilterEditing()
                                 filterSheetVisible = true
                             },
-                            modifier = Modifier.padding(end = 8.dp).testTag("discover_filter_button"),
-                            contentPadding = PaddingValues(horizontal = 12.dp),
-                            colors =
-                                ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                ),
+                            modifier = Modifier.padding(end = 8.dp).size(48.dp).testTag("discover_filter_button"),
                         ) {
-                            Icon(imageVector = Icons.Default.Tune, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.discover_filters))
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (activeFilterCount > 0) {
+                                                MaterialTheme.colorScheme.primaryContainer
+                                            } else {
+                                                MaterialTheme.colorScheme.surfaceContainerHigh
+                                            },
+                                        ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Tune,
+                                    contentDescription = stringResource(R.string.discover_filters),
+                                    tint =
+                                        if (activeFilterCount > 0) {
+                                            MaterialTheme.colorScheme.onPrimaryContainer
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        },
+                                )
+                            }
                         }
                     }
                 },

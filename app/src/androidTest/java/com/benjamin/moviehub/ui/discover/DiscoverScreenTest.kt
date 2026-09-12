@@ -4,16 +4,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.unit.dp
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.Pager
@@ -373,6 +377,62 @@ class DiscoverScreenTest {
             assertEquals(DiscoverFilters(), state.draftFilters)
         }
         composeRule.onAllNodesWithTag("discover_filter_sheet").assertCountEquals(0)
+    }
+
+    @Test
+    fun filterButtonIsIconOnlyAccessibleWithLargeTouchTarget() {
+        composeRule.setContent {
+            MovieHubTheme {
+                DiscoverScreen(
+                    state = initialState(),
+                    discoverResults = flowOf(PagingData.empty()),
+                    onGenreSelected = {},
+                    onReleaseYearSelected = {},
+                    onMinimumRatingSelected = {},
+                    onSortSelected = {},
+                    onBeginFilterEditing = {},
+                    onApplyFilters = {},
+                    onResetFilters = {},
+                    onDiscardFilterEdits = {},
+                    onRetryGenres = {},
+                    onMovieClick = {},
+                )
+            }
+        }
+
+        composeRule
+            .onNodeWithContentDescription("Filtres")
+            .assertIsDisplayed()
+            .assertHasClickAction()
+            .assertHeightIsAtLeast(48.dp)
+        composeRule.onNodeWithTag("discover_filter_button").assertHeightIsAtLeast(48.dp)
+    }
+
+    @Test
+    fun retryGenreActionUsesSharedRetryStyleText() {
+        composeRule.setContent {
+            MovieHubTheme {
+                DiscoverScreen(
+                    state = initialState().copy(genres = emptyList(), hasGenreError = true),
+                    discoverResults = flowOf(PagingData.empty()),
+                    onGenreSelected = {},
+                    onReleaseYearSelected = {},
+                    onMinimumRatingSelected = {},
+                    onSortSelected = {},
+                    onBeginFilterEditing = {},
+                    onApplyFilters = {},
+                    onResetFilters = {},
+                    onDiscardFilterEdits = {},
+                    onRetryGenres = {},
+                    onMovieClick = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("discover_filter_button").performClick()
+        composeRule.onNodeWithTag("discover_genre_section").performClick()
+        composeRule.onNodeWithTag("discover_retry_genres").assertIsDisplayed().assertHasClickAction()
+        composeRule.onNodeWithText("Réessayer").assertIsDisplayed()
     }
 
     private fun initialState() =

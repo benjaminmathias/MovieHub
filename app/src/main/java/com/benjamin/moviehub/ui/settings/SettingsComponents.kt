@@ -97,6 +97,25 @@ internal fun SettingsItem(
     enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
+    val disabledAlpha = 0.38f
+    val iconTint =
+        if (enabled) {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = disabledAlpha)
+        }
+    val titleColor =
+        if (enabled) {
+            MaterialTheme.colorScheme.onSurface
+        } else {
+            MaterialTheme.colorScheme.onSurface.copy(alpha = disabledAlpha)
+        }
+    val subtitleColor =
+        if (enabled) {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = disabledAlpha)
+        }
     Row(
         modifier =
             Modifier
@@ -109,15 +128,15 @@ internal fun SettingsItem(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = iconTint,
         )
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            Text(text = title, style = MaterialTheme.typography.bodyLarge, color = titleColor)
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = subtitleColor,
             )
         }
     }

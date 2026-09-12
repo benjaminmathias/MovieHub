@@ -22,7 +22,6 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SelectableChipColors
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +36,7 @@ import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
 import com.benjamin.moviehub.domain.model.MovieGenre
+import com.benjamin.moviehub.ui.components.RetryButton
 
 @Composable
 internal fun GenreFilterSection(
@@ -76,12 +76,10 @@ internal fun GenreFilterSection(
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.weight(1f),
                     )
-                    TextButton(
+                    RetryButton(
                         onClick = onRetryGenres,
                         modifier = Modifier.testTag("discover_retry_genres"),
-                    ) {
-                        Text(stringResource(R.string.retry))
-                    }
+                    )
                 }
             else ->
                 FlowRow(
@@ -246,6 +244,7 @@ internal fun FilterSection(
                 Icon(
                     imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                     contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             if (expanded) {

@@ -87,7 +87,7 @@ fun RowMovieItem(
                                 ),
                             tint =
                                 if (movie.isFavorite) {
-                                    MaterialTheme.colorScheme.tertiary
+                                    MaterialTheme.colorScheme.primary
                                 } else {
                                     MaterialTheme.colorScheme.onSurface
                                 },

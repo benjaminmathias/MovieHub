@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Favorite
@@ -21,6 +20,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -125,19 +125,34 @@ fun HeroMovieBanner(
                 ) {
                     Button(
                         onClick = { onMovieClick(movie.id) },
-                        shape = CircleShape,
+                        shape = MaterialTheme.shapes.medium,
                     ) {
+                        Text(text = stringResource(R.string.view_details))
+                        Spacer(modifier = Modifier.size(8.dp))
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
                         )
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Text(text = stringResource(R.string.view_details))
                     }
 
                     FilledTonalIconButton(
                         onClick = { onToggleFavorite(movie, !movie.isFavorite) },
+                        colors =
+                            IconButtonDefaults.filledTonalIconButtonColors(
+                                containerColor =
+                                    if (movie.isFavorite) {
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    } else {
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)
+                                    },
+                                contentColor =
+                                    if (movie.isFavorite) {
+                                        MaterialTheme.colorScheme.onPrimaryContainer
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface
+                                    },
+                            ),
                     ) {
                         Icon(
                             imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
@@ -145,6 +160,7 @@ fun HeroMovieBanner(
                                 stringResource(
                                     if (movie.isFavorite) R.string.remove_favorite else R.string.favorite,
                                 ),
+                            modifier = Modifier.size(24.dp),
                         )
                     }
                 }
