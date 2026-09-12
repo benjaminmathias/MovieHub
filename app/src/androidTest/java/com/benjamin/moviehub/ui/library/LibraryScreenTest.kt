@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
+import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.domain.model.Movie
 import org.junit.Rule
@@ -60,6 +61,25 @@ class LibraryScreenTest {
         composeRule.onNodeWithText("Aucun film favori n'a été ajouté.").assertIsDisplayed()
         composeRule.onNodeWithText("Vu").performClick()
         composeRule.onNodeWithText("Aucun film vu.").assertIsDisplayed()
+    }
+
+    @Test
+    fun errorStateOffersRetryAction() {
+        var retried = false
+        composeRule.setContent {
+            MovieHubTheme {
+                LibraryScreen(
+                    state = LibraryUiState.Error(R.string.error_loading_movies),
+                    onRemove = { _, _ -> },
+                    onMovieClick = {},
+                    onSettingsClick = {},
+                    onRetry = { retried = true },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Réessayer").assertIsDisplayed().performClick()
+        assertTrue(retried)
     }
 
     @Test

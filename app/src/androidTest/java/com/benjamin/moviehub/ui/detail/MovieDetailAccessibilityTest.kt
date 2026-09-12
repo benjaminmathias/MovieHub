@@ -119,8 +119,7 @@ class MovieDetailAccessibilityTest {
         composeRule.onNodeWithText("8.7 / 10").assertIsDisplayed()
         composeRule.onNodeWithText("123 votes").assertIsDisplayed()
         composeRule.onNodeWithText("Réalisé par Director Name").assertIsDisplayed()
-        composeRule.onNodeWithText("Genres").assertIsDisplayed()
-        composeRule.onNodeWithText("Action").assertIsDisplayed()
+        composeRule.onNodeWithText("Action • Drame").assertIsDisplayed()
     }
 
     @Test
@@ -258,6 +257,10 @@ class MovieDetailAccessibilityTest {
                 )
             }
         }
+        composeRule
+            .onNodeWithTag("detail_favorite")
+            .assertHasClickAction()
+            .assertHeightIsAtLeast(48.dp)
         composeRule.onNodeWithTag("detail_watchlist").assertHasClickAction()
         composeRule
             .onNodeWithContentDescription("Retirer de la liste À voir")

@@ -26,12 +26,13 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CheckCircleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material3.FilledTonalIconToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -39,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -157,7 +159,7 @@ private fun MovieDetailSummary(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-                if (metadata.isNotEmpty() || director != null) {
+                if (metadata.isNotEmpty() || director != null || movie.genres.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         if (metadata.isNotEmpty()) {
                             Text(
@@ -171,6 +173,15 @@ private fun MovieDetailSummary(
                                 text = stringResource(R.string.director_format, it),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.primary,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        if (movie.genres.isNotEmpty()) {
+                            Text(
+                                text = movie.genres.joinToString(" • "),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -216,61 +227,54 @@ private fun MovieDetailActions(
             Modifier
                 .fillMaxWidth()
                 .padding(start = ContentHorizontalPadding, end = ContentHorizontalPadding, top = 16.dp, bottom = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Surface(
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                onToggleFavorite?.let { toggle ->
-                    LibraryAction(
-                        selected = movie.isFavorite,
-                        label = stringResource(R.string.favorite_tab),
-                        contentDescription = favoriteLabel,
-                        icon = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                        onClick = toggle,
-                        modifier = Modifier.weight(1f),
-                        testTag = "detail_favorite",
-                        iconModifier = Modifier.graphicsLayer { scaleX = favoriteScale; scaleY = favoriteScale },
-                    )
-                }
-                onToggleWatchlist?.let { toggle ->
-                    LibraryAction(
-                        selected = movie.isWatchlist,
-                        label = stringResource(R.string.watchlist_short),
-                        contentDescription = stringResource(if (movie.isWatchlist) R.string.remove_watchlist_accessibility else R.string.add_watchlist_accessibility),
-                        icon = if (movie.isWatchlist) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                        onClick = toggle,
-                        modifier = Modifier.weight(1f),
-                        testTag = "detail_watchlist",
-                    )
-                }
-                onToggleWatched?.let { toggle ->
-                    LibraryAction(
-                        selected = movie.isWatched,
-                        label = stringResource(R.string.watched_short),
-                        contentDescription = stringResource(if (movie.isWatched) R.string.mark_unwatched_accessibility else R.string.mark_watched_accessibility),
-                        icon = if (movie.isWatched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircleOutline,
-                        onClick = toggle,
-                        modifier = Modifier.weight(1f),
-                        testTag = "detail_watched",
-                    )
-                }
+            onToggleFavorite?.let { toggle ->
+                LibraryAction(
+                    selected = movie.isFavorite,
+                    label = stringResource(R.string.favorite_tab),
+                    contentDescription = favoriteLabel,
+                    icon = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    onClick = toggle,
+                    modifier = Modifier.weight(1f),
+                    testTag = "detail_favorite",
+                    iconModifier = Modifier.graphicsLayer { scaleX = favoriteScale; scaleY = favoriteScale },
+                )
+            }
+            onToggleWatchlist?.let { toggle ->
+                LibraryAction(
+                    selected = movie.isWatchlist,
+                    label = stringResource(R.string.watchlist_short),
+                    contentDescription = stringResource(if (movie.isWatchlist) R.string.remove_watchlist_accessibility else R.string.add_watchlist_accessibility),
+                    icon = if (movie.isWatchlist) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                    onClick = toggle,
+                    modifier = Modifier.weight(1f),
+                    testTag = "detail_watchlist",
+                )
+            }
+            onToggleWatched?.let { toggle ->
+                LibraryAction(
+                    selected = movie.isWatched,
+                    label = stringResource(R.string.watched_short),
+                    contentDescription = stringResource(if (movie.isWatched) R.string.mark_unwatched_accessibility else R.string.mark_watched_accessibility),
+                    icon = if (movie.isWatched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircleOutline,
+                    onClick = toggle,
+                    modifier = Modifier.weight(1f),
+                    testTag = "detail_watched",
+                )
             }
         }
         onOpenTmdb?.let { openTmdb ->
-            androidx.compose.material3.TextButton(
+            TextButton(
                 onClick = openTmdb,
                 modifier = Modifier.align(Alignment.End).heightIn(min = 48.dp).testTag("detail_tmdb"),
             ) {
                 Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.open_tmdb))
+                Text(stringResource(R.string.open_tmdb), style = MaterialTheme.typography.labelMedium)
             }
         }
     }
@@ -281,28 +285,38 @@ private fun LibraryAction(
     selected: Boolean,
     label: String,
     contentDescription: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     onClick: () -> Unit,
     testTag: String,
     modifier: Modifier = Modifier,
     iconModifier: Modifier = Modifier,
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
-        FilledTonalIconToggleButton(
+    val contentColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        IconToggleButton(
             checked = selected,
             onCheckedChange = { onClick() },
             modifier = Modifier.size(48.dp).testTag(testTag).semantics { this.contentDescription = contentDescription },
             colors =
-                IconButtonDefaults.filledTonalIconToggleButtonColors(
+                IconButtonDefaults.iconToggleButtonColors(
                     containerColor = Color.Transparent,
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    checkedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    checkedContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    checkedContainerColor = Color.Transparent,
+                    checkedContentColor = MaterialTheme.colorScheme.primary,
                 ),
         ) {
             Icon(icon, contentDescription = null, modifier = iconModifier.size(22.dp))
         }
-        Text(label, style = MaterialTheme.typography.labelMedium, maxLines = 1)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = contentColor,
+            maxLines = 1,
+        )
     }
 }
 

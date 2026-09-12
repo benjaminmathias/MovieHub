@@ -58,7 +58,6 @@
     <string name="synopsis">Synopsis</string>
     <string name="read_more">Afficher plus</string>
     <string name="show_less">Afficher moins</string>
-    <string name="genres">Genres</string>
     <string name="director_format">Réalisé par %1$s</string>
     <string name="error_loading_more_movies">Impossible de charger plus de films.</string>
     <string name="cast_principal">Distribution</string>

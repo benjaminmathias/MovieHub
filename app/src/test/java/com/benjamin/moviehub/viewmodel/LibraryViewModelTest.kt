@@ -13,10 +13,13 @@ import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -62,6 +65,27 @@ class LibraryViewModelTest {
             coVerify { repository.setWatchlist(target, false) }
             coVerify { repository.setFavorite(target, false) }
             coVerify { repository.setWatched(target, false) }
+        }
+
+    @Test
+    fun `retry recovers after a loading error`() =
+        runTest {
+            var shouldFail = true
+            every { repository.getLibraryMovies() } answers {
+                if (shouldFail) flow { throw IllegalStateException("offline") } else flowOf(listOf(movie(1, favorite = true)))
+            }
+            val viewModel = LibraryViewModel(repository)
+            val job = launch { viewModel.uiState.collect {} }
+
+            advanceUntilIdle()
+            assertTrue(viewModel.uiState.value is LibraryUiState.Error)
+
+            shouldFail = false
+            viewModel.onRetry()
+            advanceUntilIdle()
+            assertEquals(listOf(1), (viewModel.uiState.value as LibraryUiState.Success).movies.map { it.id })
+
+            job.cancel()
         }
 
     private fun movie(

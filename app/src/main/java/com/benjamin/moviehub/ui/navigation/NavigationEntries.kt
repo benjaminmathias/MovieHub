@@ -107,7 +107,7 @@ internal fun MovieDetailEntry(
         onToggleWatchlist = viewModel::toggleWatchlist,
         onToggleWatched = viewModel::toggleWatched,
         onRetry = { viewModel.loadMovieDetails(movieId) },
-        favoriteActionErrors = viewModel.favoriteActionErrors,
+        libraryActionErrors = viewModel.libraryActionErrors,
         onRecommendationClick = onOpenRecommendation,
     )
 }
@@ -125,6 +125,7 @@ internal fun LibraryEntry(
         onSettingsClick = onOpenSettings,
         onMovieClick = onOpenDetails,
         onRemove = viewModel::onRemove,
+        onRetry = viewModel::onRetry,
         actionErrors = viewModel.actionErrors,
     )
 }

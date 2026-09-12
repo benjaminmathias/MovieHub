@@ -65,12 +65,12 @@ fun MovieDetailScreen(
     onToggleWatchlist: () -> Unit = {},
     onToggleWatched: () -> Unit = {},
     onRetry: () -> Unit,
-    favoriteActionErrors: Flow<Unit> = emptyFlow(),
+    libraryActionErrors: Flow<Unit> = emptyFlow(),
     onRecommendationClick: (Int) -> Unit = {},
 ) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
-    val favoriteErrorMessage = stringResource(R.string.error_updating_favorite)
+    val libraryErrorMessage = stringResource(R.string.error_updating_library)
     val listState = rememberLazyListState()
     val density = LocalDensity.current
     // 0f (sur le hero) -> 1f (contenu scrollé) : évite le flash opaque dès 1px scrollé.
@@ -89,9 +89,9 @@ fun MovieDetailScreen(
     }
     val detailTitle = (uiState as? MovieDetailUiState.Success)?.movie?.title.orEmpty()
 
-    LaunchedEffect(favoriteActionErrors, favoriteErrorMessage) {
-        favoriteActionErrors.collect {
-            snackbarHostState.showSnackbar(favoriteErrorMessage)
+    LaunchedEffect(libraryActionErrors, libraryErrorMessage) {
+        libraryActionErrors.collect {
+            snackbarHostState.showSnackbar(libraryErrorMessage)
         }
     }
 

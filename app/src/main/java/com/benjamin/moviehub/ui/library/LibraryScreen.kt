@@ -64,6 +64,7 @@ fun LibraryScreen(
     onRemove: (Movie, LibraryTab) -> Unit,
     onMovieClick: (Int) -> Unit,
     onSettingsClick: () -> Unit,
+    onRetry: () -> Unit = {},
     actionErrors: Flow<Unit> = emptyFlow(),
 ) {
     val snackbar = remember { SnackbarHostState() }
@@ -125,7 +126,12 @@ fun LibraryScreen(
                         }
                     }
                 }
-                is LibraryUiState.Error -> EmptyStateView(message = stringResource(R.string.error_prefix, stringResource(state.errorMessage)), icon = Icons.Default.ErrorOutline)
+                is LibraryUiState.Error ->
+                    EmptyStateView(
+                        message = stringResource(R.string.error_prefix, stringResource(state.errorMessage)),
+                        icon = Icons.Default.ErrorOutline,
+                        onRetry = onRetry,
+                    )
             }
         }
     }

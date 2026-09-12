@@ -3,6 +3,7 @@ package com.benjamin.moviehub.ui.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benjamin.moviehub.R
+import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,8 +30,8 @@ class MovieDetailViewModel
     ) : ViewModel() {
         private val _uiState = MutableStateFlow<MovieDetailUiState>(MovieDetailUiState.Loading)
         val uiState: StateFlow<MovieDetailUiState> = _uiState.asStateFlow()
-        private val _favoriteActionErrors = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-        val favoriteActionErrors = _favoriteActionErrors.asSharedFlow()
+        private val _libraryActionErrors = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+        val libraryActionErrors = _libraryActionErrors.asSharedFlow()
         private var loadJob: Job? = null
         private var libraryJob: Job? = null
         private val libraryMutex = Mutex()
@@ -119,48 +120,62 @@ class MovieDetailViewModel
 
         fun toggleFavorite() {
             toggleLibraryFlag(
+                current = Movie::isFavorite,
                 persist = { movie, value -> repository.setFavorite(movie, value) },
-                current = { it.isFavorite },
                 update = { movie, value -> movie.copy(isFavorite = value) },
+                restore = { movie, previous, _ -> movie.copy(isFavorite = previous.isFavorite) },
             )
         }
 
         fun toggleWatchlist() {
             toggleLibraryFlag(
+                current = Movie::isWatchlist,
                 persist = { movie, value -> repository.setWatchlist(movie, value) },
-                current = { it.isWatchlist },
                 update = { movie, value -> movie.copy(isWatchlist = value, isWatched = if (value) false else movie.isWatched) },
+                restore = { movie, previous, attempted ->
+                    movie.copy(
+                        isWatchlist = previous.isWatchlist,
+                        isWatched = if (attempted) previous.isWatched else movie.isWatched,
+                    )
+                },
             )
         }
 
         fun toggleWatched() {
             toggleLibraryFlag(
+                current = Movie::isWatched,
                 persist = { movie, value -> repository.setWatched(movie, value) },
-                current = { it.isWatched },
                 update = { movie, value -> movie.copy(isWatched = value, isWatchlist = if (value) false else movie.isWatchlist) },
+                restore = { movie, previous, attempted ->
+                    movie.copy(
+                        isWatched = previous.isWatched,
+                        isWatchlist = if (attempted) previous.isWatchlist else movie.isWatchlist,
+                    )
+                },
             )
         }
 
         private fun toggleLibraryFlag(
-            persist: suspend (com.benjamin.moviehub.domain.model.Movie, Boolean) -> Unit,
-            current: (com.benjamin.moviehub.domain.model.Movie) -> Boolean,
-            update: (com.benjamin.moviehub.domain.model.Movie, Boolean) -> com.benjamin.moviehub.domain.model.Movie,
+            current: (Movie) -> Boolean,
+            persist: suspend (Movie, Boolean) -> Unit,
+            update: (Movie, Boolean) -> Movie,
+            restore: (movie: Movie, previous: Movie, attempted: Boolean) -> Movie,
         ) {
             viewModelScope.launch {
                 libraryMutex.withLock {
                     val currentState = _uiState.value as? MovieDetailUiState.Success ?: return@withLock
-                    val requestedMovie = currentState.movie
-                    val newStatus = !current(requestedMovie)
+                    val previous = currentState.movie
+                    val attempted = !current(previous)
 
-                    _uiState.value = currentState.copy(movie = update(requestedMovie, newStatus))
+                    _uiState.value = currentState.copy(movie = update(previous, attempted))
 
                     try {
-                        persist(requestedMovie, newStatus)
+                        persist(previous, attempted)
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
-                        _favoriteActionErrors.tryEmit(Unit)
-                        rollbackLibrary(requestedMovie.id, requestedMovie, current, newStatus)
+                        _libraryActionErrors.tryEmit(Unit)
+                        rollbackLibrary(previous.id, previous, current, attempted, restore)
                     }
                 }
             }
@@ -201,13 +216,14 @@ class MovieDetailViewModel
 
         private fun rollbackLibrary(
             movieId: Int,
-            requestedMovie: com.benjamin.moviehub.domain.model.Movie,
-            current: (com.benjamin.moviehub.domain.model.Movie) -> Boolean,
-            attemptedStatus: Boolean,
+            previous: Movie,
+            current: (Movie) -> Boolean,
+            attempted: Boolean,
+            restore: (movie: Movie, previous: Movie, attempted: Boolean) -> Movie,
         ) {
             updateSuccess(movieId) { latest ->
-                if (current(latest.movie) == attemptedStatus) {
-                    latest.copy(movie = requestedMovie)
+                if (current(latest.movie) == attempted) {
+                    latest.copy(movie = restore(latest.movie, previous, attempted))
                 } else {
                     latest
                 }

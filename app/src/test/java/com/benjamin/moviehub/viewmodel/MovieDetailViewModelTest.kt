@@ -13,9 +13,11 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
@@ -336,5 +338,93 @@ class MovieDetailViewModelTest {
             val state = viewModel.uiState.value as MovieDetailUiState.Success
             assertEquals(MovieRecommendationsUiState.Error, state.recommendations)
             assertEquals(movie, state.movie)
+        }
+
+    @Test
+    fun `failed watchlist toggle restores watchlist and watched flags`() =
+        runTest {
+            val initial = movie.copy(isWatchlist = false, isWatched = true)
+            every { repository.getLibraryMovies() } returns MutableStateFlow(listOf(initial))
+            coEvery { repository.getMovieDetails(1) } returns initial
+            coEvery { repository.setWatchlist(initial, true) } throws IllegalStateException()
+            val viewModel = MovieDetailViewModel(repository)
+
+            viewModel.loadMovieDetails(1)
+            advanceUntilIdle()
+            viewModel.toggleWatchlist()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as MovieDetailUiState.Success
+            assertEquals(false, state.movie.isWatchlist)
+            assertEquals(true, state.movie.isWatched)
+        }
+
+    @Test
+    fun `failed watched toggle restores watched and watchlist flags`() =
+        runTest {
+            val initial = movie.copy(isWatchlist = true, isWatched = false)
+            every { repository.getLibraryMovies() } returns MutableStateFlow(listOf(initial))
+            coEvery { repository.getMovieDetails(1) } returns initial
+            coEvery { repository.setWatched(initial, true) } throws IllegalStateException()
+            val viewModel = MovieDetailViewModel(repository)
+
+            viewModel.loadMovieDetails(1)
+            advanceUntilIdle()
+            viewModel.toggleWatched()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as MovieDetailUiState.Success
+            assertEquals(false, state.movie.isWatched)
+            assertEquals(true, state.movie.isWatchlist)
+        }
+
+    @Test
+    fun `failed rollback keeps an independent library flag changed meanwhile`() =
+        runTest {
+            val library = MutableStateFlow<List<Movie>>(emptyList())
+            every { repository.getLibraryMovies() } returns library
+            coEvery { repository.getMovieDetails(1) } returns movie
+            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
+            val failureGate = CompletableDeferred<Unit>()
+            coEvery { repository.setFavorite(movie, true) } coAnswers {
+                failureGate.await()
+                throw IllegalStateException()
+            }
+            val viewModel = MovieDetailViewModel(repository)
+            viewModel.loadMovieDetails(1)
+            advanceUntilIdle()
+
+            viewModel.toggleFavorite()
+            runCurrent()
+            assertEquals(true, (viewModel.uiState.value as MovieDetailUiState.Success).movie.isFavorite)
+
+            library.value = listOf(movie.copy(isFavorite = true, isWatchlist = true))
+            runCurrent()
+
+            failureGate.complete(Unit)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as MovieDetailUiState.Success
+            assertEquals(false, state.movie.isFavorite)
+            assertEquals(true, state.movie.isWatchlist)
+        }
+
+    @Test
+    fun `failed library action emits a library error`() =
+        runTest {
+            coEvery { repository.getMovieDetails(1) } returns movie
+            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
+            coEvery { repository.setWatched(movie, true) } throws IllegalStateException()
+            val viewModel = MovieDetailViewModel(repository)
+            val errors = mutableListOf<Unit>()
+            val job = launch { viewModel.libraryActionErrors.collect { errors += it } }
+
+            viewModel.loadMovieDetails(1)
+            advanceUntilIdle()
+            viewModel.toggleWatched()
+            advanceUntilIdle()
+
+            assertEquals(1, errors.size)
+            job.cancel()
         }
 }
