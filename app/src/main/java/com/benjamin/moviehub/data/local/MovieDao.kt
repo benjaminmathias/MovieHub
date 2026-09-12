@@ -23,15 +23,8 @@ interface MovieDao {
 
     @Transaction
     suspend fun upsertMovieDetails(movie: MovieEntity): MovieEntity {
-        val localMovie = getMovieById(movie.id)
-        val mergedMovie =
-            movie.copy(
-                isFavorite = localMovie?.isFavorite ?: movie.isFavorite,
-                runtimeMinutes = movie.runtimeMinutes ?: localMovie?.runtimeMinutes,
-            )
-
-        upsertMovies(listOf(mergedMovie))
-        return mergedMovie
+        upsertMovies(listOf(movie))
+        return getMovieById(movie.id) ?: movie
     }
 
     @Transaction
@@ -42,22 +35,65 @@ interface MovieDao {
         if (getMovieById(movie.id) == null) {
             insertMovie(movie.copy(isFavorite = isFavorite))
         } else {
-            updateFavoriteStatus(movie.id, isFavorite)
+            updateLocalFlags(movie.id, isFavorite = isFavorite, isWatchlist = null, isWatched = null)
         }
     }
 
-    @Query("UPDATE movies SET isFavorite = :isFavorite WHERE id = :movieId")
-    suspend fun updateFavoriteStatus(
+    @Transaction
+    suspend fun setWatchlist(movie: MovieEntity, isWatchlist: Boolean) {
+        if (getMovieById(movie.id) == null) {
+            insertMovie(
+                movie.copy(
+                    isWatchlist = isWatchlist,
+                    isWatched = if (isWatchlist) false else movie.isWatched,
+                ),
+            )
+        } else {
+            updateLocalFlags(
+                movie.id,
+                isFavorite = null,
+                isWatchlist = isWatchlist,
+                isWatched = if (isWatchlist) false else null,
+            )
+        }
+    }
+
+    @Transaction
+    suspend fun setWatched(movie: MovieEntity, isWatched: Boolean) {
+        if (getMovieById(movie.id) == null) {
+            insertMovie(
+                movie.copy(
+                    isWatched = isWatched,
+                    isWatchlist = if (isWatched) false else movie.isWatchlist,
+                ),
+            )
+        } else {
+            updateLocalFlags(
+                movie.id,
+                isFavorite = null,
+                isWatchlist = if (isWatched) false else null,
+                isWatched = isWatched,
+            )
+        }
+    }
+
+    @Query(
+        """UPDATE movies SET
+            isFavorite = COALESCE(:isFavorite, isFavorite),
+            isWatchlist = COALESCE(:isWatchlist, isWatchlist),
+            isWatched = COALESCE(:isWatched, isWatched)
+            WHERE id = :movieId""",
+    )
+    suspend fun updateLocalFlags(
         movieId: Int,
-        isFavorite: Boolean,
+        isFavorite: Boolean?,
+        isWatchlist: Boolean?,
+        isWatched: Boolean?,
     )
 
     // --- FILMS : LISTES & FLOWS ---
-    @Query("SELECT * FROM movies WHERE isFavorite = 1 ORDER BY title COLLATE NOCASE ASC, id ASC")
-    fun getFavoriteMoviesFlow(): Flow<List<MovieEntity>>
-
-    @Query("SELECT id FROM movies WHERE isFavorite = 1 ORDER BY id ASC")
-    fun getFavoriteMovieIdsFlow(): Flow<List<Int>>
+    @Query("SELECT * FROM movies WHERE isFavorite = 1 OR isWatchlist = 1 OR isWatched = 1 ORDER BY title COLLATE NOCASE ASC, id ASC")
+    fun getLibraryMoviesFlow(): Flow<List<MovieEntity>>
 
     // --- CATEGORIES (ASSOCIATION + PAGINATION) ---
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -101,7 +137,26 @@ interface MovieDao {
     fun searchMoviesPaging(queryKey: String): PagingSource<Int, MovieEntity>
 
     @Upsert
-    suspend fun upsertMovies(movies: List<MovieEntity>)
+    suspend fun upsertMoviesRaw(movies: List<MovieEntity>)
+
+    /** Upsert network data without ever overwriting local library flags. */
+    @Transaction
+    suspend fun upsertMovies(movies: List<MovieEntity>) {
+        if (movies.isEmpty()) return
+        val localById = getMoviesByIds(movies.map { it.id }).associateBy { it.id }
+        val merged = movies.map { incoming ->
+            val local = localById[incoming.id]
+            val watched = local?.isWatched ?: incoming.isWatched
+            val watchlist = local?.isWatchlist ?: incoming.isWatchlist
+            incoming.copy(
+                isFavorite = local?.isFavorite ?: incoming.isFavorite,
+                isWatchlist = watchlist && !watched,
+                isWatched = watched,
+                runtimeMinutes = incoming.runtimeMinutes ?: local?.runtimeMinutes,
+            )
+        }
+        upsertMoviesRaw(merged)
+    }
 
     // --- CLÉS DE PAGINATION (UNE PAR FEED) ---
     @Upsert
@@ -137,6 +192,8 @@ interface MovieDao {
         """
         DELETE FROM movies
         WHERE isFavorite = 0
+          AND isWatchlist = 0
+          AND isWatched = 0
           AND id IN (:previousResultIds)
           AND id NOT IN (:preserveMovieIds)
           AND id NOT IN (SELECT movieId FROM movie_search_results)

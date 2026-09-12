@@ -49,7 +49,7 @@ class MovieListViewModel
         ) {
             viewModelScope.launch {
                 try {
-                    repository.toggleFavorite(movie, isFavorite)
+                    repository.setFavorite(movie, isFavorite)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {

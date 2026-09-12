@@ -63,6 +63,8 @@ private fun toTmdbImageUrl(
  */
 fun MovieDto.toEntity(
     isFavorite: Boolean = false,
+    isWatchlist: Boolean = false,
+    isWatched: Boolean = false,
     runtimeMinutesOverride: Int? = null,
 ): MovieEntity {
     val finalGenreIds =
@@ -80,6 +82,8 @@ fun MovieDto.toEntity(
         releaseDate = this.releaseDate ?: "",
         genreIds = finalGenreIds,
         isFavorite = isFavorite,
+        isWatchlist = isWatchlist,
+        isWatched = isWatched,
         runtimeMinutes = runtimeMinutesOverride ?: runtimeMinutes,
     )
 }
@@ -121,6 +125,8 @@ fun MovieEntity.toDomain(): Movie =
         releaseDate = releaseDate,
         webUrl = "https://www.themoviedb.org/movie/$id",
         isFavorite = isFavorite,
+        isWatchlist = isWatchlist,
+        isWatched = isWatched,
         genreIds = genreIds,
         genres = genreIds.mapNotNull { tmdbGenreNames[it] },
         runtimeMinutes = runtimeMinutes,
@@ -130,7 +136,11 @@ fun MovieEntity.toDomain(): Movie =
 /**
  * Convert a Movie (Domain model) to a MovieEntity (DB entity)
  */
-fun Movie.toEntity(isFavorite: Boolean): MovieEntity =
+fun Movie.toEntity(
+    isFavorite: Boolean = this.isFavorite,
+    isWatchlist: Boolean = this.isWatchlist,
+    isWatched: Boolean = this.isWatched,
+): MovieEntity =
     MovieEntity(
         id = this.id,
         title = this.title,
@@ -141,5 +151,7 @@ fun Movie.toEntity(isFavorite: Boolean): MovieEntity =
         voteAverage = this.voteAverage,
         genreIds = this.genreIds,
         isFavorite = isFavorite,
+        isWatchlist = isWatchlist,
+        isWatched = isWatched,
         runtimeMinutes = runtimeMinutes,
     )

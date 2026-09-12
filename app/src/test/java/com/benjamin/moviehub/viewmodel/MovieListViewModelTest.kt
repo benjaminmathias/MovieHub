@@ -75,19 +75,19 @@ class MovieListViewModelTest {
     fun `toggle favorite is persisted through the repository`() =
         runTest {
             val target = movie()
-            coEvery { repository.toggleFavorite(target, true) } just runs
+            coEvery { repository.setFavorite(target, true) } just runs
 
             viewModel.onToggleFavorite(target, true)
             advanceUntilIdle()
 
-            coVerify { repository.toggleFavorite(target, true) }
+            coVerify { repository.setFavorite(target, true) }
         }
 
     @Test
     fun `toggle favorite failure emits an error`() =
         runTest {
             val target = movie()
-            coEvery { repository.toggleFavorite(target, true) } throws IOException("offline")
+            coEvery { repository.setFavorite(target, true) } throws IOException("offline")
             val errors = mutableListOf<Unit>()
             val job = launch { viewModel.favoriteActionErrors.collect { errors += it } }
             advanceUntilIdle()

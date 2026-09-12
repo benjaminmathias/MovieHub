@@ -34,7 +34,6 @@ class DiscoverViewModelTest {
     @Before
     fun setup() {
         every { repository.getDiscoverMovies(any()) } returns flowOf(PagingData.empty())
-        every { repository.getFavoriteMovieIds() } returns flowOf(emptySet())
         coEvery {
             repository.getMovieGenres()
         } returns listOf(MovieGenre(id = 28, name = "Action"), MovieGenre(id = 18, name = "Drame"))

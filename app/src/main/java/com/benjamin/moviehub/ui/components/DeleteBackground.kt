@@ -13,9 +13,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.vector.ImageVector
 
 @Composable
-fun DeleteBackground(modifier: Modifier = Modifier) {
+fun DeleteBackground(
+    modifier: Modifier = Modifier,
+    icon: ImageVector = Icons.Default.Delete,
+    contentDescription: String? = null,
+) {
     Box(
         modifier =
             modifier
@@ -27,8 +32,8 @@ fun DeleteBackground(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.CenterEnd,
     ) {
         Icon(
-            imageVector = Icons.Default.Delete,
-            contentDescription = null,
+            imageVector = icon,
+            contentDescription = contentDescription,
             tint = MaterialTheme.colorScheme.onErrorContainer,
         )
     }

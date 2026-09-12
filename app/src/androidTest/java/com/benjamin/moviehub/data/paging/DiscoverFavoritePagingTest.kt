@@ -54,7 +54,7 @@ class DiscoverFavoritePagingTest {
         runBlocking {
             val dao = database.movieDao()
             dao.insertMovie(movieEntity(id = 2, isFavorite = true))
-            assertEquals(listOf(2), dao.getFavoriteMovieIdsFlow().first())
+            assertEquals(listOf(2), dao.getLibraryMoviesFlow().first().map { it.id })
 
             val api = FakeMovieApiService()
             val differ = newDiffer()

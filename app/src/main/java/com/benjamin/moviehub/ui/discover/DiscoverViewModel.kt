@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import androidx.paging.map
 import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
 import com.benjamin.moviehub.domain.model.Movie
@@ -18,7 +17,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -49,13 +47,7 @@ class DiscoverViewModel
                 .map { it.appliedFilters }
                 .distinctUntilChanged()
                 .flatMapLatest { filters ->
-                    // The page feed must stay cached here: favorite changes re-emit the same
-                    // PagingData mapped again, and submitting it to the differ would otherwise
-                    // collect its pageEventFlow a second time and crash.
-                    val networkResults = repository.getDiscoverMovies(filters).cachedIn(viewModelScope)
-                    combine(networkResults, repository.getFavoriteMovieIds()) { pagingData, favoriteIds ->
-                        pagingData.map { movie -> movie.copy(isFavorite = movie.id in favoriteIds) }
-                    }
+                    repository.getDiscoverMovies(filters).cachedIn(viewModelScope)
                 }
                 .cachedIn(viewModelScope)
 

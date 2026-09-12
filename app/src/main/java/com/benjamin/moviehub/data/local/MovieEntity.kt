@@ -14,5 +14,7 @@ data class MovieEntity(
     val releaseDate: String,
     val genreIds: List<Int> = emptyList(),
     val isFavorite: Boolean = false,
+    val isWatchlist: Boolean = false,
+    val isWatched: Boolean = false,
     val runtimeMinutes: Int? = null,
 )

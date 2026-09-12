@@ -11,7 +11,7 @@ import androidx.room.TypeConverters
         MovieSearchResultEntity::class,
         MovieCategoryEntity::class,
     ],
-    version = 3,
+    version = 5,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)

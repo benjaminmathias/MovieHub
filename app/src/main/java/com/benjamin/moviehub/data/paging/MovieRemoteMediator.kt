@@ -70,16 +70,7 @@ class MovieRemoteMediator(
                     movieDao.clearCategoryMovies(remoteKeyType)
                 }
 
-                val localMovies = MediatorPagingHelper.preservedByIds(movieDao, movies.map { it.id })
-
-                val movieEntities =
-                    movies.map { dto ->
-                        val localMovie = localMovies[dto.id]
-                        dto.toEntity(
-                            isFavorite = localMovie?.isFavorite ?: false,
-                            runtimeMinutesOverride = localMovie?.runtimeMinutes,
-                        )
-                    }
+                val movieEntities = movies.map { it.toEntity() }
                 val categoryEntries =
                     movies.mapIndexed { index, dto ->
                         MovieCategoryEntity(

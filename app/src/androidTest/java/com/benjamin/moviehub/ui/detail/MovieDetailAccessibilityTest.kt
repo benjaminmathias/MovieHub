@@ -228,4 +228,46 @@ class MovieDetailAccessibilityTest {
             .assertHeightIsAtLeast(48.dp)
     }
 
+    @Test
+    fun libraryChipsExposeAccessibleActions() {
+        val movie =
+            Movie(
+                id = 1,
+                title = "Test movie",
+                overview = "Overview",
+                posterPath = null,
+                backdropPath = null,
+                voteAverage = 0.0,
+                releaseDate = "2024-01-01",
+                webUrl = null,
+                isFavorite = false,
+                isWatchlist = true,
+                isWatched = false,
+                genreIds = emptyList(),
+                genres = emptyList(),
+            )
+        composeRule.setContent {
+            MovieHubTheme {
+                MovieDetailScreen(
+                    uiState = MovieDetailUiState.Success(movie, MovieCredits()),
+                    onBackClick = {},
+                    onToggleFavorite = {},
+                    onToggleWatchlist = {},
+                    onToggleWatched = {},
+                    onRetry = {},
+                )
+            }
+        }
+        composeRule.onNodeWithTag("detail_watchlist").assertHasClickAction()
+        composeRule
+            .onNodeWithContentDescription("Retirer de la liste À voir")
+            .assertHasClickAction()
+            .assertHeightIsAtLeast(48.dp)
+        composeRule.onNodeWithTag("detail_watched").assertHasClickAction()
+        composeRule
+            .onNodeWithContentDescription("Marquer comme vu")
+            .assertHasClickAction()
+            .assertHeightIsAtLeast(48.dp)
+    }
+
 }

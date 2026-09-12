@@ -77,12 +77,42 @@ class MovieRepositoryTest {
 
             coEvery { dao.setFavorite(capture(entitySlot), true) } just runs
 
-            repository.toggleFavorite(movie, true)
+            repository.setFavorite(movie, true)
 
             coVerify(exactly = 1) { dao.setFavorite(any(), true) }
             assertEquals(true, entitySlot.captured.isFavorite)
             assertEquals("/poster.jpg", entitySlot.captured.posterPath)
             assertEquals("/backdrop.jpg", entitySlot.captured.backdropPath)
+        }
+
+    @Test
+    fun `library setters delegate independent flags`() =
+        runBlocking {
+            val apiService = mockk<MovieApiService>()
+            val database = mockk<MovieDatabase>()
+            val dao = mockk<MovieDao>()
+            val repository = MovieRepositoryImpl(apiService, database, dao)
+            val movie = Movie(
+                id = 8,
+                title = "Movie",
+                overview = "",
+                posterPath = null,
+                backdropPath = null,
+                voteAverage = 0.0,
+                releaseDate = "",
+                webUrl = null,
+                isFavorite = false,
+                genreIds = emptyList(),
+                genres = emptyList(),
+            )
+            coEvery { dao.setWatchlist(any(), true) } just runs
+            coEvery { dao.setWatched(any(), true) } just runs
+
+            repository.setWatchlist(movie, true)
+            repository.setWatched(movie, true)
+
+            coVerify(exactly = 1) { dao.setWatchlist(any(), true) }
+            coVerify(exactly = 1) { dao.setWatched(any(), true) }
         }
 
     @Test
@@ -107,6 +137,20 @@ class MovieRepositoryTest {
                             ),
                         ),
                 )
+            coEvery { dao.getMoviesByIds(any()) } returns listOf(
+                MovieEntity(
+                    id = 9,
+                    title = "Cached",
+                    overview = "",
+                    posterPath = null,
+                    backdropPath = null,
+                    voteAverage = 1.0,
+                    releaseDate = "",
+                    isFavorite = true,
+                    isWatchlist = true,
+                    isWatched = true,
+                ),
+            )
 
             val result = repository.getMovieRecommendations(9)
 
@@ -114,6 +158,9 @@ class MovieRepositoryTest {
             assertEquals(9, result.single().id)
             assertEquals("https://image.tmdb.org/t/p/w500/poster.jpg", result.single().posterPath)
             assertEquals("https://www.themoviedb.org/movie/9", result.single().webUrl)
+            assertEquals(true, result.single().isFavorite)
+            assertEquals(true, result.single().isWatchlist)
+            assertEquals(true, result.single().isWatched)
             coVerify(exactly = 0) { dao.insertMovie(any()) }
         }
 

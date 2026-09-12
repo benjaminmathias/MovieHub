@@ -33,7 +33,7 @@ class MovieDatabaseMigrationTest {
     }
 
     @Test
-    fun migrate1To3_preservesMovieAndMigratesPopularMembership() =
+    fun migrate1To5_preservesMovieAndMigratesPopularMembership() =
         runBlocking {
             createVersionOneDatabase(includeRuntimeColumn = true)
 
@@ -44,6 +44,8 @@ class MovieDatabaseMigrationTest {
                 val favorite = dao.getMovieById(1)
                 assertNotNull(favorite)
                 assertEquals(true, favorite?.isFavorite)
+                assertEquals(false, favorite?.isWatchlist)
+                assertEquals(false, favorite?.isWatched)
                 assertEquals(120, favorite?.runtimeMinutes)
 
                 // Legacy popular order is preserved in the association table.
@@ -58,7 +60,7 @@ class MovieDatabaseMigrationTest {
         }
 
     @Test
-    fun migrate1To3_withoutRuntimeColumn_opensAndPreservesData() =
+    fun migrate1To5_withoutRuntimeColumn_opensAndPreservesData() =
         runBlocking {
             createVersionOneDatabase(includeRuntimeColumn = false)
 
@@ -69,6 +71,8 @@ class MovieDatabaseMigrationTest {
                 val favorite = dao.getMovieById(1)
                 assertNotNull(favorite)
                 assertEquals(true, favorite?.isFavorite)
+                assertEquals(false, favorite?.isWatchlist)
+                assertEquals(false, favorite?.isWatched)
                 // The legacy column never existed, so runtime stays null rather than being invented.
                 assertEquals(null, favorite?.runtimeMinutes)
 
@@ -81,7 +85,7 @@ class MovieDatabaseMigrationTest {
         }
 
     @Test
-    fun migrate2To3_collapsesRemoteKeysAndDropsSearchFlag() =
+    fun migrate2To5_collapsesRemoteKeysAndAddsLibraryFlags() =
         runBlocking {
             createVersionTwoDatabase()
 
@@ -95,8 +99,25 @@ class MovieDatabaseMigrationTest {
                 assertEquals(4, dao.getRemoteKey("UPCOMING")?.nextKey)
                 assertEquals("Kept", dao.getMovieById(1)?.title)
                 assertTrue(dao.getMovieById(1)?.isFavorite == true)
+                assertEquals(false, dao.getMovieById(1)?.isWatchlist)
+                assertEquals(false, dao.getMovieById(1)?.isWatched)
 
                 assertTrue("isSearchResult" !in movieColumns(database))
+            } finally {
+                database.close()
+            }
+        }
+
+    @Test
+    fun migrate3To5_addsIndependentLibraryFlags() =
+        runBlocking {
+            createVersionThreeDatabase()
+            val database = openMigratedDatabase()
+            try {
+                val movie = database.movieDao().getMovieById(1)
+                assertEquals(true, movie?.isFavorite)
+                assertEquals(false, movie?.isWatchlist)
+                assertEquals(false, movie?.isWatched)
             } finally {
                 database.close()
             }
@@ -105,8 +126,23 @@ class MovieDatabaseMigrationTest {
     private fun openMigratedDatabase(): MovieDatabase =
         Room
             .databaseBuilder(context, MovieDatabase::class.java, dbName)
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .build()
+
+    @Test
+    fun migrate4To5_resolvesConflictingLibraryFlagsKeepingWatched() =
+        runBlocking {
+            createVersionFourDatabaseWithConflict()
+            val database = openMigratedDatabase()
+            try {
+                val movie = database.movieDao().getMovieById(1)
+                assertEquals(true, movie?.isFavorite)
+                assertEquals(false, movie?.isWatchlist)
+                assertEquals(true, movie?.isWatched)
+            } finally {
+                database.close()
+            }
+        }
 
     private fun createVersionOneDatabase(includeRuntimeColumn: Boolean) {
         val runtimeColumnDefinition = if (includeRuntimeColumn) ", `runtimeMinutes` INTEGER" else ""
@@ -242,6 +278,73 @@ class MovieDatabaseMigrationTest {
             db.execSQL("INSERT INTO `remote_keys` (`movieId`,`prevKey`,`nextKey`,`type`) VALUES (2,1,NULL,'POPULAR')")
             // Another feed still has a next page.
             db.execSQL("INSERT INTO `remote_keys` (`movieId`,`prevKey`,`nextKey`,`type`) VALUES (3,NULL,4,'UPCOMING')")
+        }
+        helper.close()
+    }
+
+    private fun createVersionThreeDatabase() {
+        val helper =
+            FrameworkSQLiteOpenHelperFactory().create(
+                SupportSQLiteOpenHelper.Configuration
+                    .builder(context)
+                    .name(dbName)
+                    .callback(
+                        object : SupportSQLiteOpenHelper.Callback(3) {
+                            override fun onCreate(db: SupportSQLiteDatabase) {
+                                db.execSQL(
+                                    "CREATE TABLE `movies` (" +
+                                        "`id` INTEGER NOT NULL, `title` TEXT NOT NULL, `overview` TEXT NOT NULL, " +
+                                        "`posterPath` TEXT, `backdropPath` TEXT, `voteAverage` REAL NOT NULL, " +
+                                        "`releaseDate` TEXT NOT NULL, `genreIds` TEXT NOT NULL, `isFavorite` INTEGER NOT NULL, " +
+                                        "`runtimeMinutes` INTEGER, PRIMARY KEY(`id`))",
+                                )
+                                db.execSQL("CREATE TABLE `remote_keys` (`type` TEXT NOT NULL, `nextKey` INTEGER, PRIMARY KEY(`type`))")
+                                db.execSQL("CREATE TABLE `movie_search_results` (`queryKey` TEXT NOT NULL, `movieId` INTEGER NOT NULL, `pageOrder` INTEGER NOT NULL, PRIMARY KEY(`queryKey`, `movieId`))")
+                                db.execSQL("CREATE TABLE `movie_categories` (`movieId` INTEGER NOT NULL, `category` TEXT NOT NULL, `pageOrder` INTEGER NOT NULL, PRIMARY KEY(`movieId`, `category`))")
+                                db.execSQL("CREATE INDEX `index_movie_categories_category_pageOrder` ON `movie_categories` (`category`, `pageOrder`)")
+                            }
+
+                            override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+                        },
+                    ).build(),
+            )
+        helper.writableDatabase.use { db ->
+            db.execSQL("INSERT INTO `movies` (`id`,`title`,`overview`,`voteAverage`,`releaseDate`,`genreIds`,`isFavorite`,`runtimeMinutes`) VALUES (1,'Kept','o',7.0,'2020-01-01','28',1,120)")
+        }
+        helper.close()
+    }
+
+    private fun createVersionFourDatabaseWithConflict() {
+        val helper =
+            FrameworkSQLiteOpenHelperFactory().create(
+                SupportSQLiteOpenHelper.Configuration
+                    .builder(context)
+                    .name(dbName)
+                    .callback(
+                        object : SupportSQLiteOpenHelper.Callback(4) {
+                            override fun onCreate(db: SupportSQLiteDatabase) {
+                                db.execSQL(
+                                    "CREATE TABLE `movies` (" +
+                                        "`id` INTEGER NOT NULL, `title` TEXT NOT NULL, `overview` TEXT NOT NULL, " +
+                                        "`posterPath` TEXT, `backdropPath` TEXT, `voteAverage` REAL NOT NULL, " +
+                                        "`releaseDate` TEXT NOT NULL, `genreIds` TEXT NOT NULL, `isFavorite` INTEGER NOT NULL, " +
+                                        "`isWatchlist` INTEGER NOT NULL, `isWatched` INTEGER NOT NULL, `runtimeMinutes` INTEGER, PRIMARY KEY(`id`))",
+                                )
+                                db.execSQL("CREATE TABLE `remote_keys` (`type` TEXT NOT NULL, `nextKey` INTEGER, PRIMARY KEY(`type`))")
+                                db.execSQL("CREATE TABLE `movie_search_results` (`queryKey` TEXT NOT NULL, `movieId` INTEGER NOT NULL, `pageOrder` INTEGER NOT NULL, PRIMARY KEY(`queryKey`, `movieId`))")
+                                db.execSQL("CREATE TABLE `movie_categories` (`movieId` INTEGER NOT NULL, `category` TEXT NOT NULL, `pageOrder` INTEGER NOT NULL, PRIMARY KEY(`movieId`, `category`))")
+                                db.execSQL("CREATE INDEX `index_movie_categories_category_pageOrder` ON `movie_categories` (`category`, `pageOrder`)")
+                            }
+
+                            override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+                        },
+                    ).build(),
+            )
+        helper.writableDatabase.use { db ->
+            db.execSQL(
+                "INSERT INTO `movies` (`id`,`title`,`overview`,`voteAverage`,`releaseDate`,`genreIds`,`isFavorite`,`isWatchlist`,`isWatched`) " +
+                    "VALUES (1,'Conflict','o',7.0,'2020-01-01','28',1,1,1)",
+            )
         }
         helper.close()
     }

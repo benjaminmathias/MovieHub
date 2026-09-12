@@ -52,16 +52,7 @@ class SearchMovieRemoteMediator(
                     movieDao.deleteSearchOrphans(previousResultIds, movies.map { it.id })
                 }
 
-                val localMovies = MediatorPagingHelper.preservedByIds(movieDao, movies.map { it.id })
-
-                val movieEntities =
-                    movies.map { dto ->
-                        val localMovie = localMovies[dto.id]
-                        dto.toEntity(
-                            isFavorite = localMovie?.isFavorite ?: false,
-                            runtimeMinutesOverride = localMovie?.runtimeMinutes,
-                        )
-                    }
+                val movieEntities = movies.map { it.toEntity() }
                 val searchResults =
                     movies.mapIndexed { index, dto ->
                         MovieSearchResultEntity(

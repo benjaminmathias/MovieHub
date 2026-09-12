@@ -13,8 +13,8 @@ import com.benjamin.moviehub.ui.detail.MovieDetailScreen
 import com.benjamin.moviehub.ui.detail.MovieDetailViewModel
 import com.benjamin.moviehub.ui.discover.DiscoverScreen
 import com.benjamin.moviehub.ui.discover.DiscoverViewModel
-import com.benjamin.moviehub.ui.favorites.FavoriteScreen
-import com.benjamin.moviehub.ui.favorites.FavoriteViewModel
+import com.benjamin.moviehub.ui.library.LibraryScreen
+import com.benjamin.moviehub.ui.library.LibraryViewModel
 import com.benjamin.moviehub.ui.list.MovieListScreen
 import com.benjamin.moviehub.ui.list.MovieListViewModel
 import com.benjamin.moviehub.ui.search.SearchScreen
@@ -104,6 +104,8 @@ internal fun MovieDetailEntry(
         uiState = detailsUiState,
         onBackClick = onBack,
         onToggleFavorite = viewModel::toggleFavorite,
+        onToggleWatchlist = viewModel::toggleWatchlist,
+        onToggleWatched = viewModel::toggleWatched,
         onRetry = { viewModel.loadMovieDetails(movieId) },
         favoriteActionErrors = viewModel.favoriteActionErrors,
         onRecommendationClick = onOpenRecommendation,
@@ -111,20 +113,19 @@ internal fun MovieDetailEntry(
 }
 
 @Composable
-internal fun FavoriteListEntry(
+internal fun LibraryEntry(
     onOpenSettings: () -> Unit,
     onOpenDetails: (Int) -> Unit,
 ) {
-    val viewModel: FavoriteViewModel = hiltViewModel()
-    val favoriteUiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val viewModel: LibraryViewModel = hiltViewModel()
+    val libraryUiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    FavoriteScreen(
-        state = favoriteUiState,
+    LibraryScreen(
+        state = libraryUiState,
         onSettingsClick = onOpenSettings,
         onMovieClick = onOpenDetails,
-        onRemoveFavorite = viewModel::onToggleFavorite,
-        onRetry = viewModel::onRetry,
-        favoriteActionErrors = viewModel.favoriteActionErrors,
+        onRemove = viewModel::onRemove,
+        actionErrors = viewModel.actionErrors,
     )
 }
 

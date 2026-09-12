@@ -27,23 +27,16 @@ interface MovieRepository {
     /** First movie of a home [category], used by the hero banner. Emits null until it is cached. */
     fun getHeroMovie(category: MovieCategory = MovieCategory.POPULAR): Flow<Movie?>
 
-    /**
-     * Fetch the movie from the API, upsert it locally (preserving local favorite and runtime),
-     * and fall back to the cached row when the network is unavailable.
-     */
+    /** Fetch the movie from the API, preserving local library flags and runtime when cached. */
     suspend fun getMovieDetails(movieId: Int): Movie
 
-    /** Persist the favorite status of [movie] in the db. */
-    suspend fun toggleFavorite(
-        movie: Movie,
-        isFavorite: Boolean,
-    )
+    suspend fun setFavorite(movie: Movie, isFavorite: Boolean)
 
-    /** Get favorite movies from the db. */
-    fun getFavoriteMovies(): Flow<List<Movie>>
+    suspend fun setWatchlist(movie: Movie, isWatchlist: Boolean)
 
-    /** Observe the local favorite IDs used to enrich network-backed feeds. */
-    fun getFavoriteMovieIds(): Flow<Set<Int>>
+    suspend fun setWatched(movie: Movie, isWatched: Boolean)
+
+    fun getLibraryMovies(): Flow<List<Movie>>
 
     /** Get movie credits from the API. Throws on network error; callers show details without credits. */
     suspend fun getMovieCredits(movieId: Int): MovieCredits

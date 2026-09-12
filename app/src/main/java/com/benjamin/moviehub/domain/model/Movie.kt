@@ -12,6 +12,8 @@ data class Movie(
     val isFavorite: Boolean,
     val genreIds: List<Int>,
     val genres: List<String>,
+    val isWatchlist: Boolean = false,
+    val isWatched: Boolean = false,
     val runtimeMinutes: Int? = null,
     val voteCount: Int? = null,
     /** Small poster variant used by the compact home rows. */

@@ -19,11 +19,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.outlined.Explore
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -69,27 +69,27 @@ private data class BottomNavItem(
 private enum class TopLevelTab {
     HOME,
     DISCOVER,
-    FAVORITES,
+    LIBRARY,
 }
 
 private val bottomNavItems =
     listOf(
         BottomNavItem(Route.List, Icons.Default.Home, Icons.Outlined.Home, R.string.home_tab),
         BottomNavItem(Route.Discover, Icons.Default.Explore, Icons.Outlined.Explore, R.string.discover_tab),
-        BottomNavItem(Route.FavoriteList, Icons.Default.Favorite, Icons.Outlined.FavoriteBorder, R.string.favorite_tab),
+        BottomNavItem(Route.Library, Icons.Filled.VideoLibrary, Icons.Outlined.VideoLibrary, R.string.library_tab),
     )
 
 @Composable
 fun NavigationRoot(networkStatus: ConnectivityStatus) {
     val homeBackStack = rememberNavBackStack(Route.List)
     val discoverBackStack = rememberNavBackStack(Route.Discover)
-    val favoritesBackStack = rememberNavBackStack(Route.FavoriteList)
+    val libraryBackStack = rememberNavBackStack(Route.Library)
     var selectedTab by rememberSaveable { mutableStateOf(TopLevelTab.HOME) }
     val backStack =
         when (selectedTab) {
             TopLevelTab.HOME -> homeBackStack
             TopLevelTab.DISCOVER -> discoverBackStack
-            TopLevelTab.FAVORITES -> favoritesBackStack
+            TopLevelTab.LIBRARY -> libraryBackStack
         }
     val currentRoute = backStack.lastOrNull()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -98,13 +98,13 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val useNavigationRail = maxWidth >= 600.dp
         val showTopLevelNavigation =
-            currentRoute is Route.List || currentRoute is Route.Discover || currentRoute is Route.FavoriteList
+            currentRoute is Route.List || currentRoute is Route.Discover || currentRoute is Route.Library
         fun navigateToTopLevel(route: Route) {
             val tab =
                 when (route) {
                     Route.List -> TopLevelTab.HOME
                     Route.Discover -> TopLevelTab.DISCOVER
-                    Route.FavoriteList -> TopLevelTab.FAVORITES
+                    Route.Library -> TopLevelTab.LIBRARY
                     else -> return
                 }
             if (selectedTab != tab) {
@@ -151,8 +151,8 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                     )
                 }
 
-                entry<Route.FavoriteList> {
-                    FavoriteListEntry(
+                entry<Route.Library> {
+                    LibraryEntry(
                         onOpenSettings = { backStack.add(Route.Settings) },
                         onOpenDetails = { id -> openMovieDetails(id) },
                     )
@@ -165,12 +165,12 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
 
         val homeEntries = rememberDecoratedEntries(homeBackStack, entryProvider)
         val discoverEntries = rememberDecoratedEntries(discoverBackStack, entryProvider)
-        val favoritesEntries = rememberDecoratedEntries(favoritesBackStack, entryProvider)
+        val libraryEntries = rememberDecoratedEntries(libraryBackStack, entryProvider)
         val entries =
             when (selectedTab) {
                 TopLevelTab.HOME -> homeEntries
                 TopLevelTab.DISCOVER -> discoverEntries
-                TopLevelTab.FAVORITES -> favoritesEntries
+                TopLevelTab.LIBRARY -> libraryEntries
             }
 
         NetworkStatusEffect(networkStatus, snackbarHostState)

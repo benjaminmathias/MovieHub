@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -31,7 +32,8 @@ class MovieDetailViewModel
         private val _favoriteActionErrors = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
         val favoriteActionErrors = _favoriteActionErrors.asSharedFlow()
         private var loadJob: Job? = null
-        private val favoriteMutex = Mutex()
+        private var libraryJob: Job? = null
+        private val libraryMutex = Mutex()
 
         fun loadMovieDetails(movieId: Int) {
             val currentState = _uiState.value
@@ -40,21 +42,71 @@ class MovieDetailViewModel
             }
 
             loadJob?.cancel()
+            libraryJob?.cancel()
             loadJob = viewModelScope.launch {
                 _uiState.value = MovieDetailUiState.Loading
 
                 try {
                     coroutineScope {
+                        var latestLibraryById = emptyMap<Int, com.benjamin.moviehub.domain.model.Movie>()
                         val creditsDeferred = async { loadCredits(movieId) }
                         val recommendationsDeferred = async { loadRecommendations(movieId) }
                         // A main failure throws out of the scope and cancels both async children.
                         val movie = repository.getMovieDetails(movieId)
 
                         _uiState.value = MovieDetailUiState.Success(movie, MovieCredits())
+                        libraryJob = viewModelScope.launch {
+                            repository.getLibraryMovies().collectLatest { localMovies ->
+                                val localById = localMovies.associateBy { it.id }
+                                latestLibraryById = localById
+                                updateSuccess(movieId) { latest ->
+                                    val localMovie = localById[movieId]
+                                    val updatedMovie =
+                                        latest.movie.copy(
+                                            isFavorite = localMovie?.isFavorite ?: false,
+                                            isWatchlist = localMovie?.isWatchlist ?: false,
+                                            isWatched = localMovie?.isWatched ?: false,
+                                        )
+                                    val updatedRecommendations =
+                                        (latest.recommendations as? MovieRecommendationsUiState.Success)?.let { recommendations ->
+                                            MovieRecommendationsUiState.Success(
+                                                recommendations.movies.map { recommendation ->
+                                                    localById[recommendation.id]?.let { local ->
+                                                        recommendation.copy(
+                                                            isFavorite = local.isFavorite,
+                                                            isWatchlist = local.isWatchlist,
+                                                            isWatched = local.isWatched,
+                                                        )
+                                                    } ?: recommendation.copy(
+                                                        isFavorite = false,
+                                                        isWatchlist = false,
+                                                        isWatched = false,
+                                                    )
+                                                },
+                                            )
+                                        } ?: latest.recommendations
+                                    latest.copy(movie = updatedMovie, recommendations = updatedRecommendations)
+                                }
+                            }
+                        }
                         val credits = creditsDeferred.await()
                         updateSuccess(movieId) { it.copy(credits = credits) }
                         val recommendations = recommendationsDeferred.await()
-                        updateSuccess(movieId) { it.copy(recommendations = recommendations) }
+                        val syncedRecommendations =
+                            (recommendations as? MovieRecommendationsUiState.Success)?.let { success ->
+                                MovieRecommendationsUiState.Success(
+                                    success.movies.map { recommendation ->
+                                        latestLibraryById[recommendation.id]?.let { local ->
+                                            recommendation.copy(
+                                                isFavorite = local.isFavorite,
+                                                isWatchlist = local.isWatchlist,
+                                                isWatched = local.isWatched,
+                                            )
+                                        } ?: recommendation
+                                    },
+                                )
+                            } ?: recommendations
+                        updateSuccess(movieId) { it.copy(recommendations = syncedRecommendations) }
                     }
                 } catch (e: CancellationException) {
                     throw e
@@ -66,21 +118,49 @@ class MovieDetailViewModel
         }
 
         fun toggleFavorite() {
+            toggleLibraryFlag(
+                persist = { movie, value -> repository.setFavorite(movie, value) },
+                current = { it.isFavorite },
+                update = { movie, value -> movie.copy(isFavorite = value) },
+            )
+        }
+
+        fun toggleWatchlist() {
+            toggleLibraryFlag(
+                persist = { movie, value -> repository.setWatchlist(movie, value) },
+                current = { it.isWatchlist },
+                update = { movie, value -> movie.copy(isWatchlist = value, isWatched = if (value) false else movie.isWatched) },
+            )
+        }
+
+        fun toggleWatched() {
+            toggleLibraryFlag(
+                persist = { movie, value -> repository.setWatched(movie, value) },
+                current = { it.isWatched },
+                update = { movie, value -> movie.copy(isWatched = value, isWatchlist = if (value) false else movie.isWatchlist) },
+            )
+        }
+
+        private fun toggleLibraryFlag(
+            persist: suspend (com.benjamin.moviehub.domain.model.Movie, Boolean) -> Unit,
+            current: (com.benjamin.moviehub.domain.model.Movie) -> Boolean,
+            update: (com.benjamin.moviehub.domain.model.Movie, Boolean) -> com.benjamin.moviehub.domain.model.Movie,
+        ) {
             viewModelScope.launch {
-                favoriteMutex.withLock {
+                libraryMutex.withLock {
                     val currentState = _uiState.value as? MovieDetailUiState.Success ?: return@withLock
                     val requestedMovie = currentState.movie
-                    val newStatus = !requestedMovie.isFavorite
+                    val newStatus = !current(requestedMovie)
 
-                    _uiState.value = currentState.copy(movie = requestedMovie.copy(isFavorite = newStatus))
+                    _uiState.value = currentState.copy(movie = update(requestedMovie, newStatus))
 
                     try {
-                        repository.toggleFavorite(requestedMovie, newStatus)
+                        persist(requestedMovie, newStatus)
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
                         _favoriteActionErrors.tryEmit(Unit)
-                        rollbackFavorite(requestedMovie.id, newStatus)
+                        rollbackLibrary(requestedMovie.id, requestedMovie, current, newStatus)
                     }
                 }
             }
@@ -119,13 +199,15 @@ class MovieDetailViewModel
                 MovieRecommendationsUiState.Error
             }
 
-        private fun rollbackFavorite(
+        private fun rollbackLibrary(
             movieId: Int,
+            requestedMovie: com.benjamin.moviehub.domain.model.Movie,
+            current: (com.benjamin.moviehub.domain.model.Movie) -> Boolean,
             attemptedStatus: Boolean,
         ) {
             updateSuccess(movieId) { latest ->
-                if (latest.movie.isFavorite == attemptedStatus) {
-                    latest.copy(movie = latest.movie.copy(isFavorite = !attemptedStatus))
+                if (current(latest.movie) == attemptedStatus) {
+                    latest.copy(movie = requestedMovie)
                 } else {
                     latest
                 }

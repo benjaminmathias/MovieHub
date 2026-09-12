@@ -93,6 +93,8 @@ fun MovieDetailContent(
     recommendations: MovieRecommendationsUiState = MovieRecommendationsUiState.Empty,
     listState: LazyListState = rememberLazyListState(),
     onToggleFavorite: (() -> Unit)? = null,
+    onToggleWatchlist: (() -> Unit)? = null,
+    onToggleWatched: (() -> Unit)? = null,
     onOpenTmdb: (() -> Unit)? = null,
     onRecommendationClick: (Int) -> Unit = {},
 ) {
@@ -115,6 +117,8 @@ fun MovieDetailContent(
                 movie = movie,
                 director = credits.director?.takeIf(String::isNotBlank),
                 onToggleFavorite = onToggleFavorite,
+                onToggleWatchlist = onToggleWatchlist,
+                onToggleWatched = onToggleWatched,
                 onOpenTmdb = onOpenTmdb,
             )
         }

@@ -3,6 +3,7 @@ package com.benjamin.moviehub.data.repository
 import androidx.paging.ExperimentalPagingApi
 import androidx.paging.Pager
 import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import androidx.paging.map
 import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.local.MovieDatabase
@@ -21,7 +22,10 @@ import com.benjamin.moviehub.domain.model.MovieGenre
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.coroutineScope
 import java.io.IOException
 import retrofit2.HttpException
 import javax.inject.Inject
@@ -52,11 +56,32 @@ class MovieRepositoryImpl
             ).flow.map { pagingData -> pagingData.map { entity -> entity.toDomain() } }
         }
 
-        override fun getDiscoverMovies(filters: DiscoverFilters): Flow<PagingData<Movie>> =
-            Pager(
-                config = moviePagingConfig,
-                pagingSourceFactory = { DiscoverMoviePagingSource(apiService, filters) },
-            ).flow
+        override fun getDiscoverMovies(filters: DiscoverFilters): Flow<PagingData<Movie>> = flow {
+            coroutineScope {
+                // Scope the cache to each collection so a Room refresh can safely
+                // re-emit the same PagingData instance without double collection.
+                val pagerFlow =
+                    Pager(
+                        config = moviePagingConfig,
+                        pagingSourceFactory = { DiscoverMoviePagingSource(apiService, filters) },
+                    ).flow.cachedIn(this)
+                combine(
+                    pagerFlow,
+                    movieDao.getLibraryMoviesFlow(),
+                ) { pagingData, libraryMovies ->
+                    val localById = libraryMovies.associateBy { it.id }
+                    pagingData.map { movie ->
+                        localById[movie.id]?.let { local ->
+                            movie.copy(
+                                isFavorite = local.isFavorite,
+                                isWatchlist = local.isWatchlist,
+                                isWatched = local.isWatched,
+                            )
+                        } ?: movie
+                    }
+                }.collect(::emit)
+            }
+        }
 
         override suspend fun getMovieGenres(): List<MovieGenre> =
             apiService
@@ -94,29 +119,36 @@ class MovieRepositoryImpl
             }
         }
 
-        override suspend fun toggleFavorite(
-            movie: Movie,
-            isFavorite: Boolean,
-        ) {
+        override suspend fun setFavorite(movie: Movie, isFavorite: Boolean) {
             movieDao.setFavorite(movie.toEntity(isFavorite = isFavorite), isFavorite)
         }
 
-        override fun getFavoriteMovies(): Flow<List<Movie>> =
-            movieDao
-                .getFavoriteMoviesFlow()
-                .map { entities -> entities.map { it.toDomain() } }
+        override suspend fun setWatchlist(movie: Movie, isWatchlist: Boolean) {
+            movieDao.setWatchlist(movie.toEntity(), isWatchlist)
+        }
 
-        override fun getFavoriteMovieIds(): Flow<Set<Int>> =
-            movieDao
-                .getFavoriteMovieIdsFlow()
-                .map { ids -> ids.toSet() }
+        override suspend fun setWatched(movie: Movie, isWatched: Boolean) {
+            movieDao.setWatched(movie.toEntity(), isWatched)
+        }
+
+        override fun getLibraryMovies(): Flow<List<Movie>> =
+            movieDao.getLibraryMoviesFlow().map { entities -> entities.map { it.toDomain() } }
 
         override suspend fun getMovieCredits(movieId: Int) =
             apiService.getMovieCredits(movieId).toDomain()
 
         override suspend fun getMovieRecommendations(movieId: Int): List<Movie> =
-            apiService
-                .getMovieRecommendations(movieId)
-                .movies
-                .map { it.toDomain() }
+            apiService.getMovieRecommendations(movieId).movies.let { dtos ->
+                val localById = movieDao.getMoviesByIds(dtos.map { it.id }).associateBy { it.id }
+                dtos.map { dto ->
+                    val remote = dto.toDomain()
+                    localById[dto.id]?.let { local ->
+                        remote.copy(
+                            isFavorite = local.isFavorite,
+                            isWatchlist = local.isWatchlist,
+                            isWatched = local.isWatched,
+                        )
+                    } ?: remote
+                }
+            }
     }

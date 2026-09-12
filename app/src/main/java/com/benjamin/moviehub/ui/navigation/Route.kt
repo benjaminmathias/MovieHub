@@ -12,7 +12,7 @@ sealed interface Route : NavKey {
     data object Discover : Route
 
     @Serializable
-    data object FavoriteList : Route
+    data object Library : Route
 
     @Serializable
     data object Search : Route

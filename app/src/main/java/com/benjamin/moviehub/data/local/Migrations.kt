@@ -128,6 +128,27 @@ internal val MIGRATION_2_3 =
         }
     }
 
+internal val MIGRATION_3_4 =
+    object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            val columns = columnNames(db, "movies")
+            if ("isWatchlist" !in columns) {
+                db.execSQL("ALTER TABLE `movies` ADD COLUMN `isWatchlist` INTEGER NOT NULL DEFAULT 0")
+            }
+            if ("isWatched" !in columns) {
+                db.execSQL("ALTER TABLE `movies` ADD COLUMN `isWatched` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+    }
+
+internal val MIGRATION_4_5 =
+    object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Resolve the only invalid historical combination deterministically: Vu wins.
+            db.execSQL("UPDATE `movies` SET `isWatchlist` = 0 WHERE `isWatchlist` = 1 AND `isWatched` = 1")
+        }
+    }
+
 private fun columnNames(
     db: SupportSQLiteDatabase,
     table: String,

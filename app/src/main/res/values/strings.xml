@@ -11,6 +11,9 @@
     <string name="home_tab">Accueil</string>
     <string name="discover_tab">Découvrir</string>
     <string name="favorite_tab">Favoris</string>
+    <string name="library_tab">Bibliothèque</string>
+    <string name="watchlist_tab">À voir</string>
+    <string name="watched_tab">Vu</string>
 
     <string name="discover_title">Découvrir des films</string>
     <string name="discover_filters">Filtres</string>
@@ -66,6 +69,16 @@
     <string name="favorite_state">Dans vos favoris</string>
     <string name="not_favorite_state">Pas dans vos favoris</string>
     <string name="error_updating_favorite">Impossible de modifier ce favori.</string>
+    <string name="error_updating_library">Impossible de modifier la bibliothèque.</string>
+    <string name="watchlist_short">À voir</string>
+    <string name="watched_short">Vu</string>
+    <string name="add_watchlist_accessibility">Ajouter à la liste À voir</string>
+    <string name="remove_watchlist_accessibility">Retirer de la liste À voir</string>
+    <string name="mark_watched_accessibility">Marquer comme vu</string>
+    <string name="mark_unwatched_accessibility">Marquer comme non vu</string>
+    <string name="no_watchlist_added">Aucun film à voir.</string>
+    <string name="no_watched_added">Aucun film vu.</string>
+    <string name="remove_watched_accessibility">Retirer des films vus</string>
 
     <string name="settings_title">Paramètres</string>
     <string name="back">Retour</string>
@@ -89,5 +102,5 @@
     <string name="connection_restored">Connexion rétablie</string>
     <string name="remove_favorite_accessibility">Retirer des favoris</string>
     <string name="poster_description">Affiche de %1$s</string>
-    <string name="no_favorite_added">Aucun film favori n\'a été ajouté !</string>
+    <string name="no_favorite_added">Aucun film favori n\'a été ajouté.</string>
 </resources>

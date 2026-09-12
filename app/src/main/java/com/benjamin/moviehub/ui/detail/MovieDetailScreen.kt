@@ -62,6 +62,8 @@ fun MovieDetailScreen(
     uiState: MovieDetailUiState,
     onBackClick: () -> Unit,
     onToggleFavorite: () -> Unit,
+    onToggleWatchlist: () -> Unit = {},
+    onToggleWatched: () -> Unit = {},
     onRetry: () -> Unit,
     favoriteActionErrors: Flow<Unit> = emptyFlow(),
     onRecommendationClick: (Int) -> Unit = {},
@@ -130,6 +132,8 @@ fun MovieDetailScreen(
                     recommendations = uiState.recommendations,
                     listState = listState,
                     onToggleFavorite = onToggleFavorite,
+                    onToggleWatchlist = onToggleWatchlist,
+                    onToggleWatched = onToggleWatched,
                     onOpenTmdb =
                         uiState.movie.webUrl
                             ?.takeIf(::isValidHttpUrl)

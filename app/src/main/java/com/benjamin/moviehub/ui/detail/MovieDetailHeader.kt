@@ -6,11 +6,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -24,12 +20,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.CheckCircleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalIconToggleButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,7 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -65,16 +64,20 @@ internal fun MovieDetailHeader(
     movie: Movie,
     director: String?,
     onToggleFavorite: (() -> Unit)?,
+    onToggleWatchlist: (() -> Unit)?,
+    onToggleWatched: (() -> Unit)?,
     onOpenTmdb: (() -> Unit)?,
 ) {
     Box(modifier = Modifier.fillMaxWidth()) {
         MovieDetailHero(backdropPath = movie.backdropPath)
         Column(modifier = Modifier.padding(top = HeroHeight - SummaryOverlap)) {
             MovieDetailSummary(movie = movie, director = director)
-            if (onToggleFavorite != null || onOpenTmdb != null) {
+            if (onToggleFavorite != null || onToggleWatchlist != null || onToggleWatched != null || onOpenTmdb != null) {
                 MovieDetailActions(
                     movie = movie,
                     onToggleFavorite = onToggleFavorite,
+                    onToggleWatchlist = onToggleWatchlist,
+                    onToggleWatched = onToggleWatched,
                     onOpenTmdb = onOpenTmdb,
                 )
             }
@@ -190,11 +193,12 @@ private fun MovieDetailSummary(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MovieDetailActions(
     movie: Movie,
     onToggleFavorite: (() -> Unit)?,
+    onToggleWatchlist: (() -> Unit)?,
+    onToggleWatched: (() -> Unit)?,
     onOpenTmdb: (() -> Unit)?,
 ) {
     val favoriteLabel = stringResource(if (movie.isFavorite) R.string.remove_favorite else R.string.favorite)
@@ -207,61 +211,98 @@ private fun MovieDetailActions(
             ),
         label = "favoritePop",
     )
-    BoxWithConstraints(
+    Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .padding(start = ContentHorizontalPadding, end = ContentHorizontalPadding, top = 16.dp, bottom = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        val stackActions = LocalDensity.current.fontScale >= 1.3f || maxWidth < 360.dp
-        FlowRow(
+        Surface(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            maxItemsInEachRow = if (stackActions) 1 else 2,
+            shape = MaterialTheme.shapes.medium,
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
         ) {
-            onToggleFavorite?.let { toggleFavorite ->
-                Button(
-                    onClick = toggleFavorite,
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .heightIn(min = 52.dp)
-                            .testTag("detail_favorite")
-                            .semantics { contentDescription = favoriteLabel },
-                ) {
-                    Icon(
-                        imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = null,
-                        modifier =
-                            Modifier
-                                .size(20.dp)
-                                .graphicsLayer {
-                                    scaleX = favoriteScale
-                                    scaleY = favoriteScale
-                                },
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                onToggleFavorite?.let { toggle ->
+                    LibraryAction(
+                        selected = movie.isFavorite,
+                        label = stringResource(R.string.favorite_tab),
+                        contentDescription = favoriteLabel,
+                        icon = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                        onClick = toggle,
+                        modifier = Modifier.weight(1f),
+                        testTag = "detail_favorite",
+                        iconModifier = Modifier.graphicsLayer { scaleX = favoriteScale; scaleY = favoriteScale },
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = favoriteLabel, style = MaterialTheme.typography.labelLarge)
                 }
-            }
-            onOpenTmdb?.let { openTmdb ->
-                OutlinedButton(
-                    onClick = openTmdb,
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                    modifier = Modifier.weight(1f).heightIn(min = 52.dp).testTag("detail_tmdb"),
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
+                onToggleWatchlist?.let { toggle ->
+                    LibraryAction(
+                        selected = movie.isWatchlist,
+                        label = stringResource(R.string.watchlist_short),
+                        contentDescription = stringResource(if (movie.isWatchlist) R.string.remove_watchlist_accessibility else R.string.add_watchlist_accessibility),
+                        icon = if (movie.isWatchlist) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                        onClick = toggle,
+                        modifier = Modifier.weight(1f),
+                        testTag = "detail_watchlist",
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = stringResource(R.string.open_tmdb), style = MaterialTheme.typography.labelLarge)
+                }
+                onToggleWatched?.let { toggle ->
+                    LibraryAction(
+                        selected = movie.isWatched,
+                        label = stringResource(R.string.watched_short),
+                        contentDescription = stringResource(if (movie.isWatched) R.string.mark_unwatched_accessibility else R.string.mark_watched_accessibility),
+                        icon = if (movie.isWatched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircleOutline,
+                        onClick = toggle,
+                        modifier = Modifier.weight(1f),
+                        testTag = "detail_watched",
+                    )
                 }
             }
         }
+        onOpenTmdb?.let { openTmdb ->
+            androidx.compose.material3.TextButton(
+                onClick = openTmdb,
+                modifier = Modifier.align(Alignment.End).heightIn(min = 48.dp).testTag("detail_tmdb"),
+            ) {
+                Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.open_tmdb))
+            }
+        }
+    }
+}
+
+@Composable
+private fun LibraryAction(
+    selected: Boolean,
+    label: String,
+    contentDescription: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    testTag: String,
+    modifier: Modifier = Modifier,
+    iconModifier: Modifier = Modifier,
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
+        FilledTonalIconToggleButton(
+            checked = selected,
+            onCheckedChange = { onClick() },
+            modifier = Modifier.size(48.dp).testTag(testTag).semantics { this.contentDescription = contentDescription },
+            colors =
+                IconButtonDefaults.filledTonalIconToggleButtonColors(
+                    containerColor = Color.Transparent,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    checkedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    checkedContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
+        ) {
+            Icon(icon, contentDescription = null, modifier = iconModifier.size(22.dp))
+        }
+        Text(label, style = MaterialTheme.typography.labelMedium, maxLines = 1)
     }
 }
 
