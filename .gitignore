@@ -3,7 +3,8 @@
 .kotlin
 /local.properties
 /capture-nettetee.png
-/screenshots/
+/screenshots/*
+!/screenshots/portfolio_*.png
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml

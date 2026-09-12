@@ -1,82 +1,143 @@
 # MovieHub
 
-MovieHub est une application Android qui affiche les films populaires et permet de rechercher et filtrer des films via l'API TMDB. Home et Search sont **Offline-First** avec pagination infinie ; Discover utilise une pagination réseau adaptée à ses filtres dynamiques.
+**Native Android movie discovery app built with Kotlin and Jetpack Compose.**
 
-<p align="center">
-  <img src="screenshots/home_popular.png" width="200" />
-  <img src="screenshots/details.png" width="200" />
-  <img src="screenshots/search_result.png" width="200" />
-</p>
+MovieHub combines [TMDB](https://www.themoviedb.org/) content with Room-backed Home and Search feeds, flexible movie discovery, and a local Library for favorites, watchlist, and watched movies. The project keeps its product scope focused while exploring pragmatic Android architecture, Paging 3, persistence, accessible Compose UI, and automated testing.
 
-## Fonctionnalités
+[![Android CI](https://github.com/benjaminmathias/MovieHub/actions/workflows/android.yml/badge.svg)](https://github.com/benjaminmathias/MovieHub/actions/workflows/android.yml)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.2.10-7F52FF?logo=kotlin&logoColor=white)
+![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
+![Android](https://img.shields.io/badge/Android-API%2024%2B-3DDC84?logo=android&logoColor=white)
 
-- **Offline-First** : Room comme *Single Source of Truth* (SSOT) pour Home et Search. L'application fonctionne sans connexion grâce au cache local.
-- **Pagination infinie** : Paging 3 avec `RemoteMediator` pour Home/Search et `PagingSource` réseau pour Discover.
-- **Recherche réactive** : recherche instantanée avec debounce et gestion des états vide / erreur / hors-ligne.
-- **Favoris** : sauvegarde locale, suppression par balayage avec action d'accessibilité dédiée.
-- **Détail riche** : synopsis, note, durée, genres, réalisateur et distribution.
-- **Thème** : clair / sombre / système, mémorisé via DataStore.
-- **Mise en cache des images** : Coil (mémoire + disque), nettoyable depuis les paramètres.
+## Screenshots
 
-## Stack technique
+<table>
+  <tr>
+    <td align="center"><img src="screenshots/portfolio_home.png" width="220" alt="MovieHub Home screen" /><br /><sub>Home</sub></td>
+    <td align="center"><img src="screenshots/portfolio_detail.png" width="220" alt="MovieHub movie detail screen" /><br /><sub>Movie detail</sub></td>
+    <td align="center"><img src="screenshots/portfolio_discover.png" width="220" alt="MovieHub Discover filters" /><br /><sub>Discover filters</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/portfolio_library.png" width="220" alt="MovieHub Library screen" /><br /><sub>Library</sub></td>
+    <td align="center"><img src="screenshots/portfolio_search.png" width="220" alt="MovieHub Search results" /><br /><sub>Search</sub></td>
+  </tr>
+</table>
 
-| Domaine | Technologie |
-|---|---|
-| Langage | Kotlin |
-| UI | Jetpack Compose (Material 3) |
-| Navigation | Navigation 3 |
-| Architecture | MVVM + couches data / domain / ui |
-| Injection | Hilt |
-| Réseau | Retrofit + OkHttp |
-| Persistance | Room |
-| Pagination | Paging 3 (`RemoteMediator` + `PagingSource` réseau) |
-| Images | Coil |
-| Asynchrone | Coroutines + Flow |
+## Features
+
+- **Home** — a featured movie and four independently paged TMDB feeds: Popular, Now Playing, Upcoming, and Top Rated, with pull-to-refresh.
+- **Search** — debounced, paginated search with loading, empty, error, retry, and cached-result states.
+- **Discover** — network-paged results filtered by genre, release year, minimum rating, and sort order.
+- **Library** — local Watchlist, Favorites, and Watched collections with contextual removal actions. Watchlist and Watched are mutually exclusive.
+- **Movie details** — synopsis, rating, runtime, genres, director, cast, recommendations, Library actions, sharing, and a direct TMDB link.
+- **Settings** — system, light, and dark themes persisted with DataStore, plus Coil image-cache management.
+
+## Technical highlights
+
+### Offline-backed Home and Search
+
+Home categories and search results use Paging 3 `RemoteMediator`s to synchronize TMDB pages into Room. The database remains the source of truth exposed to the UI, so cached rows stay available while a refresh runs or when the network is unavailable.
+
+```mermaid
+flowchart LR
+    TMDB[TMDB API] --> RM[RemoteMediator]
+    RM --> Room
+    Room --> PS[PagingSource]
+    PS --> VM[ViewModel]
+    VM --> UI[Compose UI]
+```
+
+### Dynamic Discover
+
+Discover uses a network-backed `PagingSource` because its genre, year, rating, and sort combinations are short-lived and numerous. Results are reconciled with Room-backed Library flags, while duplicate movie IDs returned across TMDB pages are removed within each paging generation to keep Compose grid keys stable.
+
+### Local Library state
+
+Favorite, Watchlist, and Watched flags are stored in Room and preserved when network data refreshes the same movies. Library changes flow back to Detail, Discover, and recommendation content; Detail actions update optimistically and roll back if persistence fails.
 
 ## Architecture
 
-Le code est séparé en trois couches :
+MovieHub uses a pragmatic layered architecture with ViewModels and unidirectional UI state:
 
-1. **ui** — Compose + ViewModel ; Home et Search exposent des flux `PagingData`, Discover combine Paging avec un état de filtres, et Detail/Favorites utilisent des états UI explicites.
-2. **domain** — modèles (`Movie`, `Actor`, `MovieCredits`) et contrats de repository.
-3. **data** — Retrofit, Room, mappers et implémentations des repositories.
+- **UI** — Jetpack Compose screens, reusable components, Navigation 3, and screen-level ViewModels.
+- **Domain** — application models and repository contracts with no Android UI dependencies.
+- **Data** — repository implementations, Retrofit/OkHttp networking, Room persistence, mappers, and Paging sources/mediators.
 
-### Single Source of Truth (SSOT)
+## Engineering decisions
 
-L'architecture dépend de l'écran :
+- **Persist feeds where reuse matters.** Home and Search benefit from Room-backed pagination and cached data; transient Discover filter combinations do not justify a persistent cache model.
+- **Keep Library ownership local.** Personal movie states are updated independently of TMDB and merged into remote content across screens.
+- **Keep the layering proportional to the app.** ViewModels depend on repository contracts directly; an additional use-case layer is not added where it would only forward calls.
 
-- **Home / Search** : l'API est synchronisée par `RemoteMediator` dans Room. Room est la source de vérité, ce qui fournit un cache local et un support hors-ligne.
-- **Discover** : les filtres dynamiques alimentent un `PagingSource` réseau. Les pages ne sont pas persistées dans Room ; les résultats sont seulement enrichis avec le flux local des IDs favoris afin de garder l'indicateur cohérent avec les autres écrans.
+## Tech stack
 
-Discover reste donc network-backed par choix : persister chaque combinaison de filtres ajouterait une complexité disproportionnée pour ce projet.
+| Area | Technologies |
+| --- | --- |
+| Language | Kotlin |
+| UI | Jetpack Compose, Material 3 |
+| Architecture | MVVM, repository pattern, unidirectional UI state |
+| Navigation | Navigation 3 |
+| Async | Coroutines, Flow |
+| Network | Retrofit, OkHttp, Gson |
+| Persistence | Room, DataStore Preferences |
+| Pagination | Paging 3, RemoteMediator |
+| Dependency injection | Hilt |
+| Images | Coil |
+| Testing | JUnit 4, MockK, Turbine, Compose UI tests, Android instrumentation |
+| Quality | ktlint, Android Lint, GitHub Actions |
 
-### Pagination
+## Testing & quality
 
-MovieHub utilise les deux formes de Paging 3 :
+The current suites contain **65 local unit tests** and **57 instrumented tests** covering:
 
-- `RemoteMediator` + Room pour les flux Home et Search persistés.
-- `PagingSource` réseau pour Discover, dont les résultats dépendent des filtres courants et ne sont pas mis en cache durablement.
+- DTO/domain/entity mapping, repositories, ViewModels, debounce, and error handling;
+- Paging sources, remote mediators, cached refresh behavior, and duplicate-page results;
+- Room paging behavior, local-flag preservation, and database migrations through schema version 5;
+- Compose UI, navigation, accessibility semantics, and Library interactions;
+- optimistic Library updates, rapid state changes, failure rollback, and cross-screen reconciliation.
 
-## Tests
+Instrumented integration paths use an in-process Room database and a deterministic fake TMDB service where network behavior is involved. Critical user flows have also been checked manually on an Android emulator, including offline behavior, pagination, Library state changes, and phone/tablet layouts.
 
-Trois niveaux de tests :
+## Continuous integration
 
-- **Unitaires** (`src/test`) : mappers, repository et ViewModels (coroutines, debounce, favoris, détail).
-- **Instrumentés** (`src/androidTest`) : navigation, recherche/favoris, Discover et médiateurs de pagination, exécutés avec une **fausse API déterministe** (`FakeMovieApiService`) sans dépendance réseau.
-- **Room/Paging** : synchronisation API ↔ base vérifiée sur une base en mémoire.
+The [`Android CI`](.github/workflows/android.yml) workflow runs on pushes and pull requests targeting `main` or `master`. It verifies:
 
-Les tests instrumentés se lancent localement avec un émulateur ou appareil connecté :
+```text
+ktlintCheck -> lintDebug -> testDebugUnitTest -> assembleDebug
+```
+
+Instrumented tests remain a local device/emulator check and are not run by this workflow.
+
+## Setup
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/benjaminmathias/MovieHub.git
+   cd MovieHub
+   ```
+
+2. Create a TMDB API key from the [TMDB API settings](https://www.themoviedb.org/settings/api).
+
+3. Add the key to the root `local.properties` file:
+
+   ```properties
+   TMDB_API_KEY=your_api_key_here
+   ```
+
+4. Open the project in Android Studio and run the `app` configuration, or build it with the Gradle wrapper.
+
+## Build & verify
+
+```bash
+./gradlew assembleDebug
+./gradlew testDebugUnitTest
+./gradlew lintDebug
+./gradlew ktlintCheck
+```
+
+Run the instrumented suite with a connected device or emulator:
 
 ```bash
 ./gradlew connectedDebugAndroidTest
 ```
-
-## Installation
-
-L'application utilise The Movie Database (TMDB) comme source de données. La clé API n'est pas versionnée :
-
-1. Clonez ce dépôt.
-2. Créez un compte gratuit sur [TMDB](https://www.themoviedb.org/settings/api) pour générer une clé.
-3. À la racine du projet, créez (ou ouvrez) le fichier `local.properties` et ajoutez :
-   `TMDB_API_KEY=votre_cle_api_ici`
-4. Synchronisez Gradle et lancez le projet.
