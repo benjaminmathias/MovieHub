@@ -35,11 +35,11 @@ internal fun CategoryRow(
     onMovieClick: (Int) -> Unit,
     onToggleFavorite: (Movie, Boolean) -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = stringResource(category.labelRes),
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
         )
 
@@ -67,7 +67,10 @@ private fun CategoryRowList(
     onToggleFavorite: (Movie, Boolean) -> Unit,
 ) {
     LazyRow(
-        modifier = Modifier.fillMaxWidth().testTag("category_row"),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .testTag("category_row"),
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -85,19 +88,21 @@ private fun CategoryRowList(
             }
         }
 
-        when (val appendState = lazyPagingItems.loadState.append) {
+        when (lazyPagingItems.loadState.append) {
             is LoadState.Error -> {
                 item {
                     ErrorRetryItem(
                         message = stringResource(R.string.error_loading_more_movies),
-                        onRetry = { lazyPagingItems.retry() },
+                        onRetry = lazyPagingItems::retry,
                     )
                 }
             }
 
             LoadState.Loading -> {
                 item {
-                    RowMovieShimmerItem(modifier = Modifier.width(HomeMovieCardWidth))
+                    RowMovieShimmerItem(
+                        modifier = Modifier.width(HomeMovieCardWidth),
+                    )
                 }
             }
 

@@ -90,7 +90,7 @@ fun PosterMovieItem(
             ) {
                 Text(
                     text = movie.title,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     minLines = 2,
                     maxLines = 2,
@@ -149,6 +149,14 @@ fun CompactMovieItem(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
+
+                Text(
+                    text = movie.overview,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 MovieMetadata(movie)
             }
 
@@ -176,12 +184,16 @@ private fun MovieMetadata(movie: Movie) {
         movie.releaseDate.take(4).takeIf { it.length == 4 }?.let {
             Text(
                 text = it,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.secondary,
             )
         }
         if (movie.voteAverage > 0) {
-            MovieRating(movie.voteAverage)
+            MovieRating(
+                value = movie.voteAverage,
+                iconSize = 14.dp,
+                textStyle = MaterialTheme.typography.labelMedium,
+            )
         }
     }
 }
@@ -210,7 +222,7 @@ internal fun previewMovie() =
         voteAverage = 7.3,
         releaseDate = "2025-12-20",
         isFavorite = true,
-        overview = "Test",
+        overview = "Test, \n test \n test",
         backdropPath = "",
         webUrl = "",
         genreIds = emptyList(),

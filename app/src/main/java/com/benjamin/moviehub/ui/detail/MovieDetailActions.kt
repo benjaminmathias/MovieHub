@@ -134,7 +134,18 @@ private fun LibraryAction(
     modifier: Modifier = Modifier,
     iconModifier: Modifier = Modifier,
 ) {
-    val contentColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    val iconColor =
+        if (selected) {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
+    val labelColor =
+        if (selected) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
     val indicatorColor by animateColorAsState(
         targetValue = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
         label = "libraryActionIndicator",
@@ -162,14 +173,14 @@ private fun LibraryAction(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = contentColor,
+                tint = iconColor,
                 modifier = iconModifier.size(20.dp),
             )
         }
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            color = contentColor,
+            color = labelColor,
             maxLines = 1,
         )
     }

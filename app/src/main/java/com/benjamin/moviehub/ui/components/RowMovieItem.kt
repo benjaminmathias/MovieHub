@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -46,7 +47,11 @@ fun RowMovieItem(
 ) {
     val favoriteStateDescription =
         stringResource(
-            if (movie.isFavorite) R.string.favorite_state else R.string.not_favorite_state,
+            if (movie.isFavorite) {
+                R.string.favorite_state
+            } else {
+                R.string.not_favorite_state
+            },
         )
 
     Card(
@@ -58,32 +63,61 @@ fun RowMovieItem(
                     stateDescription = favoriteStateDescription
                 },
         shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            ),
     ) {
         Column {
-            Box(modifier = Modifier.fillMaxWidth().aspectRatio(PosterAspectRatio)) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(PosterAspectRatio),
+            ) {
                 MoviePosterArtwork(
-                    model = (movie.posterPathSmall?.takeIf(String::isNotBlank) ?: movie.posterPath),
+                    model =
+                        movie.posterPathSmall
+                            ?.takeIf(String::isNotBlank)
+                            ?: movie.posterPath,
                     modifier = Modifier.matchParentSize(),
                 )
 
                 IconButton(
-                    onClick = { onToggleFavorite(movie, !movie.isFavorite) },
-                    modifier = Modifier.align(Alignment.TopEnd).padding(2.dp),
+                    onClick = {
+                        onToggleFavorite(movie, !movie.isFavorite)
+                    },
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(2.dp),
                 ) {
                     Box(
                         modifier =
                             Modifier
                                 .size(30.dp)
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.65f)),
+                                .background(
+                                    MaterialTheme.colorScheme.surface.copy(
+                                        alpha = 0.65f,
+                                    ),
+                                ),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
-                            imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            imageVector =
+                                if (movie.isFavorite) {
+                                    Icons.Filled.Favorite
+                                } else {
+                                    Icons.Outlined.FavoriteBorder
+                                },
                             contentDescription =
                                 stringResource(
-                                    if (movie.isFavorite) R.string.remove_favorite else R.string.favorite,
+                                    if (movie.isFavorite) {
+                                        R.string.remove_favorite
+                                    } else {
+                                        R.string.favorite
+                                    },
                                 ),
                             tint =
                                 if (movie.isFavorite) {
@@ -98,12 +132,15 @@ fun RowMovieItem(
             }
 
             Column(
-                modifier = Modifier.fillMaxWidth().padding(10.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
                     text = movie.title,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     minLines = 2,
@@ -112,17 +149,25 @@ fun RowMovieItem(
                 )
 
                 Row(
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 18.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 18.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    movie.releaseDate.take(4).takeIf { it.length == 4 }?.let { year ->
-                        Text(
-                            text = year,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.secondary,
-                        )
-                    }
-                    Box(modifier = Modifier.weight(1f))
+                    movie.releaseDate
+                        .take(4)
+                        .takeIf { it.length == 4 }
+                        ?.let { year ->
+                            Text(
+                                text = year,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.secondary,
+                            )
+                        }
+
+                    Spacer(modifier = Modifier.weight(1f))
+
                     if (movie.voteAverage > 0) {
                         MovieRating(
                             value = movie.voteAverage,
@@ -130,17 +175,6 @@ fun RowMovieItem(
                             textStyle = MaterialTheme.typography.labelMedium,
                         )
                     }
-                }
-
-                val genres = movie.genres.take(2).joinToString(" • ")
-                if (genres.isNotBlank()) {
-                    Text(
-                        text = genres,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.secondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
                 }
             }
         }
