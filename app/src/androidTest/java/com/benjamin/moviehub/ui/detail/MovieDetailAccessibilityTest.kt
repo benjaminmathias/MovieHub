@@ -224,10 +224,12 @@ class MovieDetailAccessibilityTest {
             }
         }
 
-        composeRule.onNodeWithContentDescription("Retour")
+        composeRule
+            .onNodeWithContentDescription("Retour")
             .assertHasClickAction()
             .assertHeightIsAtLeast(48.dp)
-        composeRule.onNodeWithContentDescription("Partager")
+        composeRule
+            .onNodeWithContentDescription("Partager")
             .assertHasClickAction()
             .assertHeightIsAtLeast(48.dp)
     }

@@ -57,8 +57,8 @@ class MovieRemoteMediator(
         page: Int,
         pageSize: Int,
         clearCategory: Boolean,
-    ): MediatorResult {
-        return try {
+    ): MediatorResult =
+        try {
             val response = fetchPage(page)
 
             val movies = response.movies
@@ -94,7 +94,6 @@ class MovieRemoteMediator(
         } catch (e: Exception) {
             MediatorResult.Error(e)
         }
-    }
 
     private suspend fun fetchPage(page: Int): MovieResponse =
         when (category) {

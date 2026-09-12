@@ -10,18 +10,16 @@ import com.benjamin.moviehub.data.local.MovieDatabase
 import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.remote.FakeMovieApiService
 import com.benjamin.moviehub.data.repository.MovieRepositoryImpl
-import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.discover.DiscoverViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
-import java.util.concurrent.atomic.AtomicInteger
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -29,6 +27,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.atomic.AtomicInteger
 
 @RunWith(AndroidJUnit4::class)
 class DiscoverFavoritePagingTest {
@@ -92,11 +91,11 @@ class DiscoverFavoritePagingTest {
     ): List<Movie> {
         val items =
             withTimeoutOrNull(10_000) {
-            while (!condition(differ.snapshot().filterNotNull())) {
-                delay(20)
+                while (!condition(differ.snapshot().filterNotNull())) {
+                    delay(20)
+                }
+                differ.snapshot().filterNotNull()
             }
-            differ.snapshot().filterNotNull()
-        }
         return items ?: error("Timed out waiting for paging items: ${differ.snapshot().filterNotNull()}")
     }
 
@@ -143,15 +142,14 @@ class DiscoverFavoritePagingTest {
     private fun movieEntity(
         id: Int,
         isFavorite: Boolean = false,
-    ) =
-        MovieEntity(
-            id = id,
-            title = "Movie $id",
-            overview = "Overview",
-            posterPath = null,
-            backdropPath = null,
-            voteAverage = 7.0,
-            releaseDate = "2020-01-01",
-            isFavorite = isFavorite,
-        )
+    ) = MovieEntity(
+        id = id,
+        title = "Movie $id",
+        overview = "Overview",
+        posterPath = null,
+        backdropPath = null,
+        voteAverage = 7.0,
+        releaseDate = "2020-01-01",
+        isFavorite = isFavorite,
+    )
 }

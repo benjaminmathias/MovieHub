@@ -84,14 +84,21 @@ internal fun MovieDetailActions(
                     onClick = toggle,
                     modifier = Modifier.weight(1f),
                     testTag = "detail_favorite",
-                    iconModifier = Modifier.graphicsLayer { scaleX = favoriteScale; scaleY = favoriteScale },
+                    iconModifier =
+                        Modifier.graphicsLayer {
+                            scaleX = favoriteScale
+                            scaleY = favoriteScale
+                        },
                 )
             }
             onToggleWatchlist?.let { toggle ->
                 LibraryAction(
                     selected = movie.isWatchlist,
                     label = stringResource(R.string.watchlist_short),
-                    contentDescription = stringResource(if (movie.isWatchlist) R.string.remove_watchlist_accessibility else R.string.add_watchlist_accessibility),
+                    contentDescription =
+                        stringResource(
+                            if (movie.isWatchlist) R.string.remove_watchlist_accessibility else R.string.add_watchlist_accessibility,
+                        ),
                     icon = if (movie.isWatchlist) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
                     onClick = toggle,
                     modifier = Modifier.weight(1f),
@@ -102,7 +109,10 @@ internal fun MovieDetailActions(
                 LibraryAction(
                     selected = movie.isWatched,
                     label = stringResource(R.string.watched_short),
-                    contentDescription = stringResource(if (movie.isWatched) R.string.mark_unwatched_accessibility else R.string.mark_watched_accessibility),
+                    contentDescription =
+                        stringResource(
+                            if (movie.isWatched) R.string.mark_unwatched_accessibility else R.string.mark_watched_accessibility,
+                        ),
                     icon = if (movie.isWatched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircleOutline,
                     onClick = toggle,
                     modifier = Modifier.weight(1f),
@@ -158,8 +168,7 @@ private fun LibraryAction(
                     value = selected,
                     role = Role.Checkbox,
                     onValueChange = { onClick() },
-                )
-                .testTag(testTag)
+                ).testTag(testTag)
                 .semantics(mergeDescendants = true) {
                     this.contentDescription = contentDescription
                 },

@@ -1,18 +1,18 @@
 package com.benjamin.moviehub.ui.library
 
-import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.domain.model.Movie
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import org.junit.Assert.assertTrue
 
 class LibraryScreenTest {
     @get:Rule
@@ -104,7 +104,12 @@ class LibraryScreenTest {
         assertTrue(actions.any { it.label == "Retirer de la liste À voir" })
     }
 
-    private fun movie(id: Int, title: String, favorite: Boolean = false, watchlist: Boolean = false) = Movie(
+    private fun movie(
+        id: Int,
+        title: String,
+        favorite: Boolean = false,
+        watchlist: Boolean = false,
+    ) = Movie(
         id = id,
         title = title,
         overview = "",

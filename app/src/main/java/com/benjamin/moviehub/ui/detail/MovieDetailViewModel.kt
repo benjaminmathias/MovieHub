@@ -11,8 +11,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,78 +44,80 @@ class MovieDetailViewModel
 
             loadJob?.cancel()
             libraryJob?.cancel()
-            loadJob = viewModelScope.launch {
-                _uiState.value = MovieDetailUiState.Loading
+            loadJob =
+                viewModelScope.launch {
+                    _uiState.value = MovieDetailUiState.Loading
 
-                try {
-                    coroutineScope {
-                        var latestLibraryById = emptyMap<Int, com.benjamin.moviehub.domain.model.Movie>()
-                        val creditsDeferred = async { loadCredits(movieId) }
-                        val recommendationsDeferred = async { loadRecommendations(movieId) }
-                        // A main failure throws out of the scope and cancels both async children.
-                        val movie = repository.getMovieDetails(movieId)
+                    try {
+                        coroutineScope {
+                            var latestLibraryById = emptyMap<Int, com.benjamin.moviehub.domain.model.Movie>()
+                            val creditsDeferred = async { loadCredits(movieId) }
+                            val recommendationsDeferred = async { loadRecommendations(movieId) }
+                            // A main failure throws out of the scope and cancels both async children.
+                            val movie = repository.getMovieDetails(movieId)
 
-                        _uiState.value = MovieDetailUiState.Success(movie, MovieCredits())
-                        libraryJob = viewModelScope.launch {
-                            repository.getLibraryMovies().collectLatest { localMovies ->
-                                val localById = localMovies.associateBy { it.id }
-                                latestLibraryById = localById
-                                updateSuccess(movieId) { latest ->
-                                    val localMovie = localById[movieId]
-                                    val updatedMovie =
-                                        latest.movie.copy(
-                                            isFavorite = localMovie?.isFavorite ?: false,
-                                            isWatchlist = localMovie?.isWatchlist ?: false,
-                                            isWatched = localMovie?.isWatched ?: false,
-                                        )
-                                    val updatedRecommendations =
-                                        (latest.recommendations as? MovieRecommendationsUiState.Success)?.let { recommendations ->
-                                            MovieRecommendationsUiState.Success(
-                                                recommendations.movies.map { recommendation ->
-                                                    localById[recommendation.id]?.let { local ->
-                                                        recommendation.copy(
-                                                            isFavorite = local.isFavorite,
-                                                            isWatchlist = local.isWatchlist,
-                                                            isWatched = local.isWatched,
-                                                        )
-                                                    } ?: recommendation.copy(
-                                                        isFavorite = false,
-                                                        isWatchlist = false,
-                                                        isWatched = false,
+                            _uiState.value = MovieDetailUiState.Success(movie, MovieCredits())
+                            libraryJob =
+                                viewModelScope.launch {
+                                    repository.getLibraryMovies().collectLatest { localMovies ->
+                                        val localById = localMovies.associateBy { it.id }
+                                        latestLibraryById = localById
+                                        updateSuccess(movieId) { latest ->
+                                            val localMovie = localById[movieId]
+                                            val updatedMovie =
+                                                latest.movie.copy(
+                                                    isFavorite = localMovie?.isFavorite ?: false,
+                                                    isWatchlist = localMovie?.isWatchlist ?: false,
+                                                    isWatched = localMovie?.isWatched ?: false,
+                                                )
+                                            val updatedRecommendations =
+                                                (latest.recommendations as? MovieRecommendationsUiState.Success)?.let { recommendations ->
+                                                    MovieRecommendationsUiState.Success(
+                                                        recommendations.movies.map { recommendation ->
+                                                            localById[recommendation.id]?.let { local ->
+                                                                recommendation.copy(
+                                                                    isFavorite = local.isFavorite,
+                                                                    isWatchlist = local.isWatchlist,
+                                                                    isWatched = local.isWatched,
+                                                                )
+                                                            } ?: recommendation.copy(
+                                                                isFavorite = false,
+                                                                isWatchlist = false,
+                                                                isWatched = false,
+                                                            )
+                                                        },
                                                     )
-                                                },
-                                            )
-                                        } ?: latest.recommendations
-                                    latest.copy(movie = updatedMovie, recommendations = updatedRecommendations)
+                                                } ?: latest.recommendations
+                                            latest.copy(movie = updatedMovie, recommendations = updatedRecommendations)
+                                        }
+                                    }
                                 }
-                            }
+                            val credits = creditsDeferred.await()
+                            updateSuccess(movieId) { it.copy(credits = credits) }
+                            val recommendations = recommendationsDeferred.await()
+                            val syncedRecommendations =
+                                (recommendations as? MovieRecommendationsUiState.Success)?.let { success ->
+                                    MovieRecommendationsUiState.Success(
+                                        success.movies.map { recommendation ->
+                                            latestLibraryById[recommendation.id]?.let { local ->
+                                                recommendation.copy(
+                                                    isFavorite = local.isFavorite,
+                                                    isWatchlist = local.isWatchlist,
+                                                    isWatched = local.isWatched,
+                                                )
+                                            } ?: recommendation
+                                        },
+                                    )
+                                } ?: recommendations
+                            updateSuccess(movieId) { it.copy(recommendations = syncedRecommendations) }
                         }
-                        val credits = creditsDeferred.await()
-                        updateSuccess(movieId) { it.copy(credits = credits) }
-                        val recommendations = recommendationsDeferred.await()
-                        val syncedRecommendations =
-                            (recommendations as? MovieRecommendationsUiState.Success)?.let { success ->
-                                MovieRecommendationsUiState.Success(
-                                    success.movies.map { recommendation ->
-                                        latestLibraryById[recommendation.id]?.let { local ->
-                                            recommendation.copy(
-                                                isFavorite = local.isFavorite,
-                                                isWatchlist = local.isWatchlist,
-                                                isWatched = local.isWatched,
-                                            )
-                                        } ?: recommendation
-                                    },
-                                )
-                            } ?: recommendations
-                        updateSuccess(movieId) { it.copy(recommendations = syncedRecommendations) }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        _uiState.value =
+                            MovieDetailUiState.Error(R.string.error_loading_movie_detail)
                     }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    _uiState.value =
-                        MovieDetailUiState.Error(R.string.error_loading_movie_detail)
                 }
-            }
         }
 
         fun toggleFavorite() {

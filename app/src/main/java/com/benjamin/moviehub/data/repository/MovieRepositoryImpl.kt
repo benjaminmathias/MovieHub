@@ -21,13 +21,13 @@ import com.benjamin.moviehub.domain.model.MovieCategory
 import com.benjamin.moviehub.domain.model.MovieGenre
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.coroutineScope
-import java.io.IOException
 import retrofit2.HttpException
+import java.io.IOException
 import javax.inject.Inject
 
 class MovieRepositoryImpl
@@ -56,32 +56,33 @@ class MovieRepositoryImpl
             ).flow.map { pagingData -> pagingData.map { entity -> entity.toDomain() } }
         }
 
-        override fun getDiscoverMovies(filters: DiscoverFilters): Flow<PagingData<Movie>> = flow {
-            coroutineScope {
-                // Scope the cache to each collection so a Room refresh can safely
-                // re-emit the same PagingData instance without double collection.
-                val pagerFlow =
-                    Pager(
-                        config = moviePagingConfig,
-                        pagingSourceFactory = { DiscoverMoviePagingSource(apiService, filters) },
-                    ).flow.cachedIn(this)
-                combine(
-                    pagerFlow,
-                    movieDao.getLibraryMoviesFlow(),
-                ) { pagingData, libraryMovies ->
-                    val localById = libraryMovies.associateBy { it.id }
-                    pagingData.map { movie ->
-                        localById[movie.id]?.let { local ->
-                            movie.copy(
-                                isFavorite = local.isFavorite,
-                                isWatchlist = local.isWatchlist,
-                                isWatched = local.isWatched,
-                            )
-                        } ?: movie
-                    }
-                }.collect(::emit)
+        override fun getDiscoverMovies(filters: DiscoverFilters): Flow<PagingData<Movie>> =
+            flow {
+                coroutineScope {
+                    // Scope the cache to each collection so a Room refresh can safely
+                    // re-emit the same PagingData instance without double collection.
+                    val pagerFlow =
+                        Pager(
+                            config = moviePagingConfig,
+                            pagingSourceFactory = { DiscoverMoviePagingSource(apiService, filters) },
+                        ).flow.cachedIn(this)
+                    combine(
+                        pagerFlow,
+                        movieDao.getLibraryMoviesFlow(),
+                    ) { pagingData, libraryMovies ->
+                        val localById = libraryMovies.associateBy { it.id }
+                        pagingData.map { movie ->
+                            localById[movie.id]?.let { local ->
+                                movie.copy(
+                                    isFavorite = local.isFavorite,
+                                    isWatchlist = local.isWatchlist,
+                                    isWatched = local.isWatched,
+                                )
+                            } ?: movie
+                        }
+                    }.collect(::emit)
+                }
             }
-        }
 
         override suspend fun getMovieGenres(): List<MovieGenre> =
             apiService
@@ -98,8 +99,8 @@ class MovieRepositoryImpl
                 .getHeroMovieFlow(category.key)
                 .map { entity -> entity?.toDomain() }
 
-        override suspend fun getMovieDetails(movieId: Int): Movie {
-            return try {
+        override suspend fun getMovieDetails(movieId: Int): Movie =
+            try {
                 val dto = apiService.getMovieDetails(movieId = movieId)
 
                 val remoteMovieEntity = dto.toEntity()
@@ -117,25 +118,32 @@ class MovieRepositoryImpl
                     throw e
                 }
             }
-        }
 
-        override suspend fun setFavorite(movie: Movie, isFavorite: Boolean) {
+        override suspend fun setFavorite(
+            movie: Movie,
+            isFavorite: Boolean,
+        ) {
             movieDao.setFavorite(movie.toEntity(isFavorite = isFavorite), isFavorite)
         }
 
-        override suspend fun setWatchlist(movie: Movie, isWatchlist: Boolean) {
+        override suspend fun setWatchlist(
+            movie: Movie,
+            isWatchlist: Boolean,
+        ) {
             movieDao.setWatchlist(movie.toEntity(), isWatchlist)
         }
 
-        override suspend fun setWatched(movie: Movie, isWatched: Boolean) {
+        override suspend fun setWatched(
+            movie: Movie,
+            isWatched: Boolean,
+        ) {
             movieDao.setWatched(movie.toEntity(), isWatched)
         }
 
         override fun getLibraryMovies(): Flow<List<Movie>> =
             movieDao.getLibraryMoviesFlow().map { entities -> entities.map { it.toDomain() } }
 
-        override suspend fun getMovieCredits(movieId: Int) =
-            apiService.getMovieCredits(movieId).toDomain()
+        override suspend fun getMovieCredits(movieId: Int) = apiService.getMovieCredits(movieId).toDomain()
 
         override suspend fun getMovieRecommendations(movieId: Int): List<Movie> =
             apiService.getMovieRecommendations(movieId).movies.let { dtos ->

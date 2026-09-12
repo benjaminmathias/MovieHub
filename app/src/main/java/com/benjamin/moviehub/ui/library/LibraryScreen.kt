@@ -70,7 +70,11 @@ fun LibraryScreen(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 },
-                actions = { IconButton(onClick = onSettingsClick) { Icon(Icons.Default.Settings, stringResource(R.string.settings_title)) } },
+                actions = {
+                    IconButton(
+                        onClick = onSettingsClick,
+                    ) { Icon(Icons.Default.Settings, stringResource(R.string.settings_title)) }
+                },
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
@@ -90,13 +94,14 @@ fun LibraryScreen(
             when (state) {
                 LibraryUiState.Loading -> Column(Modifier.verticalScroll(rememberScrollState())) { repeat(5) { CompactMovieShimmerItem() } }
                 is LibraryUiState.Success -> {
-                    val movies = state.movies.filter {
-                        when (selected) {
-                            LibraryTab.WATCHLIST -> it.isWatchlist
-                            LibraryTab.FAVORITES -> it.isFavorite
-                            LibraryTab.WATCHED -> it.isWatched
+                    val movies =
+                        state.movies.filter {
+                            when (selected) {
+                                LibraryTab.WATCHLIST -> it.isWatchlist
+                                LibraryTab.FAVORITES -> it.isFavorite
+                                LibraryTab.WATCHED -> it.isWatched
+                            }
                         }
-                    }
                     if (movies.isEmpty()) {
                         EmptyStateView(message = stringResource(selected.emptyLabel()), icon = selected.emptyIcon())
                     } else {
@@ -125,16 +130,37 @@ fun LibraryScreen(
     }
 }
 
-private fun LibraryTab.label() = when (this) { LibraryTab.WATCHLIST -> R.string.watchlist_tab; LibraryTab.FAVORITES -> R.string.favorite_tab; LibraryTab.WATCHED -> R.string.watched_tab }
-private fun LibraryTab.emptyLabel() = when (this) { LibraryTab.WATCHLIST -> R.string.no_watchlist_added; LibraryTab.FAVORITES -> R.string.no_favorite_added; LibraryTab.WATCHED -> R.string.no_watched_added }
-private fun LibraryTab.removeLabel() = when (this) { LibraryTab.WATCHLIST -> R.string.remove_watchlist_accessibility; LibraryTab.FAVORITES -> R.string.remove_favorite_accessibility; LibraryTab.WATCHED -> R.string.remove_watched_accessibility }
-private fun LibraryTab.emptyIcon() = when (this) {
-    LibraryTab.WATCHLIST -> Icons.Outlined.BookmarkBorder
-    LibraryTab.FAVORITES -> Icons.Outlined.FavoriteBorder
-    LibraryTab.WATCHED -> Icons.Filled.CheckCircleOutline
-}
-private fun LibraryTab.removeIcon() = when (this) {
-    LibraryTab.WATCHLIST -> Icons.Filled.BookmarkRemove
-    LibraryTab.FAVORITES -> Icons.Filled.HeartBroken
-    LibraryTab.WATCHED -> Icons.Filled.VisibilityOff
-}
+private fun LibraryTab.label() =
+    when (this) {
+        LibraryTab.WATCHLIST -> R.string.watchlist_tab
+        LibraryTab.FAVORITES -> R.string.favorite_tab
+        LibraryTab.WATCHED -> R.string.watched_tab
+    }
+
+private fun LibraryTab.emptyLabel() =
+    when (this) {
+        LibraryTab.WATCHLIST -> R.string.no_watchlist_added
+        LibraryTab.FAVORITES -> R.string.no_favorite_added
+        LibraryTab.WATCHED -> R.string.no_watched_added
+    }
+
+private fun LibraryTab.removeLabel() =
+    when (this) {
+        LibraryTab.WATCHLIST -> R.string.remove_watchlist_accessibility
+        LibraryTab.FAVORITES -> R.string.remove_favorite_accessibility
+        LibraryTab.WATCHED -> R.string.remove_watched_accessibility
+    }
+
+private fun LibraryTab.emptyIcon() =
+    when (this) {
+        LibraryTab.WATCHLIST -> Icons.Outlined.BookmarkBorder
+        LibraryTab.FAVORITES -> Icons.Outlined.FavoriteBorder
+        LibraryTab.WATCHED -> Icons.Filled.CheckCircleOutline
+    }
+
+private fun LibraryTab.removeIcon() =
+    when (this) {
+        LibraryTab.WATCHLIST -> Icons.Filled.BookmarkRemove
+        LibraryTab.FAVORITES -> Icons.Filled.HeartBroken
+        LibraryTab.WATCHED -> Icons.Filled.VisibilityOff
+    }

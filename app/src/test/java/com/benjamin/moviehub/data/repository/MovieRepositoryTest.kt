@@ -92,19 +92,20 @@ class MovieRepositoryTest {
             val database = mockk<MovieDatabase>()
             val dao = mockk<MovieDao>()
             val repository = MovieRepositoryImpl(apiService, database, dao)
-            val movie = Movie(
-                id = 8,
-                title = "Movie",
-                overview = "",
-                posterPath = null,
-                backdropPath = null,
-                voteAverage = 0.0,
-                releaseDate = "",
-                webUrl = null,
-                isFavorite = false,
-                genreIds = emptyList(),
-                genres = emptyList(),
-            )
+            val movie =
+                Movie(
+                    id = 8,
+                    title = "Movie",
+                    overview = "",
+                    posterPath = null,
+                    backdropPath = null,
+                    voteAverage = 0.0,
+                    releaseDate = "",
+                    webUrl = null,
+                    isFavorite = false,
+                    genreIds = emptyList(),
+                    genres = emptyList(),
+                )
             coEvery { dao.setWatchlist(any(), true) } just runs
             coEvery { dao.setWatched(any(), true) } just runs
 
@@ -137,20 +138,21 @@ class MovieRepositoryTest {
                             ),
                         ),
                 )
-            coEvery { dao.getMoviesByIds(any()) } returns listOf(
-                MovieEntity(
-                    id = 9,
-                    title = "Cached",
-                    overview = "",
-                    posterPath = null,
-                    backdropPath = null,
-                    voteAverage = 1.0,
-                    releaseDate = "",
-                    isFavorite = true,
-                    isWatchlist = true,
-                    isWatched = true,
-                ),
-            )
+            coEvery { dao.getMoviesByIds(any()) } returns
+                listOf(
+                    MovieEntity(
+                        id = 9,
+                        title = "Cached",
+                        overview = "",
+                        posterPath = null,
+                        backdropPath = null,
+                        voteAverage = 1.0,
+                        releaseDate = "",
+                        isFavorite = true,
+                        isWatchlist = true,
+                        isWatched = true,
+                    ),
+                )
 
             val result = repository.getMovieRecommendations(9)
 

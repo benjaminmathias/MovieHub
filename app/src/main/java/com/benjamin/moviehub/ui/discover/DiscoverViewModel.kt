@@ -14,7 +14,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -48,8 +47,7 @@ class DiscoverViewModel
                 .distinctUntilChanged()
                 .flatMapLatest { filters ->
                     repository.getDiscoverMovies(filters).cachedIn(viewModelScope)
-                }
-                .cachedIn(viewModelScope)
+                }.cachedIn(viewModelScope)
 
         init {
             loadGenres()

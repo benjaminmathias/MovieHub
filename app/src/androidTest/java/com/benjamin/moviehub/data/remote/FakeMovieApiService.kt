@@ -90,8 +90,7 @@ class FakeMovieApiService(
 
     override suspend fun getMovieCredits(movieId: Int): MovieCreditsDto = credits[movieId] ?: MovieCreditsDto()
 
-    override suspend fun getMovieRecommendations(movieId: Int): MovieResponse =
-        MovieResponse(recommendations[movieId].orEmpty())
+    override suspend fun getMovieRecommendations(movieId: Int): MovieResponse = MovieResponse(recommendations[movieId].orEmpty())
 
     private fun failIfRequested() {
         if (failRequests) throw IOException("Fake network failure")

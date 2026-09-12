@@ -258,7 +258,8 @@ class MovieRoomPagingTest {
             assertEquals(listOf(3), dao.getCategoryMovieIds(MovieCategory.UPCOMING.key))
 
             val page =
-                dao.getCategoryMoviesPaging(MovieCategory.POPULAR.key)
+                dao
+                    .getCategoryMoviesPaging(MovieCategory.POPULAR.key)
                     .load(LoadParams.Refresh(key = null, loadSize = 10, placeholdersEnabled = false)) as LoadResult.Page
             assertEquals(listOf(2, 1), page.data.map { it.id })
         }

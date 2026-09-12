@@ -12,13 +12,13 @@ import com.benjamin.moviehub.domain.model.DiscoverSortOption
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.IOException
 
 class DiscoverMoviePagingSourceTest {
     @Test

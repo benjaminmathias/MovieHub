@@ -73,7 +73,7 @@ class NetworkConnectivityObserver
                 val request =
                     NetworkRequest
                         .Builder()
-                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                         .build()
 
                 connectivityManager.registerNetworkCallback(request, callback)

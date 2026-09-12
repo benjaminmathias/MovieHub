@@ -39,7 +39,16 @@ internal fun LibraryMovieItem(
     }
     SwipeToDismissBox(
         state = dismissState,
-        modifier = modifier.fillMaxWidth().semantics { customActions = listOf(CustomAccessibilityAction(removeLabel) { onRemove(movie); true }) },
+        modifier =
+            modifier.fillMaxWidth().semantics {
+                customActions =
+                    listOf(
+                        CustomAccessibilityAction(removeLabel) {
+                            onRemove(movie)
+                            true
+                        },
+                    )
+            },
         enableDismissFromStartToEnd = false,
         backgroundContent = {
             if (dismissState.currentValue != SwipeToDismissBoxValue.Settled || dismissState.targetValue != SwipeToDismissBoxValue.Settled) {

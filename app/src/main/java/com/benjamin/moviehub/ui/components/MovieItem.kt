@@ -24,8 +24,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewFontScale
 import androidx.compose.ui.tooling.preview.PreviewLightDark
@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.theme.ContentHorizontalPadding
 import com.benjamin.moviehub.core.theme.MovieHubTheme
-import com.benjamin.moviehub.core.theme.PosterAspectRatio
+import com.benjamin.moviehub.core.theme.POSTER_ASPECT_RATIO
 import com.benjamin.moviehub.domain.model.Movie
 
 @Composable
@@ -61,7 +61,7 @@ fun PosterMovieItem(
     ) {
         Column {
             Box(
-                modifier = Modifier.fillMaxWidth().aspectRatio(PosterAspectRatio),
+                modifier = Modifier.fillMaxWidth().aspectRatio(POSTER_ASPECT_RATIO),
             ) {
                 MoviePosterArtwork(
                     model = movie.posterPath,

@@ -30,11 +30,20 @@ interface MovieRepository {
     /** Fetch the movie from the API, preserving local library flags and runtime when cached. */
     suspend fun getMovieDetails(movieId: Int): Movie
 
-    suspend fun setFavorite(movie: Movie, isFavorite: Boolean)
+    suspend fun setFavorite(
+        movie: Movie,
+        isFavorite: Boolean,
+    )
 
-    suspend fun setWatchlist(movie: Movie, isWatchlist: Boolean)
+    suspend fun setWatchlist(
+        movie: Movie,
+        isWatchlist: Boolean,
+    )
 
-    suspend fun setWatched(movie: Movie, isWatched: Boolean)
+    suspend fun setWatched(
+        movie: Movie,
+        isWatched: Boolean,
+    )
 
     fun getLibraryMovies(): Flow<List<Movie>>
 

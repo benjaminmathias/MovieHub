@@ -49,16 +49,17 @@ fun MovieDetailScreen(
     val listState = rememberLazyListState()
     val density = LocalDensity.current
     // 0f (sur le hero) -> 1f (contenu scrollé) : évite le flash opaque dès 1px scrollé.
-    val toolbarProgress = remember(density) {
-        derivedStateOf {
-            if (listState.firstVisibleItemIndex > 0) {
-                1f
-            } else {
-                val maxOffset = with(density) { 180.dp.toPx() }.coerceAtLeast(1f)
-                (listState.firstVisibleItemScrollOffset / maxOffset).coerceIn(0f, 1f)
+    val toolbarProgress =
+        remember(density) {
+            derivedStateOf {
+                if (listState.firstVisibleItemIndex > 0) {
+                    1f
+                } else {
+                    val maxOffset = with(density) { 180.dp.toPx() }.coerceAtLeast(1f)
+                    (listState.firstVisibleItemScrollOffset / maxOffset).coerceIn(0f, 1f)
+                }
             }
         }
-    }
     val toolbarVisible by remember {
         derivedStateOf { toolbarProgress.value > 0.7f }
     }

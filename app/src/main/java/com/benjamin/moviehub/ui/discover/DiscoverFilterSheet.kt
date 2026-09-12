@@ -17,7 +17,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SelectableChipColors
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -64,7 +63,12 @@ internal fun DiscoverFilterSheet(
         mutableStateOf(filters.releaseYear != null && filters.releaseYear !in recentYears)
     }
     var customYearText by rememberSaveable {
-        mutableStateOf(filters.releaseYear?.takeIf { it !in recentYears }?.toString().orEmpty())
+        mutableStateOf(
+            filters.releaseYear
+                ?.takeIf { it !in recentYears }
+                ?.toString()
+                .orEmpty(),
+        )
     }
     val customYearInvalid = customYearIsInvalid(customYearMode, customYearText, currentYear)
     val canApply = !customYearInvalid && filters != state.appliedFilters

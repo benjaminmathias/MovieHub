@@ -6,8 +6,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHeightIsAtLeast
-import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -18,9 +18,9 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.unit.dp
+import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
-import androidx.paging.Pager
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.benjamin.moviehub.core.theme.MovieHubTheme
@@ -29,11 +29,11 @@ import com.benjamin.moviehub.domain.model.DiscoverSortOption
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieGenre
 import kotlinx.coroutines.flow.flowOf
-import java.util.Calendar
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import java.util.Calendar
 
 class DiscoverScreenTest {
     @get:Rule
@@ -340,10 +340,23 @@ class DiscoverScreenTest {
 
     @Test
     fun resetRestoresDefaultsAndClosesSheet() {
-        var state = initialState().copy(
-            draftFilters = DiscoverFilters(genreId = 28, releaseYear = 2020, minimumVoteAverage = 8.0, sort = DiscoverSortOption.RATING),
-            appliedFilters = DiscoverFilters(genreId = 28, releaseYear = 2020, minimumVoteAverage = 8.0, sort = DiscoverSortOption.RATING),
-        )
+        var state =
+            initialState().copy(
+                draftFilters =
+                    DiscoverFilters(
+                        genreId = 28,
+                        releaseYear = 2020,
+                        minimumVoteAverage = 8.0,
+                        sort = DiscoverSortOption.RATING,
+                    ),
+                appliedFilters =
+                    DiscoverFilters(
+                        genreId = 28,
+                        releaseYear = 2020,
+                        minimumVoteAverage = 8.0,
+                        sort = DiscoverSortOption.RATING,
+                    ),
+            )
         var resetCalled = false
 
         composeRule.setContent {
@@ -457,8 +470,7 @@ class DiscoverScreenTest {
         )
 
     private class ErrorPagingSource : PagingSource<Int, Movie>() {
-        override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Movie> =
-            LoadResult.Error(IllegalStateException("test error"))
+        override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Movie> = LoadResult.Error(IllegalStateException("test error"))
 
         override fun getRefreshKey(state: PagingState<Int, Movie>): Int? = null
     }

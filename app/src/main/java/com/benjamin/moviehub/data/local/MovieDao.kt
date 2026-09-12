@@ -40,7 +40,10 @@ interface MovieDao {
     }
 
     @Transaction
-    suspend fun setWatchlist(movie: MovieEntity, isWatchlist: Boolean) {
+    suspend fun setWatchlist(
+        movie: MovieEntity,
+        isWatchlist: Boolean,
+    ) {
         if (getMovieById(movie.id) == null) {
             insertMovie(
                 movie.copy(
@@ -59,7 +62,10 @@ interface MovieDao {
     }
 
     @Transaction
-    suspend fun setWatched(movie: MovieEntity, isWatched: Boolean) {
+    suspend fun setWatched(
+        movie: MovieEntity,
+        isWatched: Boolean,
+    ) {
         if (getMovieById(movie.id) == null) {
             insertMovie(
                 movie.copy(
@@ -144,17 +150,18 @@ interface MovieDao {
     suspend fun upsertMovies(movies: List<MovieEntity>) {
         if (movies.isEmpty()) return
         val localById = getMoviesByIds(movies.map { it.id }).associateBy { it.id }
-        val merged = movies.map { incoming ->
-            val local = localById[incoming.id]
-            val watched = local?.isWatched ?: incoming.isWatched
-            val watchlist = local?.isWatchlist ?: incoming.isWatchlist
-            incoming.copy(
-                isFavorite = local?.isFavorite ?: incoming.isFavorite,
-                isWatchlist = watchlist && !watched,
-                isWatched = watched,
-                runtimeMinutes = incoming.runtimeMinutes ?: local?.runtimeMinutes,
-            )
-        }
+        val merged =
+            movies.map { incoming ->
+                val local = localById[incoming.id]
+                val watched = local?.isWatched ?: incoming.isWatched
+                val watchlist = local?.isWatchlist ?: incoming.isWatchlist
+                incoming.copy(
+                    isFavorite = local?.isFavorite ?: incoming.isFavorite,
+                    isWatchlist = watchlist && !watched,
+                    isWatched = watched,
+                    runtimeMinutes = incoming.runtimeMinutes ?: local?.runtimeMinutes,
+                )
+            }
         upsertMoviesRaw(merged)
     }
 

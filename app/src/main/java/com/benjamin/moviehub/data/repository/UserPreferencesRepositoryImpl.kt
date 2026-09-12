@@ -32,8 +32,7 @@ class UserPreferencesRepositoryImpl
                     } else {
                         throw exception
                     }
-                }
-                .map { preferences ->
+                }.map { preferences ->
                     val themeName = preferences[themeKey] ?: AppTheme.SYSTEM.name
                     try {
                         AppTheme.valueOf(themeName)

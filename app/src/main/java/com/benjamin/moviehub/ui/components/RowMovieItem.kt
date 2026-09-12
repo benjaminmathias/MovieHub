@@ -34,8 +34,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
-import com.benjamin.moviehub.core.theme.PosterAspectRatio
 import com.benjamin.moviehub.core.theme.MovieHubTheme
+import com.benjamin.moviehub.core.theme.POSTER_ASPECT_RATIO
 import com.benjamin.moviehub.domain.model.Movie
 
 @Composable
@@ -73,7 +73,7 @@ fun RowMovieItem(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .aspectRatio(PosterAspectRatio),
+                        .aspectRatio(POSTER_ASPECT_RATIO),
             ) {
                 MoviePosterArtwork(
                     model =

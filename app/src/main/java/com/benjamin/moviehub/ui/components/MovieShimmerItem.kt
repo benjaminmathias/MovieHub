@@ -19,9 +19,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.valentinilk.shimmer.shimmer
 import com.benjamin.moviehub.core.theme.ContentHorizontalPadding
-import com.benjamin.moviehub.core.theme.PosterAspectRatio
+import com.benjamin.moviehub.core.theme.POSTER_ASPECT_RATIO
+import com.valentinilk.shimmer.shimmer
 
 @Composable
 fun PosterMovieShimmerItem(modifier: Modifier = Modifier) {
@@ -35,7 +35,7 @@ fun PosterMovieShimmerItem(modifier: Modifier = Modifier) {
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .aspectRatio(PosterAspectRatio)
+                        .aspectRatio(POSTER_ASPECT_RATIO)
                         .background(MaterialTheme.colorScheme.surfaceVariant),
             )
             Column(
@@ -118,7 +118,7 @@ fun RowMovieShimmerItem(modifier: Modifier = Modifier) {
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .aspectRatio(PosterAspectRatio)
+                        .aspectRatio(POSTER_ASPECT_RATIO)
                         .background(MaterialTheme.colorScheme.surfaceVariant),
             )
             Column(

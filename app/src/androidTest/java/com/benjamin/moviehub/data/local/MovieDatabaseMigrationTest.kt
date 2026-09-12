@@ -299,17 +299,29 @@ class MovieDatabaseMigrationTest {
                                         "`runtimeMinutes` INTEGER, PRIMARY KEY(`id`))",
                                 )
                                 db.execSQL("CREATE TABLE `remote_keys` (`type` TEXT NOT NULL, `nextKey` INTEGER, PRIMARY KEY(`type`))")
-                                db.execSQL("CREATE TABLE `movie_search_results` (`queryKey` TEXT NOT NULL, `movieId` INTEGER NOT NULL, `pageOrder` INTEGER NOT NULL, PRIMARY KEY(`queryKey`, `movieId`))")
-                                db.execSQL("CREATE TABLE `movie_categories` (`movieId` INTEGER NOT NULL, `category` TEXT NOT NULL, `pageOrder` INTEGER NOT NULL, PRIMARY KEY(`movieId`, `category`))")
-                                db.execSQL("CREATE INDEX `index_movie_categories_category_pageOrder` ON `movie_categories` (`category`, `pageOrder`)")
+                                db.execSQL(
+                                    "CREATE TABLE `movie_search_results` (`queryKey` TEXT NOT NULL, `movieId` INTEGER NOT NULL, `pageOrder` INTEGER NOT NULL, PRIMARY KEY(`queryKey`, `movieId`))",
+                                )
+                                db.execSQL(
+                                    "CREATE TABLE `movie_categories` (`movieId` INTEGER NOT NULL, `category` TEXT NOT NULL, `pageOrder` INTEGER NOT NULL, PRIMARY KEY(`movieId`, `category`))",
+                                )
+                                db.execSQL(
+                                    "CREATE INDEX `index_movie_categories_category_pageOrder` ON `movie_categories` (`category`, `pageOrder`)",
+                                )
                             }
 
-                            override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+                            override fun onUpgrade(
+                                db: SupportSQLiteDatabase,
+                                oldVersion: Int,
+                                newVersion: Int,
+                            ) = Unit
                         },
                     ).build(),
             )
         helper.writableDatabase.use { db ->
-            db.execSQL("INSERT INTO `movies` (`id`,`title`,`overview`,`voteAverage`,`releaseDate`,`genreIds`,`isFavorite`,`runtimeMinutes`) VALUES (1,'Kept','o',7.0,'2020-01-01','28',1,120)")
+            db.execSQL(
+                "INSERT INTO `movies` (`id`,`title`,`overview`,`voteAverage`,`releaseDate`,`genreIds`,`isFavorite`,`runtimeMinutes`) VALUES (1,'Kept','o',7.0,'2020-01-01','28',1,120)",
+            )
         }
         helper.close()
     }
@@ -331,18 +343,29 @@ class MovieDatabaseMigrationTest {
                                         "`isWatchlist` INTEGER NOT NULL, `isWatched` INTEGER NOT NULL, `runtimeMinutes` INTEGER, PRIMARY KEY(`id`))",
                                 )
                                 db.execSQL("CREATE TABLE `remote_keys` (`type` TEXT NOT NULL, `nextKey` INTEGER, PRIMARY KEY(`type`))")
-                                db.execSQL("CREATE TABLE `movie_search_results` (`queryKey` TEXT NOT NULL, `movieId` INTEGER NOT NULL, `pageOrder` INTEGER NOT NULL, PRIMARY KEY(`queryKey`, `movieId`))")
-                                db.execSQL("CREATE TABLE `movie_categories` (`movieId` INTEGER NOT NULL, `category` TEXT NOT NULL, `pageOrder` INTEGER NOT NULL, PRIMARY KEY(`movieId`, `category`))")
-                                db.execSQL("CREATE INDEX `index_movie_categories_category_pageOrder` ON `movie_categories` (`category`, `pageOrder`)")
+                                db.execSQL(
+                                    "CREATE TABLE `movie_search_results` (`queryKey` TEXT NOT NULL, `movieId` INTEGER NOT NULL, `pageOrder` INTEGER NOT NULL, PRIMARY KEY(`queryKey`, `movieId`))",
+                                )
+                                db.execSQL(
+                                    "CREATE TABLE `movie_categories` (`movieId` INTEGER NOT NULL, `category` TEXT NOT NULL, `pageOrder` INTEGER NOT NULL, PRIMARY KEY(`movieId`, `category`))",
+                                )
+                                db.execSQL(
+                                    "CREATE INDEX `index_movie_categories_category_pageOrder` ON `movie_categories` (`category`, `pageOrder`)",
+                                )
                             }
 
-                            override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+                            override fun onUpgrade(
+                                db: SupportSQLiteDatabase,
+                                oldVersion: Int,
+                                newVersion: Int,
+                            ) = Unit
                         },
                     ).build(),
             )
         helper.writableDatabase.use { db ->
             db.execSQL(
-                "INSERT INTO `movies` (`id`,`title`,`overview`,`voteAverage`,`releaseDate`,`genreIds`,`isFavorite`,`isWatchlist`,`isWatched`) " +
+                "INSERT INTO `movies` " +
+                    "(`id`,`title`,`overview`,`voteAverage`,`releaseDate`,`genreIds`,`isFavorite`,`isWatchlist`,`isWatched`) " +
                     "VALUES (1,'Conflict','o',7.0,'2020-01-01','28',1,1,1)",
             )
         }

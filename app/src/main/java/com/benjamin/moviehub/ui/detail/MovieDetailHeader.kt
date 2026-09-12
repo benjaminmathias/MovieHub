@@ -31,7 +31,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.theme.ContentHorizontalPadding
-import com.benjamin.moviehub.core.theme.PosterAspectRatio
+import com.benjamin.moviehub.core.theme.POSTER_ASPECT_RATIO
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.MovieBackdropArtwork
 import com.benjamin.moviehub.ui.components.MoviePosterArtwork
@@ -176,7 +176,7 @@ private fun MovieDetailSummary(
         }
 
         Surface(
-            modifier = Modifier.width(PosterWidth).aspectRatio(PosterAspectRatio).testTag("detail_poster"),
+            modifier = Modifier.width(PosterWidth).aspectRatio(POSTER_ASPECT_RATIO).testTag("detail_poster"),
             shape = MaterialTheme.shapes.medium,
             tonalElevation = 2.dp,
             shadowElevation = 4.dp,

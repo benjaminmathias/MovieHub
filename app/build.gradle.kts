@@ -65,11 +65,11 @@ android {
         compose = true
         buildConfig = true
     }
+}
 
-    ktlint {
-        android.set(true)
-        outputToConsole.set(true)
-    }
+ktlint {
+    android.set(true)
+    outputToConsole.set(true)
 }
 
 dependencies {

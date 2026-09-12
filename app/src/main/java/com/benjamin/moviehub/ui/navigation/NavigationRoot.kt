@@ -15,8 +15,8 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Home
@@ -99,6 +99,7 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
         val useNavigationRail = maxWidth >= 600.dp
         val showTopLevelNavigation =
             currentRoute is Route.List || currentRoute is Route.Discover || currentRoute is Route.Library
+
         fun navigateToTopLevel(route: Route) {
             val tab =
                 when (route) {

@@ -7,12 +7,12 @@ import com.benjamin.moviehub.data.cache.ImageCacheManager
 import com.benjamin.moviehub.domain.repository.UserPreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -26,6 +26,7 @@ class SettingsViewModel
     ) : ViewModel() {
         private val _isClearing = MutableStateFlow(false)
         val isClearing: StateFlow<Boolean> = _isClearing.asStateFlow()
+
         // One-shot UI messages: true = cache cleared, false = clearing failed.
         private val _imageCacheMessages = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
         val imageCacheMessages = _imageCacheMessages.asSharedFlow()
