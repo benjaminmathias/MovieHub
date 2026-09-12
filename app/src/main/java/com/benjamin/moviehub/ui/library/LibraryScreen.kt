@@ -3,7 +3,6 @@ package com.benjamin.moviehub.ui.library
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,16 +21,13 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,19 +36,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.CustomAccessibilityAction
-import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.Movie
-import com.benjamin.moviehub.ui.components.CompactMovieItem
 import com.benjamin.moviehub.ui.components.CompactMovieShimmerItem
-import com.benjamin.moviehub.ui.components.DeleteBackground
 import com.benjamin.moviehub.ui.components.EmptyStateView
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -114,7 +102,7 @@ fun LibraryScreen(
                     } else {
                         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 8.dp)) {
                             items(movies, key = { it.id }) { movie ->
-                                LibrarySwipeItem(
+                                LibraryMovieItem(
                                     movie = movie,
                                     onMovieClick = onMovieClick,
                                     onRemove = { onRemove(it, selected) },
@@ -149,36 +137,4 @@ private fun LibraryTab.removeIcon() = when (this) {
     LibraryTab.WATCHLIST -> Icons.Filled.BookmarkRemove
     LibraryTab.FAVORITES -> Icons.Filled.HeartBroken
     LibraryTab.WATCHED -> Icons.Filled.VisibilityOff
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun LibrarySwipeItem(
-    movie: Movie,
-    onMovieClick: (Int) -> Unit,
-    onRemove: (Movie) -> Unit,
-    removeLabel: String,
-    removeIcon: ImageVector,
-    modifier: Modifier,
-) {
-    val haptic = LocalHapticFeedback.current
-    val dismissState = rememberSwipeToDismissBoxState()
-    LaunchedEffect(dismissState.currentValue) {
-        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            onRemove(movie)
-            dismissState.reset()
-        }
-    }
-    SwipeToDismissBox(
-        state = dismissState,
-        modifier = modifier.fillMaxWidth().semantics { customActions = listOf(CustomAccessibilityAction(removeLabel) { onRemove(movie); true }) },
-        enableDismissFromStartToEnd = false,
-        backgroundContent = {
-            if (dismissState.currentValue != SwipeToDismissBoxValue.Settled || dismissState.targetValue != SwipeToDismissBoxValue.Settled) {
-                DeleteBackground(icon = removeIcon)
-            }
-        },
-        content = { CompactMovieItem(movie = movie, onMovieClick = onMovieClick) },
-    )
 }

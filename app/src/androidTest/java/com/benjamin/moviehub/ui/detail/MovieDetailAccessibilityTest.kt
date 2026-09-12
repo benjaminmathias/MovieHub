@@ -1,9 +1,13 @@
 package com.benjamin.moviehub.ui.detail
 
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -14,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -273,4 +278,78 @@ class MovieDetailAccessibilityTest {
             .assertHeightIsAtLeast(48.dp)
     }
 
+    @Test
+    fun libraryActionsExposeSingleToggleSemantic() {
+        val movie =
+            Movie(
+                id = 1,
+                title = "Test movie",
+                overview = "Overview",
+                posterPath = null,
+                backdropPath = null,
+                voteAverage = 0.0,
+                releaseDate = "2024-01-01",
+                webUrl = null,
+                isFavorite = true,
+                isWatchlist = false,
+                isWatched = false,
+                genreIds = emptyList(),
+                genres = emptyList(),
+            )
+        composeRule.setContent {
+            MovieHubTheme {
+                MovieDetailScreen(
+                    uiState = MovieDetailUiState.Success(movie, MovieCredits()),
+                    onBackClick = {},
+                    onToggleFavorite = {},
+                    onToggleWatchlist = {},
+                    onToggleWatched = {},
+                    onRetry = {},
+                )
+            }
+        }
+
+        composeRule.onAllNodesWithTag("detail_favorite").assertCountEquals(1)
+        composeRule.onAllNodesWithTag("detail_watchlist").assertCountEquals(1)
+        composeRule.onAllNodesWithTag("detail_watched").assertCountEquals(1)
+        composeRule.onNodeWithTag("detail_favorite").assertIsOn()
+        composeRule.onNodeWithTag("detail_watchlist").assertIsOff()
+        composeRule.onNodeWithTag("detail_watched").assertIsOff()
+    }
+
+    @Test
+    fun libraryActionLabelIsPartOfTheClickableTarget() {
+        var favoriteClicks = 0
+        val movie =
+            Movie(
+                id = 1,
+                title = "Test movie",
+                overview = "Overview",
+                posterPath = null,
+                backdropPath = null,
+                voteAverage = 0.0,
+                releaseDate = "2024-01-01",
+                webUrl = null,
+                isFavorite = false,
+                isWatchlist = false,
+                isWatched = false,
+                genreIds = emptyList(),
+                genres = emptyList(),
+            )
+        composeRule.setContent {
+            MovieHubTheme {
+                MovieDetailScreen(
+                    uiState = MovieDetailUiState.Success(movie, MovieCredits()),
+                    onBackClick = {},
+                    onToggleFavorite = { favoriteClicks++ },
+                    onToggleWatchlist = {},
+                    onToggleWatched = {},
+                    onRetry = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Favoris").performClick()
+        composeRule.runOnIdle { assertEquals(1, favoriteClicks) }
+    }
 }

@@ -100,6 +100,5 @@
     <string name="no_internet_connection">Pas de connexion internet</string>
     <string name="connection_restored">Connexion rétablie</string>
     <string name="remove_favorite_accessibility">Retirer des favoris</string>
-    <string name="poster_description">Affiche de %1$s</string>
     <string name="no_favorite_added">Aucun film favori n\'a été ajouté.</string>
 </resources>

@@ -19,12 +19,10 @@ import coil.compose.AsyncImage
 internal fun MoviePosterArtwork(
     model: String?,
     modifier: Modifier = Modifier,
-    contentDescription: String? = null,
     shape: Shape = MaterialTheme.shapes.medium,
 ) {
     MovieArtwork(
         model = model,
-        contentDescription = contentDescription,
         contentScale = ContentScale.Crop,
         modifier = modifier.clip(shape),
     )
@@ -34,11 +32,9 @@ internal fun MoviePosterArtwork(
 internal fun MovieBackdropArtwork(
     model: String?,
     modifier: Modifier = Modifier,
-    contentDescription: String? = null,
 ) {
     MovieArtwork(
         model = model,
-        contentDescription = contentDescription,
         contentScale = ContentScale.Crop,
         modifier = modifier,
     )
@@ -47,7 +43,6 @@ internal fun MovieBackdropArtwork(
 @Composable
 private fun MovieArtwork(
     model: String?,
-    contentDescription: String?,
     contentScale: ContentScale,
     modifier: Modifier,
 ) {
@@ -63,7 +58,7 @@ private fun MovieArtwork(
         )
         AsyncImage(
             model = model?.takeIf(String::isNotBlank),
-            contentDescription = contentDescription,
+            contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = contentScale,
         )

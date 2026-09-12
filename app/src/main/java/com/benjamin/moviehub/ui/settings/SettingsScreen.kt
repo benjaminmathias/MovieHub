@@ -1,8 +1,5 @@
 package com.benjamin.moviehub.ui.settings
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,14 +16,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -36,8 +31,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewFontScale
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
@@ -162,101 +155,5 @@ private fun SettingsScreenPreview() {
             onClearImageCache = {},
             onBackClick = {},
         )
-    }
-}
-
-@Composable
-private fun SettingsSection(
-    title: String,
-    content: @Composable () -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.SemiBold,
-        )
-        content()
-    }
-}
-
-@Composable
-private fun ThemeSelector(
-    currentTheme: AppTheme,
-    onThemeSelected: (AppTheme) -> Unit,
-) {
-    Column(modifier = Modifier.selectableGroup()) {
-        listOf(AppTheme.SYSTEM, AppTheme.LIGHT, AppTheme.DARK).forEachIndexed { index, theme ->
-            if (index > 0) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            }
-            ThemeRadioButton(
-                selected = currentTheme == theme,
-                text =
-                    stringResource(
-                        when (theme) {
-                            AppTheme.SYSTEM -> R.string.theme_system
-                            AppTheme.LIGHT -> R.string.theme_light
-                            AppTheme.DARK -> R.string.theme_dark
-                        },
-                    ),
-                onClick = { onThemeSelected(theme) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun ThemeRadioButton(
-    selected: Boolean,
-    text: String,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .selectable(selected = selected, onClick = onClick, role = Role.RadioButton)
-                .heightIn(min = 48.dp)
-                .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(text = text, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        RadioButton(selected = selected, onClick = null)
-    }
-}
-
-@Composable
-private fun SettingsItem(
-    title: String,
-    subtitle: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    enabled: Boolean = true,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .padding(vertical = 8.dp)
-                .clickable(enabled = enabled, onClick = onClick),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
     }
 }
