@@ -211,4 +211,14 @@ interface MovieDao {
         previousResultIds: List<Int>,
         preserveMovieIds: List<Int>,
     )
+
+    // --- GENRES (DICTIONNAIRE LOCALISÉ) ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertGenres(genres: List<GenreEntity>)
+
+    @Query("SELECT * FROM genres")
+    suspend fun getGenres(): List<GenreEntity>
+
+    @Query("SELECT * FROM genres")
+    fun getGenresFlow(): Flow<List<GenreEntity>>
 }

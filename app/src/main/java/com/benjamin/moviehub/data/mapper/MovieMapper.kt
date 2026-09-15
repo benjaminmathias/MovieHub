@@ -33,6 +33,13 @@ private val tmdbGenreNames =
         "Western" to 37,
     ).entries.associate { (name, id) -> id to name }
 
+/**
+ * Merges the persisted/API genre dictionary over the static fallback so a genre
+ * missing from the dictionary (e.g. newly added by TMDB) still resolves.
+ */
+internal fun resolvedGenreNames(genreNames: Map<Int, String>): Map<Int, String> =
+    if (genreNames.isEmpty()) tmdbGenreNames else tmdbGenreNames + genreNames
+
 private fun normalizeImagePath(path: String?): String? {
     val value = path?.trim().orEmpty()
     if (value.isEmpty()) return null
@@ -102,6 +109,11 @@ fun MovieCreditsDto.toDomain(): MovieCredits =
  */
 fun MovieDto.toDomain(): Movie = toEntity().toDomain()
 
+/**
+ * Convert a standalone MovieDto using the localized [genreNames] dictionary.
+ */
+fun MovieDto.toDomain(genreNames: Map<Int, String>): Movie = toEntity().toDomain(genreNames)
+
 fun MovieDto.toDomain(baseMovie: Movie): Movie {
     val detailGenres = genres.orEmpty().mapNotNull { it.name?.trim()?.takeIf(String::isNotEmpty) }
 
@@ -114,8 +126,10 @@ fun MovieDto.toDomain(baseMovie: Movie): Movie {
 /**
  * Convert a MovieEntity (DB entity) to a Movie (Domain model)
  */
-fun MovieEntity.toDomain(): Movie =
-    Movie(
+fun MovieEntity.toDomain(genreNames: Map<Int, String> = emptyMap()): Movie {
+    val resolvedGenres = resolvedGenreNames(genreNames)
+
+    return Movie(
         id = id,
         title = title,
         overview = overview,
@@ -128,10 +142,11 @@ fun MovieEntity.toDomain(): Movie =
         isWatchlist = isWatchlist,
         isWatched = isWatched,
         genreIds = genreIds,
-        genres = genreIds.mapNotNull { tmdbGenreNames[it] },
+        genres = genreIds.mapNotNull { resolvedGenres[it] },
         runtimeMinutes = runtimeMinutes,
         posterPathSmall = toTmdbImageUrl(posterPath, "w342"),
     )
+}
 
 /**
  * Convert a Movie (Domain model) to a MovieEntity (DB entity)
@@ -155,3 +170,27 @@ fun Movie.toEntity(
         isWatched = isWatched,
         runtimeMinutes = runtimeMinutes,
     )
+
+/**
+ * Overlays the locally persisted favorite/watchlist/watched flags onto a remote
+ * movie. A missing local row leaves the remote flags untouched.
+ */
+fun Movie.withLocalFlags(local: MovieEntity?): Movie =
+    local?.let {
+        copy(
+            isFavorite = it.isFavorite,
+            isWatchlist = it.isWatchlist,
+            isWatched = it.isWatched,
+        )
+    } ?: this
+
+/**
+ * Re-resolves genre names from the localized dictionary. Used for network-backed
+ * feeds whose movies were mapped before the dictionary was available.
+ */
+fun Movie.withGenreNames(genreNames: Map<Int, String>): Movie {
+    if (genreNames.isEmpty()) return this
+    val resolved = resolvedGenreNames(genreNames)
+    val names = genreIds.mapNotNull { resolved[it] }
+    return if (names == genres) this else copy(genres = names)
+}

@@ -10,8 +10,9 @@ import androidx.room.TypeConverters
         RemoteKey::class,
         MovieSearchResultEntity::class,
         MovieCategoryEntity::class,
+        GenreEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)

@@ -35,6 +35,7 @@ class MovieDetailViewModel
         private var loadJob: Job? = null
         private var libraryJob: Job? = null
         private val libraryMutex = Mutex()
+        private val latestLibraryById = MutableStateFlow<Map<Int, Movie>>(emptyMap())
 
         fun loadMovieDetails(movieId: Int) {
             val currentState = _uiState.value
@@ -50,65 +51,20 @@ class MovieDetailViewModel
 
                     try {
                         coroutineScope {
-                            var latestLibraryById = emptyMap<Int, com.benjamin.moviehub.domain.model.Movie>()
                             val creditsDeferred = async { loadCredits(movieId) }
                             val recommendationsDeferred = async { loadRecommendations(movieId) }
                             // A main failure throws out of the scope and cancels both async children.
                             val movie = repository.getMovieDetails(movieId)
 
                             _uiState.value = MovieDetailUiState.Success(movie, MovieCredits())
-                            libraryJob =
-                                viewModelScope.launch {
-                                    repository.getLibraryMovies().collectLatest { localMovies ->
-                                        val localById = localMovies.associateBy { it.id }
-                                        latestLibraryById = localById
-                                        updateSuccess(movieId) { latest ->
-                                            val localMovie = localById[movieId]
-                                            val updatedMovie =
-                                                latest.movie.copy(
-                                                    isFavorite = localMovie?.isFavorite ?: false,
-                                                    isWatchlist = localMovie?.isWatchlist ?: false,
-                                                    isWatched = localMovie?.isWatched ?: false,
-                                                )
-                                            val updatedRecommendations =
-                                                (latest.recommendations as? MovieRecommendationsUiState.Success)?.let { recommendations ->
-                                                    MovieRecommendationsUiState.Success(
-                                                        recommendations.movies.map { recommendation ->
-                                                            localById[recommendation.id]?.let { local ->
-                                                                recommendation.copy(
-                                                                    isFavorite = local.isFavorite,
-                                                                    isWatchlist = local.isWatchlist,
-                                                                    isWatched = local.isWatched,
-                                                                )
-                                                            } ?: recommendation.copy(
-                                                                isFavorite = false,
-                                                                isWatchlist = false,
-                                                                isWatched = false,
-                                                            )
-                                                        },
-                                                    )
-                                                } ?: latest.recommendations
-                                            latest.copy(movie = updatedMovie, recommendations = updatedRecommendations)
-                                        }
-                                    }
-                                }
+                            // Runs in viewModelScope on purpose: the observer must outlive the load job
+                            // so library changes made elsewhere keep reconciling this screen.
+                            libraryJob = viewModelScope.launch { observeLibrary(movieId) }
+
                             val credits = creditsDeferred.await()
                             updateSuccess(movieId) { it.copy(credits = credits) }
                             val recommendations = recommendationsDeferred.await()
-                            val syncedRecommendations =
-                                (recommendations as? MovieRecommendationsUiState.Success)?.let { success ->
-                                    MovieRecommendationsUiState.Success(
-                                        success.movies.map { recommendation ->
-                                            latestLibraryById[recommendation.id]?.let { local ->
-                                                recommendation.copy(
-                                                    isFavorite = local.isFavorite,
-                                                    isWatchlist = local.isWatchlist,
-                                                    isWatched = local.isWatched,
-                                                )
-                                            } ?: recommendation
-                                        },
-                                    )
-                                } ?: recommendations
+                            val syncedRecommendations = syncRecommendationsWithLibrary(recommendations)
                             updateSuccess(movieId) { it.copy(recommendations = syncedRecommendations) }
                         }
                     } catch (e: CancellationException) {
@@ -201,6 +157,62 @@ class MovieDetailViewModel
                 _uiState.value = transform(latest)
             }
         }
+
+        private suspend fun observeLibrary(movieId: Int) {
+            repository.getLibraryMovies().collectLatest { localMovies ->
+                val localById = localMovies.associateBy { it.id }
+                latestLibraryById.value = localById
+                updateSuccess(movieId) { latest -> applyLibraryFlags(latest, localById, movieId) }
+            }
+        }
+
+        private fun applyLibraryFlags(
+            state: MovieDetailUiState.Success,
+            localById: Map<Int, Movie>,
+            movieId: Int,
+        ): MovieDetailUiState.Success {
+            val localMovie = localById[movieId]
+            val updatedMovie =
+                state.movie.copy(
+                    isFavorite = localMovie?.isFavorite ?: false,
+                    isWatchlist = localMovie?.isWatchlist ?: false,
+                    isWatched = localMovie?.isWatched ?: false,
+                )
+            val updatedRecommendations =
+                (state.recommendations as? MovieRecommendationsUiState.Success)?.let { recommendations ->
+                    MovieRecommendationsUiState.Success(
+                        recommendations.movies.map { recommendation ->
+                            localById[recommendation.id]?.let { local ->
+                                recommendation.copy(
+                                    isFavorite = local.isFavorite,
+                                    isWatchlist = local.isWatchlist,
+                                    isWatched = local.isWatched,
+                                )
+                            } ?: recommendation.copy(
+                                isFavorite = false,
+                                isWatchlist = false,
+                                isWatched = false,
+                            )
+                        },
+                    )
+                } ?: state.recommendations
+            return state.copy(movie = updatedMovie, recommendations = updatedRecommendations)
+        }
+
+        private fun syncRecommendationsWithLibrary(recommendations: MovieRecommendationsUiState): MovieRecommendationsUiState =
+            (recommendations as? MovieRecommendationsUiState.Success)?.let { success ->
+                MovieRecommendationsUiState.Success(
+                    success.movies.map { recommendation ->
+                        latestLibraryById.value[recommendation.id]?.let { local ->
+                            recommendation.copy(
+                                isFavorite = local.isFavorite,
+                                isWatchlist = local.isWatchlist,
+                                isWatched = local.isWatched,
+                            )
+                        } ?: recommendation
+                    },
+                )
+            } ?: recommendations
 
         private suspend fun loadRecommendations(movieId: Int): MovieRecommendationsUiState =
             try {

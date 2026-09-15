@@ -21,7 +21,8 @@ class DiscoverMoviePagingSource(
      * result set shifts between requests. Duplicate ids would collide with the
      * grid's `key = { it.id }` and crash the LazyVerticalGrid, so drop repeats
      * within this pagination generation. A new PagingSource instance (refresh or
-     * filter change) starts with a clean set.
+     * filter change) starts with a clean set. Memory stays bounded by TMDB's
+     * discover result cap (a few thousand ids at most).
      */
     private val seenIds = mutableSetOf<Int>()
 

@@ -149,6 +149,21 @@ internal val MIGRATION_4_5 =
         }
     }
 
+/**
+ * Adds the localized genre dictionary table. Empty on creation: it is populated
+ * on the first `genre/movie/list` refresh, and the static mapper fallback covers
+ * the window before that.
+ */
+internal val MIGRATION_5_6 =
+    object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `genres` (" +
+                    "`id` INTEGER NOT NULL, `name` TEXT NOT NULL, PRIMARY KEY(`id`))",
+            )
+        }
+    }
+
 private fun columnNames(
     db: SupportSQLiteDatabase,
     table: String,

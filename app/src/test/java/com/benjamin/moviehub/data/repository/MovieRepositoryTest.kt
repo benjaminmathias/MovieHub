@@ -44,6 +44,7 @@ class MovieRepositoryTest {
                 )
 
             coEvery { dao.getMovieById(9) } returns localMovie
+            coEvery { dao.getGenres() } returns emptyList()
             coEvery { apiService.getMovieDetails(9) } throws IOException("offline")
 
             val result = repository.getMovieDetails(9)
@@ -153,6 +154,7 @@ class MovieRepositoryTest {
                         isWatched = true,
                     ),
                 )
+            coEvery { dao.getGenres() } returns emptyList()
 
             val result = repository.getMovieRecommendations(9)
 
@@ -184,6 +186,7 @@ class MovieRepositoryTest {
                     releaseDate = "2024-01-01",
                 )
             coEvery { dao.getHeroMovieFlow(MovieCategory.POPULAR.key) } returns flowOf(entity)
+            coEvery { dao.getGenres() } returns emptyList()
 
             val result = repository.getHeroMovie(MovieCategory.POPULAR).first()
 
