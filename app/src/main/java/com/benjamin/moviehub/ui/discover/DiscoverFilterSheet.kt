@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
@@ -161,6 +163,11 @@ internal fun DiscoverFilterSheet(
                 Button(
                     onClick = onApplyFilters,
                     enabled = canApply,
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.68f),
+                        ),
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("discover_apply_filters"),
                 ) {
                     Text(
@@ -217,22 +224,34 @@ private fun MainFilterList(
             filters = filters,
             onSortSelected = onSortSelected,
         )
-        FilterSummaryRow(
-            title = stringResource(R.string.discover_genre),
-            value = genreValue,
-            onClick = onOpenGenre,
-            modifier = Modifier.testTag("discover_genre_row"),
-        )
-        FilterSummaryRow(
-            title = stringResource(R.string.discover_year),
-            value = yearValue,
-            onClick = onOpenYear,
-            modifier = Modifier.testTag("discover_year_row"),
-        )
-        RatingFilterControl(
-            filters = filters,
-            onMinimumRatingSelected = onMinimumRatingSelected,
-        )
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.medium,
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            tonalElevation = 1.dp,
+        ) {
+            Column {
+                FilterSummaryRow(
+                    title = stringResource(R.string.discover_genre),
+                    value = genreValue,
+                    onClick = onOpenGenre,
+                    modifier = Modifier.padding(horizontal = 16.dp).testTag("discover_genre_row"),
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
+                FilterSummaryRow(
+                    title = stringResource(R.string.discover_year),
+                    value = yearValue,
+                    onClick = onOpenYear,
+                    modifier = Modifier.padding(horizontal = 16.dp).testTag("discover_year_row"),
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
+                RatingFilterControl(
+                    filters = filters,
+                    onMinimumRatingSelected = onMinimumRatingSelected,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            }
+        }
     }
 }
 
@@ -245,7 +264,10 @@ private fun RatingFilterControl(
     val enabled = filters.minimumVoteAverage != null
     val currentValue = (filters.minimumVoteAverage ?: DEFAULT_MINIMUM_RATING).toFloat().coerceIn(0f, 10f)
 
-    Column(modifier = modifier.fillMaxWidth().testTag("discover_rating_section")) {
+    Column(
+        modifier = modifier.fillMaxWidth().testTag("discover_rating_section"),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = stringResource(R.string.discover_filter_by_rating),
@@ -276,6 +298,7 @@ private fun RatingFilterControl(
                 Text(
                     text = stringResource(R.string.discover_rating_plus, currentValue.roundToInt()),
                     style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary,
                 )
             }

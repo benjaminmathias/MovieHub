@@ -1,10 +1,11 @@
 package com.benjamin.moviehub.ui.discover
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -14,8 +15,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +25,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -34,47 +35,90 @@ import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
-import com.benjamin.moviehub.domain.model.MovieGenre
 import com.benjamin.moviehub.ui.components.RetryButton
 
+internal data class DiscoverFilterOptionItem(
+    val label: String,
+    val selected: Boolean,
+    val testTag: String,
+    val onClick: () -> Unit,
+)
+
 @Composable
-internal fun DiscoverFilterChip(
+internal fun DiscoverFilterOption(
     selected: Boolean,
     onClick: () -> Unit,
     label: String,
     modifier: Modifier = Modifier,
 ) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = {
-            Text(
-                text = label,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
+    val shape = MaterialTheme.shapes.small
+
+    Row(
+        modifier =
+            modifier
+                .heightIn(min = 52.dp)
+                .clip(shape)
+                .background(
+                    color =
+                        if (selected) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                        } else {
+                            Color.Transparent
+                        },
+                    shape = shape,
+                ).clickable(role = Role.Button, onClick = onClick)
+                .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (selected) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
             )
-        },
-        leadingIcon =
-            if (selected) {
-                {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = null,
-                        modifier = Modifier.size(FilterChipDefaults.IconSize),
+        } else {
+            Spacer(modifier = Modifier.size(20.dp))
+        }
+        Text(
+            text = label,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge,
+            color =
+                if (selected) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+internal fun DiscoverFilterOptionGrid(options: List<DiscoverFilterOptionItem>) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        options.chunked(2).forEach { rowOptions ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                rowOptions.forEach { option ->
+                    DiscoverFilterOption(
+                        selected = option.selected,
+                        onClick = option.onClick,
+                        label = option.label,
+                        modifier = Modifier.weight(1f).testTag(option.testTag),
                     )
                 }
-            } else {
-                null
-            },
-        colors =
-            FilterChipDefaults.filterChipColors(
-                labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            ),
-        modifier = modifier,
-    )
+                if (rowOptions.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -88,9 +132,9 @@ internal fun FilterSummaryRow(
         modifier =
             modifier
                 .fillMaxWidth()
-                .heightIn(min = 56.dp)
+                .heightIn(min = 64.dp)
                 .clickable(role = Role.Button, onClick = onClick)
-                .padding(vertical = 8.dp),
+                .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -127,7 +171,7 @@ internal fun SortFilterSection(
     ) {
         Text(
             text = stringResource(R.string.discover_sort),
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
@@ -143,10 +187,20 @@ internal fun SortFilterSection(
                     label = {
                         Text(
                             text = sortLabel(sort),
+                            style = MaterialTheme.typography.labelMedium,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
                     },
+                    colors =
+                        SegmentedButtonDefaults.colors(
+                            activeContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            activeContentColor = MaterialTheme.colorScheme.onSurface,
+                            activeBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.65f),
+                            inactiveContainerColor = Color.Transparent,
+                            inactiveContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            inactiveBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                        ),
                     modifier = Modifier.testTag("discover_sort_option_${sort.name}"),
                 )
             }
@@ -189,22 +243,25 @@ internal fun GenrePicker(
                         modifier = Modifier.testTag("discover_retry_genres"),
                     )
                 }
-            else ->
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    val genreOptions = listOf<MovieGenre?>(null) + state.genres
-                    genreOptions.forEach { genre ->
-                        DiscoverFilterChip(
-                            selected = filters.genreId == genre?.id,
-                            onClick = { onGenreSelected(genre?.id) },
-                            label = genre?.name ?: stringResource(R.string.discover_all_genres),
-                            modifier = Modifier.testTag("discover_genre_option_${genre?.id ?: "all"}"),
-                        )
-                    }
-                }
+            else -> {
+                DiscoverFilterOption(
+                    selected = filters.genreId == null,
+                    onClick = { onGenreSelected(null) },
+                    label = stringResource(R.string.discover_all_genres),
+                    modifier = Modifier.fillMaxWidth().testTag("discover_genre_option_all"),
+                )
+                DiscoverFilterOptionGrid(
+                    options =
+                        state.genres.map { genre ->
+                            DiscoverFilterOptionItem(
+                                label = genre.name,
+                                selected = filters.genreId == genre.id,
+                                testTag = "discover_genre_option_${genre.id}",
+                                onClick = { onGenreSelected(genre.id) },
+                            )
+                        },
+                )
+            }
         }
     }
 }

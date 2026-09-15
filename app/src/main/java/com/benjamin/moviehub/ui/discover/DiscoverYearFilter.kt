@@ -2,7 +2,6 @@ package com.benjamin.moviehub.ui.discover
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -41,6 +40,8 @@ internal fun YearPicker(
     onReleaseYearSelected: (Int?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val allYears = yearOptions.firstOrNull()
+
     Column(
         modifier =
             modifier
@@ -50,39 +51,50 @@ internal fun YearPicker(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            yearOptions.forEach { year ->
-                DiscoverFilterChip(
-                    selected = !customYearMode && filters.releaseYear == year,
-                    onClick = {
-                        onCustomYearModeChange(false)
-                        onCustomYearTextChange("")
-                        onReleaseYearSelected(year)
-                    },
-                    label = year?.toString() ?: stringResource(R.string.discover_all_years),
-                    modifier = Modifier.testTag("discover_year_option_${year ?: "all"}"),
-                )
-            }
-            DiscoverFilterChip(
-                selected = customYearMode,
-                onClick = {
-                    onCustomYearModeChange(true)
-                    onCustomYearTextChange(
-                        filters.releaseYear
-                            ?.takeIf { it !in recentYears }
-                            ?.toString()
-                            .orEmpty(),
+        DiscoverFilterOption(
+            selected = !customYearMode && filters.releaseYear == allYears,
+            onClick = {
+                onCustomYearModeChange(false)
+                onCustomYearTextChange("")
+                onReleaseYearSelected(allYears)
+            },
+            label = stringResource(R.string.discover_all_years),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .testTag("discover_year_option_all"),
+        )
+
+        DiscoverFilterOptionGrid(
+            options =
+                yearOptions.drop(1).map { year ->
+                    DiscoverFilterOptionItem(
+                        label = year.toString(),
+                        selected = !customYearMode && filters.releaseYear == year,
+                        testTag = "discover_year_option_$year",
+                        onClick = {
+                            onCustomYearModeChange(false)
+                            onCustomYearTextChange("")
+                            onReleaseYearSelected(year)
+                        },
                     )
-                    onReleaseYearSelected(null)
-                },
-                label = stringResource(R.string.discover_other_year),
-                modifier = Modifier.testTag("discover_year_option_other"),
-            )
-        }
+                } +
+                    DiscoverFilterOptionItem(
+                        label = stringResource(R.string.discover_other_year),
+                        selected = customYearMode,
+                        testTag = "discover_year_option_other",
+                        onClick = {
+                            onCustomYearModeChange(true)
+                            onCustomYearTextChange(
+                                filters.releaseYear
+                                    ?.takeIf { it !in recentYears }
+                                    ?.toString()
+                                    .orEmpty(),
+                            )
+                            onReleaseYearSelected(null)
+                        },
+                    ),
+        )
 
         if (customYearMode) {
             val showError = customYearInvalid && customYearText.isNotEmpty()
