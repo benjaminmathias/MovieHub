@@ -1,14 +1,14 @@
 package com.benjamin.moviehub.ui.discover
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SelectableChipColors
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -28,61 +28,46 @@ internal fun customYearIsInvalid(
         (customYearText.length != 4 || customYearText.toIntOrNull() !in 1870..currentYear)
 
 @Composable
-internal fun YearFilterSection(
+internal fun YearPicker(
     filters: DiscoverFilters,
     yearOptions: List<Int?>,
     recentYears: List<Int>,
     currentYear: Int,
-    expanded: Boolean,
-    onToggle: () -> Unit,
     customYearMode: Boolean,
     onCustomYearModeChange: (Boolean) -> Unit,
     customYearText: String,
     onCustomYearTextChange: (String) -> Unit,
     customYearInvalid: Boolean,
     onReleaseYearSelected: (Int?) -> Unit,
-    choiceChipColors: SelectableChipColors,
+    modifier: Modifier = Modifier,
 ) {
-    FilterSection(
-        title = stringResource(R.string.discover_year),
-        selectedLabel =
-            when {
-                customYearMode && customYearText.isNotEmpty() -> customYearText
-                customYearMode -> stringResource(R.string.discover_other_year)
-                filters.releaseYear != null -> filters.releaseYear.toString()
-                else -> stringResource(R.string.discover_all_years)
-            },
-        selected = filters.releaseYear != null || customYearMode,
-        expanded = expanded,
-        onClick = onToggle,
-        modifier = Modifier.testTag("discover_year_section"),
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .testTag("discover_year_section")
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            maxItemsInEachRow = 3,
         ) {
             yearOptions.forEach { year ->
-                FilterChip(
+                DiscoverFilterChip(
                     selected = !customYearMode && filters.releaseYear == year,
                     onClick = {
                         onCustomYearModeChange(false)
                         onCustomYearTextChange("")
                         onReleaseYearSelected(year)
                     },
-                    colors = choiceChipColors,
-                    label = {
-                        Text(year?.toString() ?: stringResource(R.string.discover_all_years))
-                    },
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .heightIn(min = 48.dp)
-                            .testTag("discover_year_option_${year ?: "all"}"),
+                    label = year?.toString() ?: stringResource(R.string.discover_all_years),
+                    modifier = Modifier.testTag("discover_year_option_${year ?: "all"}"),
                 )
             }
-            FilterChip(
+            DiscoverFilterChip(
                 selected = customYearMode,
                 onClick = {
                     onCustomYearModeChange(true)
@@ -94,17 +79,13 @@ internal fun YearFilterSection(
                     )
                     onReleaseYearSelected(null)
                 },
-                colors = choiceChipColors,
-                label = { Text(stringResource(R.string.discover_other_year)) },
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp)
-                        .testTag("discover_year_option_other"),
+                label = stringResource(R.string.discover_other_year),
+                modifier = Modifier.testTag("discover_year_option_other"),
             )
         }
 
         if (customYearMode) {
+            val showError = customYearInvalid && customYearText.isNotEmpty()
             OutlinedTextField(
                 value = customYearText,
                 onValueChange = { value ->
@@ -125,14 +106,14 @@ internal fun YearFilterSection(
                 label = { Text(stringResource(R.string.discover_other_year)) },
                 supportingText = {
                     Text(
-                        if (customYearInvalid) {
+                        if (showError) {
                             stringResource(R.string.discover_year_error, 1870, currentYear)
                         } else {
                             stringResource(R.string.discover_year_hint, 1870, currentYear)
                         },
                     )
                 },
-                isError = customYearInvalid,
+                isError = showError,
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             )

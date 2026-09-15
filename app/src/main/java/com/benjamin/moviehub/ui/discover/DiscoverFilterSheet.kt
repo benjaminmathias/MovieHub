@@ -1,22 +1,28 @@
 package com.benjamin.moviehub.ui.discover
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -28,17 +34,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
 import com.benjamin.moviehub.domain.model.MovieGenre
+import kotlin.math.roundToInt
 
-private enum class DiscoverFilterSection {
+private const val DEFAULT_MINIMUM_RATING = 7.0
+
+private enum class FilterGroup {
     GENRE,
     YEAR,
-    RATING,
-    SORT,
 }
 
 @Composable
@@ -58,7 +66,7 @@ internal fun DiscoverFilterSheet(
 ) {
     val filters = state.draftFilters
     val recentYears = yearOptions.filterNotNull()
-    var expandedSection by rememberSaveable { mutableStateOf<DiscoverFilterSection?>(null) }
+    var selectedGroup by rememberSaveable { mutableStateOf<FilterGroup?>(null) }
     var customYearMode by rememberSaveable {
         mutableStateOf(filters.releaseYear != null && filters.releaseYear !in recentYears)
     }
@@ -72,17 +80,9 @@ internal fun DiscoverFilterSheet(
     }
     val customYearInvalid = customYearIsInvalid(customYearMode, customYearText, currentYear)
     val canApply = !customYearInvalid && filters != state.appliedFilters
-    val choiceChipColors =
-        FilterChipDefaults.filterChipColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            labelColor = MaterialTheme.colorScheme.onSurface,
-            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        )
+    val draftFilterCount = filters.activeFilterCount()
 
-    fun toggle(section: DiscoverFilterSection) {
-        expandedSection = if (expandedSection == section) null else section
-    }
+    BackHandler(enabled = selectedGroup != null) { selectedGroup = null }
 
     Column(
         modifier =
@@ -91,105 +91,230 @@ internal fun DiscoverFilterSheet(
                 .imePadding()
                 .testTag("discover_filter_sheet"),
     ) {
-        SheetHeader(onClose = onClose)
+        SheetHeader(
+            title =
+                when (selectedGroup) {
+                    null -> stringResource(R.string.discover_filters)
+                    FilterGroup.GENRE -> stringResource(R.string.discover_genre)
+                    FilterGroup.YEAR -> stringResource(R.string.discover_year)
+                },
+            onBack = if (selectedGroup != null) ({ selectedGroup = null }) else null,
+            onClose = onClose,
+        )
 
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .weight(1f, fill = false)
-                    .testTag("discover_filter_body")
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            GenreFilterSection(
-                state = state,
-                filters = filters,
-                expanded = expandedSection == DiscoverFilterSection.GENRE,
-                onToggle = { toggle(DiscoverFilterSection.GENRE) },
-                onGenreSelected = onGenreSelected,
-                onRetryGenres = onRetryGenres,
-                choiceChipColors = choiceChipColors,
-            )
-
-            YearFilterSection(
-                filters = filters,
-                yearOptions = yearOptions,
-                recentYears = recentYears,
-                currentYear = currentYear,
-                expanded = expandedSection == DiscoverFilterSection.YEAR,
-                onToggle = { toggle(DiscoverFilterSection.YEAR) },
-                customYearMode = customYearMode,
-                onCustomYearModeChange = { customYearMode = it },
-                customYearText = customYearText,
-                onCustomYearTextChange = { customYearText = it },
-                customYearInvalid = customYearInvalid,
-                onReleaseYearSelected = onReleaseYearSelected,
-                choiceChipColors = choiceChipColors,
-            )
-
-            RatingFilterSection(
-                filters = filters,
-                expanded = expandedSection == DiscoverFilterSection.RATING,
-                onToggle = { toggle(DiscoverFilterSection.RATING) },
-                onMinimumRatingSelected = onMinimumRatingSelected,
-                choiceChipColors = choiceChipColors,
-            )
-
-            SortFilterSection(
-                filters = filters,
-                expanded = expandedSection == DiscoverFilterSection.SORT,
-                onToggle = { toggle(DiscoverFilterSection.SORT) },
-                onSortSelected = onSortSelected,
-            )
+        Box(modifier = Modifier.fillMaxWidth().weight(1f, fill = false)) {
+            when (selectedGroup) {
+                null ->
+                    MainFilterList(
+                        state = state,
+                        filters = filters,
+                        customYearMode = customYearMode,
+                        customYearText = customYearText,
+                        onOpenGenre = { selectedGroup = FilterGroup.GENRE },
+                        onOpenYear = { selectedGroup = FilterGroup.YEAR },
+                        onSortSelected = onSortSelected,
+                        onMinimumRatingSelected = onMinimumRatingSelected,
+                    )
+                FilterGroup.GENRE ->
+                    GenrePicker(
+                        state = state,
+                        filters = filters,
+                        onGenreSelected = onGenreSelected,
+                        onRetryGenres = onRetryGenres,
+                    )
+                FilterGroup.YEAR ->
+                    YearPicker(
+                        filters = filters,
+                        yearOptions = yearOptions,
+                        recentYears = recentYears,
+                        currentYear = currentYear,
+                        customYearMode = customYearMode,
+                        onCustomYearModeChange = { customYearMode = it },
+                        customYearText = customYearText,
+                        onCustomYearTextChange = { customYearText = it },
+                        customYearInvalid = customYearInvalid,
+                        onReleaseYearSelected = onReleaseYearSelected,
+                    )
+            }
         }
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            tonalElevation = 3.dp,
         ) {
-            TextButton(
-                onClick = onResetFilters,
-                modifier = Modifier.heightIn(min = 48.dp).testTag("discover_reset_filters"),
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(stringResource(R.string.discover_reset))
-            }
-            Button(
-                onClick = onApplyFilters,
-                enabled = canApply,
-                modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("discover_apply_filters"),
-            ) {
-                Text(stringResource(R.string.discover_apply))
+                TextButton(
+                    onClick = onResetFilters,
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("discover_reset_filters"),
+                ) {
+                    Text(stringResource(R.string.discover_reset))
+                }
+                Button(
+                    onClick = onApplyFilters,
+                    enabled = canApply,
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("discover_apply_filters"),
+                ) {
+                    Text(
+                        text =
+                            if (draftFilterCount > 0) {
+                                stringResource(R.string.discover_apply_count, draftFilterCount)
+                            } else {
+                                stringResource(R.string.discover_apply)
+                            },
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun SheetHeader(onClose: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 4.dp),
-        verticalAlignment = Alignment.Top,
+private fun MainFilterList(
+    state: DiscoverUiState,
+    filters: DiscoverFilters,
+    customYearMode: Boolean,
+    customYearText: String,
+    onOpenGenre: () -> Unit,
+    onOpenYear: () -> Unit,
+    onSortSelected: (DiscoverSortOption) -> Unit,
+    onMinimumRatingSelected: (Double?) -> Unit,
+) {
+    val genreValue =
+        when {
+            state.isLoadingGenres -> stringResource(R.string.discover_genres_loading)
+            state.hasGenreError -> stringResource(R.string.discover_genres_error)
+            else ->
+                state.genres.firstOrNull { it.id == filters.genreId }?.name
+                    ?: stringResource(R.string.discover_all_genres)
+        }
+    val yearValue =
+        when {
+            customYearMode && customYearText.isNotEmpty() -> customYearText
+            customYearMode -> stringResource(R.string.discover_other_year)
+            filters.releaseYear != null -> filters.releaseYear.toString()
+            else -> stringResource(R.string.discover_all_years)
+        }
+
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .testTag("discover_filter_body")
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        SortFilterSection(
+            filters = filters,
+            onSortSelected = onSortSelected,
+        )
+        FilterSummaryRow(
+            title = stringResource(R.string.discover_genre),
+            value = genreValue,
+            onClick = onOpenGenre,
+            modifier = Modifier.testTag("discover_genre_row"),
+        )
+        FilterSummaryRow(
+            title = stringResource(R.string.discover_year),
+            value = yearValue,
+            onClick = onOpenYear,
+            modifier = Modifier.testTag("discover_year_row"),
+        )
+        RatingFilterControl(
+            filters = filters,
+            onMinimumRatingSelected = onMinimumRatingSelected,
+        )
+    }
+}
+
+@Composable
+private fun RatingFilterControl(
+    filters: DiscoverFilters,
+    onMinimumRatingSelected: (Double?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val enabled = filters.minimumVoteAverage != null
+    val currentValue = (filters.minimumVoteAverage ?: DEFAULT_MINIMUM_RATING).toFloat().coerceIn(0f, 10f)
+
+    Column(modifier = modifier.fillMaxWidth().testTag("discover_rating_section")) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = stringResource(R.string.discover_filters),
-                style = MaterialTheme.typography.headlineSmall,
+                text = stringResource(R.string.discover_filter_by_rating),
+                style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
             )
-            Text(
-                text = stringResource(R.string.discover_filter_sheet_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp, bottom = 4.dp),
+            Switch(
+                checked = enabled,
+                onCheckedChange = { checked ->
+                    onMinimumRatingSelected(if (checked) DEFAULT_MINIMUM_RATING else null)
+                },
+                modifier = Modifier.testTag("discover_rating_switch"),
             )
         }
+        if (enabled) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Slider(
+                    value = currentValue,
+                    onValueChange = { value -> onMinimumRatingSelected(value.roundToInt().toDouble()) },
+                    valueRange = 0f..10f,
+                    steps = 9,
+                    modifier = Modifier.weight(1f).testTag("discover_rating_slider"),
+                )
+                Text(
+                    text = stringResource(R.string.discover_rating_plus, currentValue.roundToInt()),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SheetHeader(
+    title: String,
+    onBack: (() -> Unit)?,
+    onClose: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(end = 8.dp, top = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (onBack != null) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier.testTag("discover_filter_back"),
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.back),
+                )
+            }
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .padding(start = if (onBack != null) 0.dp else 16.dp),
+        )
         IconButton(
             onClick = onClose,
             modifier = Modifier.testTag("discover_close_filters"),

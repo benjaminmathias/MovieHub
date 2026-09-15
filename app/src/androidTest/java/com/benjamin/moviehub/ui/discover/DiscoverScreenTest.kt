@@ -3,6 +3,7 @@ package com.benjamin.moviehub.ui.discover
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHeightIsAtLeast
@@ -15,6 +16,8 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.unit.dp
@@ -70,8 +73,8 @@ class DiscoverScreenTest {
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
         composeRule.onNodeWithTag("discover_filter_sheet").assertIsDisplayed()
-        composeRule.onNodeWithTag("discover_genre_section").performClick()
-        composeRule.onNodeWithTag("discover_genre_option_28").performClick()
+        composeRule.onNodeWithTag("discover_genre_row").performClick()
+        composeRule.onNodeWithTag("discover_genre_option_28").performScrollTo().performClick()
         composeRule.onNodeWithTag("discover_apply_filters").performClick()
 
         composeRule.runOnIdle {
@@ -107,8 +110,8 @@ class DiscoverScreenTest {
         }
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
-        composeRule.onNodeWithTag("discover_year_section").performClick()
-        composeRule.onNodeWithTag("discover_year_option_other").performClick()
+        composeRule.onNodeWithTag("discover_year_row").performClick()
+        composeRule.onNodeWithTag("discover_year_option_other").performScrollTo().performClick()
 
         composeRule.runOnIdle {
             assertEquals(null, state.draftFilters.releaseYear)
@@ -196,8 +199,8 @@ class DiscoverScreenTest {
         }
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
-        composeRule.onNodeWithTag("discover_year_section").performClick()
-        composeRule.onNodeWithTag("discover_year_option_other").performClick()
+        composeRule.onNodeWithTag("discover_year_row").performClick()
+        composeRule.onNodeWithTag("discover_year_option_other").performScrollTo().performClick()
         val yearField = composeRule.onNodeWithTag("discover_custom_year")
 
         yearField.performTextInput("202")
@@ -237,9 +240,9 @@ class DiscoverScreenTest {
         }
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
-        composeRule.onNodeWithTag("discover_year_section").performClick()
-        composeRule.onNodeWithTag("discover_year_option_other").performClick()
-        composeRule.onNodeWithTag("discover_custom_year").performTextInput(validYear.toString())
+        composeRule.onNodeWithTag("discover_year_row").performClick()
+        composeRule.onNodeWithTag("discover_year_option_other").performScrollTo().performClick()
+        composeRule.onNodeWithTag("discover_custom_year").performScrollTo().performTextInput(validYear.toString())
 
         composeRule.runOnIdle {
             assertEquals(validYear, state.draftFilters.releaseYear)
@@ -271,7 +274,7 @@ class DiscoverScreenTest {
         }
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
-        composeRule.onNodeWithTag("discover_genre_section").performClick()
+        composeRule.onNodeWithTag("discover_genre_row").performClick()
         composeRule.onNodeWithTag("discover_retry_genres").assertIsDisplayed().performClick()
 
         composeRule.runOnIdle { assertTrue(retryCalled) }
@@ -328,8 +331,8 @@ class DiscoverScreenTest {
         }
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
-        composeRule.onNodeWithTag("discover_genre_section").performClick()
-        composeRule.onNodeWithTag("discover_genre_option_28").performClick()
+        composeRule.onNodeWithTag("discover_genre_row").performClick()
+        composeRule.onNodeWithTag("discover_genre_option_28").performScrollTo().performClick()
         composeRule.onNodeWithTag("discover_close_filters").performClick()
 
         composeRule.runOnIdle {
@@ -443,9 +446,107 @@ class DiscoverScreenTest {
         }
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
-        composeRule.onNodeWithTag("discover_genre_section").performClick()
+        composeRule.onNodeWithTag("discover_genre_row").performClick()
         composeRule.onNodeWithTag("discover_retry_genres").assertIsDisplayed().assertHasClickAction()
         composeRule.onNodeWithText("Réessayer").assertIsDisplayed()
+    }
+
+    @Test
+    fun selectingSortOptionUpdatesDraft() {
+        var state by mutableStateOf(initialState())
+
+        composeRule.setContent {
+            MovieHubTheme {
+                DiscoverScreen(
+                    state = state,
+                    discoverResults = flowOf(PagingData.empty()),
+                    onGenreSelected = {},
+                    onReleaseYearSelected = {},
+                    onMinimumRatingSelected = {},
+                    onSortSelected = { sort ->
+                        state = state.copy(draftFilters = state.draftFilters.copy(sort = sort))
+                    },
+                    onBeginFilterEditing = {},
+                    onApplyFilters = {},
+                    onResetFilters = {},
+                    onDiscardFilterEdits = {},
+                    onRetryGenres = {},
+                    onMovieClick = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("discover_filter_button").performClick()
+        composeRule.onNodeWithTag("discover_sort_option_RATING").performClick()
+
+        composeRule.runOnIdle {
+            assertEquals(DiscoverSortOption.RATING, state.draftFilters.sort)
+        }
+    }
+
+    @Test
+    fun enablingRatingFilterUpdatesDraft() {
+        var state by mutableStateOf(initialState())
+
+        composeRule.setContent {
+            MovieHubTheme {
+                DiscoverScreen(
+                    state = state,
+                    discoverResults = flowOf(PagingData.empty()),
+                    onGenreSelected = {},
+                    onReleaseYearSelected = {},
+                    onMinimumRatingSelected = { rating ->
+                        state = state.copy(draftFilters = state.draftFilters.copy(minimumVoteAverage = rating))
+                    },
+                    onSortSelected = {},
+                    onBeginFilterEditing = {},
+                    onApplyFilters = {},
+                    onResetFilters = {},
+                    onDiscardFilterEdits = {},
+                    onRetryGenres = {},
+                    onMovieClick = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("discover_filter_button").performClick()
+        composeRule.onNodeWithTag("discover_rating_switch").performScrollTo().performClick()
+        composeRule
+            .onNodeWithTag("discover_rating_slider")
+            .performScrollTo()
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(9f) }
+
+        composeRule.runOnIdle {
+            assertEquals(9.0, state.draftFilters.minimumVoteAverage)
+        }
+    }
+
+    @Test
+    fun subViewBackButtonReturnsToMainList() {
+        composeRule.setContent {
+            MovieHubTheme {
+                DiscoverScreen(
+                    state = initialState(),
+                    discoverResults = flowOf(PagingData.empty()),
+                    onGenreSelected = {},
+                    onReleaseYearSelected = {},
+                    onMinimumRatingSelected = {},
+                    onSortSelected = {},
+                    onBeginFilterEditing = {},
+                    onApplyFilters = {},
+                    onResetFilters = {},
+                    onDiscardFilterEdits = {},
+                    onRetryGenres = {},
+                    onMovieClick = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("discover_filter_button").performClick()
+        composeRule.onNodeWithTag("discover_genre_row").performClick()
+        composeRule.onNodeWithTag("discover_genre_option_all").assertIsDisplayed()
+        composeRule.onNodeWithTag("discover_filter_back").performClick()
+        composeRule.onNodeWithTag("discover_genre_row").assertIsDisplayed()
     }
 
     private fun initialState() =
