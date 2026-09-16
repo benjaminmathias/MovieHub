@@ -24,7 +24,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.util.AppTheme
 
 @Composable
@@ -55,14 +54,7 @@ internal fun ThemeSelector(
             }
             ThemeRadioButton(
                 selected = currentTheme == theme,
-                text =
-                    stringResource(
-                        when (theme) {
-                            AppTheme.SYSTEM -> R.string.theme_system
-                            AppTheme.LIGHT -> R.string.theme_light
-                            AppTheme.DARK -> R.string.theme_dark
-                        },
-                    ),
+                text = stringResource(theme.labelRes),
                 onClick = { onThemeSelected(theme) },
             )
         }

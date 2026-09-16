@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.domain.model.Movie
-import com.valentinilk.shimmer.shimmer
 
 @Composable
 fun HeroMovieBanner(
@@ -154,11 +151,8 @@ fun HeroMovieBanner(
                             ),
                     ) {
                         Icon(
-                            imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription =
-                                stringResource(
-                                    if (movie.isFavorite) R.string.remove_favorite else R.string.favorite,
-                                ),
+                            imageVector = favoriteIcon(movie.isFavorite),
+                            contentDescription = favoriteActionLabel(movie.isFavorite),
                             modifier = Modifier.size(24.dp),
                         )
                     }
@@ -166,19 +160,6 @@ fun HeroMovieBanner(
             }
         }
     }
-}
-
-@Composable
-fun HeroMovieShimmer(modifier: Modifier = Modifier) {
-    Box(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(8.dp)
-                .heightIn(min = 300.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.small)
-                .shimmer(),
-    )
 }
 
 @PreviewLightDark

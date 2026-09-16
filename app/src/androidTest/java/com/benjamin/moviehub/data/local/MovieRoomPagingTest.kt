@@ -2,18 +2,19 @@ package com.benjamin.moviehub.data.local
 
 import androidx.paging.ExperimentalPagingApi
 import androidx.paging.LoadType
-import androidx.paging.PagingConfig
 import androidx.paging.PagingSource.LoadParams
 import androidx.paging.PagingSource.LoadResult
-import androidx.paging.PagingState
-import androidx.room.Room
-import androidx.test.core.app.ApplicationProvider
+import androidx.paging.RemoteMediator
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.benjamin.moviehub.data.paging.MovieRemoteMediator
 import com.benjamin.moviehub.data.paging.SearchMovieRemoteMediator
 import com.benjamin.moviehub.data.remote.FakeMovieApiService
 import com.benjamin.moviehub.data.remote.movieDto
 import com.benjamin.moviehub.domain.model.MovieCategory
+import com.benjamin.moviehub.emptyPagingState
+import com.benjamin.moviehub.inMemoryDatabase
+import com.benjamin.moviehub.movieEntity
+import com.benjamin.moviehub.pagingState
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -29,12 +30,7 @@ class MovieRoomPagingTest {
 
     @Before
     fun setUp() {
-        database =
-            Room
-                .inMemoryDatabaseBuilder(
-                    ApplicationProvider.getApplicationContext(),
-                    MovieDatabase::class.java,
-                ).build()
+        database = inMemoryDatabase()
     }
 
     @After
@@ -64,10 +60,10 @@ class MovieRoomPagingTest {
             val dao = database.movieDao()
             val movie = movieEntity(id = 42)
 
-            dao.setFavorite(movie, true)
+            dao.setLibraryFlag(movie, isFavorite = true)
             assertEquals(true, dao.getMovieById(42)?.isFavorite)
 
-            dao.setFavorite(movie, false)
+            dao.setLibraryFlag(movie, isFavorite = false)
             assertEquals(false, dao.getMovieById(42)?.isFavorite)
         }
 
@@ -76,15 +72,15 @@ class MovieRoomPagingTest {
         runBlocking {
             val dao = database.movieDao()
             val movie = movieEntity(id = 43)
-            dao.setFavorite(movie, true)
-            dao.setWatchlist(movie, true)
+            dao.setLibraryFlag(movie, isFavorite = true)
+            dao.setLibraryFlag(movie, isWatchlist = true)
             assertTrue(dao.getMovieById(43)?.isWatchlist == true)
             assertTrue(dao.getMovieById(43)?.isWatched == false)
-            dao.setWatched(movie, true)
+            dao.setLibraryFlag(movie, isWatched = true)
             assertTrue(dao.getMovieById(43)?.let { it.isFavorite && !it.isWatchlist && it.isWatched } == true)
-            dao.setWatchlist(movie, false)
+            dao.setLibraryFlag(movie, isWatchlist = false)
             assertTrue(dao.getMovieById(43)?.let { it.isFavorite && !it.isWatchlist && it.isWatched } == true)
-            dao.setWatched(movie, false)
+            dao.setLibraryFlag(movie, isWatched = false)
             assertTrue(dao.getMovieById(43)?.let { it.isFavorite && !it.isWatchlist && !it.isWatched } == true)
         }
 
@@ -118,12 +114,7 @@ class MovieRoomPagingTest {
     fun refreshingSearch_keepsOnlyCurrentQueryCacheAndReferencedMovies() =
         runBlocking {
             val dao = database.movieDao()
-            dao.upsertMovies(
-                listOf(
-                    movieEntity(200, isFavorite = true),
-                    movieEntity(300),
-                ),
-            )
+            dao.upsertMovies(listOf(movieEntity(200, isFavorite = true), movieEntity(300)))
             dao.insertCategoryMovies(
                 listOf(MovieCategoryEntity(movieId = 300, category = MovieCategory.POPULAR.key, pageOrder = 0)),
             )
@@ -189,15 +180,10 @@ class MovieRoomPagingTest {
             dao.insertMovie(movieEntity(id = 1, isFavorite = true, isWatchlist = true, isWatched = true, runtimeMinutes = 137))
             dao.upsertRemoteKey(RemoteKey(MovieCategory.POPULAR.key, nextKey = 9))
 
-            val mediator =
-                MovieRemoteMediator(
-                    FakeMovieApiService(mapOf(1 to listOf(movieDto(1)))),
-                    database,
-                    MovieCategory.POPULAR,
-                )
+            val mediator = MovieRemoteMediator(FakeMovieApiService(mapOf(1 to listOf(movieDto(1)))), database, MovieCategory.POPULAR)
             val result = mediator.load(LoadType.REFRESH, emptyPagingState())
 
-            assertTrue(result is androidx.paging.RemoteMediator.MediatorResult.Success)
+            assertTrue(result is RemoteMediator.MediatorResult.Success)
             assertEquals(2, dao.getRemoteKey(MovieCategory.POPULAR.key)?.nextKey)
             assertEquals(true, dao.getMovieById(1)?.isFavorite)
             assertEquals(false, dao.getMovieById(1)?.isWatchlist)
@@ -217,10 +203,9 @@ class MovieRoomPagingTest {
             val mediator = MovieRemoteMediator(api, database, MovieCategory.NOW_PLAYING)
 
             mediator.load(LoadType.REFRESH, emptyPagingState())
-            val state = pagingState(movieEntity(10))
-            val result = mediator.load(LoadType.APPEND, state)
+            val result = mediator.load(LoadType.APPEND, pagingState(movieEntity(10)))
 
-            assertTrue(result is androidx.paging.RemoteMediator.MediatorResult.Success)
+            assertTrue(result is RemoteMediator.MediatorResult.Success)
             assertEquals(listOf(1, 2), api.nowPlayingPagesRequested)
             assertEquals(emptyList<Int>(), api.popularPagesRequested)
             assertEquals(3, database.movieDao().getRemoteKey(MovieCategory.NOW_PLAYING.key)?.nextKey)
@@ -233,10 +218,9 @@ class MovieRoomPagingTest {
             val mediator = SearchMovieRemoteMediator(api, database, "test")
 
             mediator.load(LoadType.REFRESH, emptyPagingState())
-            val state = pagingState(movieEntity(10))
-            val result = mediator.load(LoadType.APPEND, state)
+            val result = mediator.load(LoadType.APPEND, pagingState(movieEntity(10)))
 
-            assertTrue(result is androidx.paging.RemoteMediator.MediatorResult.Success)
+            assertTrue(result is RemoteMediator.MediatorResult.Success)
             assertEquals(listOf(1, 2), api.searchPagesRequested)
             assertEquals(3, database.movieDao().getRemoteKey("SEARCH:test")?.nextKey)
         }
@@ -300,34 +284,4 @@ class MovieRoomPagingTest {
             assertEquals(listOf(1), dao.getCategoryMovieIds(MovieCategory.POPULAR.key))
             assertEquals(2, dao.getRemoteKey(MovieCategory.UPCOMING.key)?.nextKey)
         }
-
-    private fun emptyPagingState(): PagingState<Int, MovieEntity> = PagingState(emptyList(), null, PagingConfig(pageSize = 1), 0)
-
-    private fun pagingState(movie: MovieEntity): PagingState<Int, MovieEntity> =
-        PagingState(
-            pages = listOf(LoadResult.Page(data = listOf(movie), prevKey = null, nextKey = 2)),
-            anchorPosition = null,
-            config = PagingConfig(pageSize = 1),
-            leadingPlaceholderCount = 0,
-        )
-
-    private fun movieEntity(
-        id: Int,
-        isFavorite: Boolean = false,
-        isWatchlist: Boolean = false,
-        isWatched: Boolean = false,
-        runtimeMinutes: Int? = null,
-    ) = MovieEntity(
-        id = id,
-        title = "Movie $id",
-        overview = "Overview",
-        posterPath = null,
-        backdropPath = null,
-        voteAverage = 7.0,
-        releaseDate = "2020-01-01",
-        isFavorite = isFavorite,
-        isWatchlist = isWatchlist,
-        isWatched = isWatched,
-        runtimeMinutes = runtimeMinutes,
-    )
 }

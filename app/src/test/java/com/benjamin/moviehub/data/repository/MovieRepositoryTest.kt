@@ -76,11 +76,11 @@ class MovieRepositoryTest {
                     genres = emptyList(),
                 )
 
-            coEvery { dao.setFavorite(capture(entitySlot), true) } just runs
+            coEvery { dao.setLibraryFlag(capture(entitySlot), isFavorite = true) } just runs
 
             repository.setFavorite(movie, true)
 
-            coVerify(exactly = 1) { dao.setFavorite(any(), true) }
+            coVerify(exactly = 1) { dao.setLibraryFlag(any(), isFavorite = true) }
             assertEquals(true, entitySlot.captured.isFavorite)
             assertEquals("/poster.jpg", entitySlot.captured.posterPath)
             assertEquals("/backdrop.jpg", entitySlot.captured.backdropPath)
@@ -107,14 +107,14 @@ class MovieRepositoryTest {
                     genreIds = emptyList(),
                     genres = emptyList(),
                 )
-            coEvery { dao.setWatchlist(any(), true) } just runs
-            coEvery { dao.setWatched(any(), true) } just runs
+            coEvery { dao.setLibraryFlag(any(), isWatchlist = true) } just runs
+            coEvery { dao.setLibraryFlag(any(), isWatched = true) } just runs
 
             repository.setWatchlist(movie, true)
             repository.setWatched(movie, true)
 
-            coVerify(exactly = 1) { dao.setWatchlist(any(), true) }
-            coVerify(exactly = 1) { dao.setWatched(any(), true) }
+            coVerify(exactly = 1) { dao.setLibraryFlag(any(), isWatchlist = true) }
+            coVerify(exactly = 1) { dao.setLibraryFlag(any(), isWatched = true) }
         }
 
     @Test

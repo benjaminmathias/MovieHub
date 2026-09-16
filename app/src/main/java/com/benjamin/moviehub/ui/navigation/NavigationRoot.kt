@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.ui.navigation
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.tween
@@ -56,75 +57,58 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.connectivity.ConnectivityStatus
+import com.benjamin.moviehub.domain.connectivity.isOffline
 import com.benjamin.moviehub.ui.components.NetworkSnackbar
 import com.benjamin.moviehub.ui.components.NetworkStatusEffect
 
-private data class BottomNavItem(
+/** The three top-level tabs, each owning its start route, icons and label. */
+private enum class TopLevelDestination(
     val route: Route,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector,
-    val labelRes: Int,
-)
+    @param:StringRes val labelRes: Int,
+) {
+    HOME(Route.List, Icons.Default.Home, Icons.Outlined.Home, R.string.home_tab),
+    DISCOVER(Route.Discover, Icons.Default.Explore, Icons.Outlined.Explore, R.string.discover_tab),
+    LIBRARY(Route.Library, Icons.Filled.VideoLibrary, Icons.Outlined.VideoLibrary, R.string.library_tab),
+    ;
 
-private enum class TopLevelTab {
-    HOME,
-    DISCOVER,
-    LIBRARY,
+    companion object {
+        fun of(route: NavKey?): TopLevelDestination? = entries.firstOrNull { it.route == route }
+    }
 }
-
-private val bottomNavItems =
-    listOf(
-        BottomNavItem(Route.List, Icons.Default.Home, Icons.Outlined.Home, R.string.home_tab),
-        BottomNavItem(Route.Discover, Icons.Default.Explore, Icons.Outlined.Explore, R.string.discover_tab),
-        BottomNavItem(Route.Library, Icons.Filled.VideoLibrary, Icons.Outlined.VideoLibrary, R.string.library_tab),
-    )
 
 @Composable
 fun NavigationRoot(networkStatus: ConnectivityStatus) {
     val homeBackStack = rememberNavBackStack(Route.List)
     val discoverBackStack = rememberNavBackStack(Route.Discover)
     val libraryBackStack = rememberNavBackStack(Route.Library)
-    var selectedTab by rememberSaveable { mutableStateOf(TopLevelTab.HOME) }
-    val backStack =
-        when (selectedTab) {
-            TopLevelTab.HOME -> homeBackStack
-            TopLevelTab.DISCOVER -> discoverBackStack
-            TopLevelTab.LIBRARY -> libraryBackStack
-        }
-    val currentRoute = backStack.lastOrNull()
+    val backStacks =
+        mapOf(
+            TopLevelDestination.HOME to homeBackStack,
+            TopLevelDestination.DISCOVER to discoverBackStack,
+            TopLevelDestination.LIBRARY to libraryBackStack,
+        )
+
+    var savedTab by rememberSaveable { mutableStateOf(TopLevelDestination.HOME.name) }
+    val selected = TopLevelDestination.entries.firstOrNull { it.name == savedTab } ?: TopLevelDestination.HOME
+    val backStack = backStacks.getValue(selected)
+    val showTopLevelNavigation = TopLevelDestination.of(backStack.lastOrNull()) != null
     val snackbarHostState = remember { SnackbarHostState() }
-    val isOffline = networkStatus == ConnectivityStatus.LOST || networkStatus == ConnectivityStatus.UNAVAILABLE
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val useNavigationRail = maxWidth >= 600.dp
-        val showTopLevelNavigation =
-            currentRoute is Route.List || currentRoute is Route.Discover || currentRoute is Route.Library
-
-        fun navigateToTopLevel(route: Route) {
-            val tab =
-                when (route) {
-                    Route.List -> TopLevelTab.HOME
-                    Route.Discover -> TopLevelTab.DISCOVER
-                    Route.Library -> TopLevelTab.LIBRARY
-                    else -> return
-                }
-            if (selectedTab != tab) {
-                selectedTab = tab
-            }
-        }
 
         fun openMovieDetails(movieId: Int) {
             val route = Route.Detail(movieId)
-            if (backStack.lastOrNull() != route) {
-                backStack.add(route)
-            }
+            if (backStack.lastOrNull() != route) backStack.add(route)
         }
 
         val entryProvider =
             entryProvider<NavKey> {
                 entry<Route.List> {
                     MovieListEntry(
-                        onOpenDetails = { id -> openMovieDetails(id) },
+                        onOpenDetails = ::openMovieDetails,
                         onOpenSettings = { backStack.add(Route.Settings) },
                         onOpenSearch = { backStack.add(Route.Search) },
                         snackbarHostState = snackbarHostState,
@@ -132,15 +116,13 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                 }
 
                 entry<Route.Discover> {
-                    DiscoverEntry(
-                        onOpenDetails = { id -> openMovieDetails(id) },
-                    )
+                    DiscoverEntry(onOpenDetails = ::openMovieDetails)
                 }
 
                 entry<Route.Search> {
                     SearchEntry(
                         onBack = { backStack.removeLastOrNull() },
-                        onOpenDetails = { id -> openMovieDetails(id) },
+                        onOpenDetails = ::openMovieDetails,
                     )
                 }
 
@@ -148,14 +130,14 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                     MovieDetailEntry(
                         movieId = key.movieId,
                         onBack = { backStack.removeLastOrNull() },
-                        onOpenRecommendation = { id -> openMovieDetails(id) },
+                        onOpenRecommendation = ::openMovieDetails,
                     )
                 }
 
                 entry<Route.Library> {
                     LibraryEntry(
                         onOpenSettings = { backStack.add(Route.Settings) },
-                        onOpenDetails = { id -> openMovieDetails(id) },
+                        onOpenDetails = ::openMovieDetails,
                     )
                 }
 
@@ -164,15 +146,12 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                 }
             }
 
-        val homeEntries = rememberDecoratedEntries(homeBackStack, entryProvider)
-        val discoverEntries = rememberDecoratedEntries(discoverBackStack, entryProvider)
-        val libraryEntries = rememberDecoratedEntries(libraryBackStack, entryProvider)
-        val entries =
-            when (selectedTab) {
-                TopLevelTab.HOME -> homeEntries
-                TopLevelTab.DISCOVER -> discoverEntries
-                TopLevelTab.LIBRARY -> libraryEntries
-            }
+        val decoratedEntries =
+            mapOf(
+                TopLevelDestination.HOME to rememberDecoratedEntries(homeBackStack, entryProvider),
+                TopLevelDestination.DISCOVER to rememberDecoratedEntries(discoverBackStack, entryProvider),
+                TopLevelDestination.LIBRARY to rememberDecoratedEntries(libraryBackStack, entryProvider),
+            )
 
         NetworkStatusEffect(networkStatus, snackbarHostState)
 
@@ -183,23 +162,12 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                     hostState = snackbarHostState,
                     modifier = if (useNavigationRail || !showTopLevelNavigation) Modifier.navigationBarsPadding() else Modifier,
                 ) { snackbarData ->
-                    NetworkSnackbar(
-                        snackbarData = snackbarData,
-                        isOffline = isOffline,
-                    )
+                    NetworkSnackbar(snackbarData = snackbarData, isOffline = networkStatus.isOffline)
                 }
             },
             bottomBar = {
                 if (!useNavigationRail && showTopLevelNavigation) {
-                    NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                        bottomNavItems.forEach { item ->
-                            MovieBottomNavigationItem(
-                                item = item,
-                                selected = currentRoute == item.route,
-                                onClick = { navigateToTopLevel(item.route) },
-                            )
-                        }
-                    }
+                    TopLevelNavigationBar(selected = selected, onSelect = { savedTab = it.name })
                 }
             },
         ) { paddingValues ->
@@ -211,26 +179,16 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                         .consumeWindowInsets(paddingValues),
             ) {
                 if (useNavigationRail && showTopLevelNavigation) {
-                    NavigationRail(containerColor = MaterialTheme.colorScheme.surface) {
-                        bottomNavItems.forEach { item ->
-                            MovieRailNavigationItem(
-                                item = item,
-                                selected = currentRoute == item.route,
-                                onClick = { navigateToTopLevel(item.route) },
-                            )
-                        }
-                    }
+                    TopLevelNavigationRail(selected = selected, onSelect = { savedTab = it.name })
                 }
 
-                Box(
-                    modifier = Modifier.weight(1f).fillMaxSize(),
-                ) {
+                Box(modifier = Modifier.weight(1f).fillMaxSize()) {
                     NavDisplay(
-                        entries = entries,
+                        entries = decoratedEntries.getValue(selected),
                         onBack = {
                             when {
                                 backStack.size > 1 -> backStack.removeLastOrNull()
-                                selectedTab != TopLevelTab.HOME -> selectedTab = TopLevelTab.HOME
+                                selected != TopLevelDestination.HOME -> savedTab = TopLevelDestination.HOME.name
                             }
                         },
                         transitionSpec = { forwardTransition() },
@@ -257,6 +215,93 @@ private fun rememberDecoratedEntries(
         entryProvider = entryProvider,
     )
 
+@Composable
+private fun TopLevelNavigationBar(
+    selected: TopLevelDestination,
+    onSelect: (TopLevelDestination) -> Unit,
+) {
+    NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+        TopLevelDestination.entries.forEach { destination ->
+            TopLevelNavigationBarItem(
+                destination = destination,
+                selected = selected == destination,
+                onClick = { onSelect(destination) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun RowScope.TopLevelNavigationBarItem(
+    destination: TopLevelDestination,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    NavigationBarItem(
+        selected = selected,
+        onClick = onClick,
+        icon = { TopLevelIcon(destination, selected) },
+        label = { Text(stringResource(destination.labelRes)) },
+        colors =
+            NavigationBarItemDefaults.colors(
+                selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                selectedTextColor = MaterialTheme.colorScheme.primary,
+                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+    )
+}
+
+@Composable
+private fun TopLevelNavigationRail(
+    selected: TopLevelDestination,
+    onSelect: (TopLevelDestination) -> Unit,
+) {
+    NavigationRail(containerColor = MaterialTheme.colorScheme.surface) {
+        TopLevelDestination.entries.forEach { destination ->
+            TopLevelNavigationRailItem(
+                destination = destination,
+                selected = selected == destination,
+                onClick = { onSelect(destination) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun TopLevelNavigationRailItem(
+    destination: TopLevelDestination,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    NavigationRailItem(
+        selected = selected,
+        onClick = onClick,
+        icon = { TopLevelIcon(destination, selected) },
+        label = { Text(stringResource(destination.labelRes)) },
+        colors =
+            NavigationRailItemDefaults.colors(
+                selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                selectedTextColor = MaterialTheme.colorScheme.primary,
+                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+    )
+}
+
+@Composable
+private fun TopLevelIcon(
+    destination: TopLevelDestination,
+    selected: Boolean,
+) {
+    Icon(
+        imageVector = if (selected) destination.selectedIcon else destination.unselectedIcon,
+        contentDescription = null,
+    )
+}
+
 private fun AnimatedContentTransitionScope<*>.forwardTransition(): ContentTransform =
     (
         slideInHorizontally(
@@ -282,65 +327,3 @@ private fun AnimatedContentTransitionScope<*>.backTransition(): ContentTransform
             animationSpec = tween(300),
         ) + fadeOut(animationSpec = tween(300)),
     )
-
-private data class NavItemVisuals(
-    val label: String,
-    val icon: ImageVector,
-)
-
-@Composable
-private fun navItemVisuals(
-    item: BottomNavItem,
-    selected: Boolean,
-): NavItemVisuals {
-    val label = stringResource(item.labelRes)
-    return NavItemVisuals(label, if (selected) item.selectedIcon else item.unselectedIcon)
-}
-
-@Composable
-private fun RowScope.MovieBottomNavigationItem(
-    item: BottomNavItem,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    val visuals = navItemVisuals(item, selected)
-
-    NavigationBarItem(
-        selected = selected,
-        onClick = onClick,
-        icon = { Icon(visuals.icon, contentDescription = null) },
-        label = { Text(visuals.label) },
-        colors =
-            NavigationBarItemDefaults.colors(
-                selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                selectedTextColor = MaterialTheme.colorScheme.primary,
-                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            ),
-    )
-}
-
-@Composable
-private fun MovieRailNavigationItem(
-    item: BottomNavItem,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    val visuals = navItemVisuals(item, selected)
-
-    NavigationRailItem(
-        selected = selected,
-        onClick = onClick,
-        icon = { Icon(visuals.icon, contentDescription = null) },
-        label = { Text(visuals.label) },
-        colors =
-            NavigationRailItemDefaults.colors(
-                selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                selectedTextColor = MaterialTheme.colorScheme.primary,
-                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            ),
-    )
-}

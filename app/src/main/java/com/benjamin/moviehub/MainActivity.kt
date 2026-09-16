@@ -5,7 +5,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -17,13 +16,20 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.core.util.AppTheme
-import com.benjamin.moviehub.ui.MainViewModel
+import com.benjamin.moviehub.domain.connectivity.ConnectivityObserver
+import com.benjamin.moviehub.domain.connectivity.ConnectivityStatus
+import com.benjamin.moviehub.domain.repository.UserPreferencesRepository
 import com.benjamin.moviehub.ui.navigation.NavigationRoot
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    private val mainViewModel: MainViewModel by viewModels()
+    @Inject
+    lateinit var userPreferencesRepository: UserPreferencesRepository
+
+    @Inject
+    lateinit var connectivityObserver: ConnectivityObserver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,15 +39,10 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            val appTheme by mainViewModel.theme.collectAsStateWithLifecycle()
-            val networkStatus by mainViewModel.networkStatus.collectAsStateWithLifecycle()
-
-            val useDarkTheme =
-                when (appTheme) {
-                    AppTheme.LIGHT -> false
-                    AppTheme.DARK -> true
-                    AppTheme.SYSTEM -> isSystemInDarkTheme()
-                }
+            val appTheme by userPreferencesRepository.theme.collectAsStateWithLifecycle(AppTheme.SYSTEM)
+            val networkStatus by
+                connectivityObserver.observe().collectAsStateWithLifecycle(ConnectivityStatus.UNKNOWN)
+            val useDarkTheme = appTheme.isDark(isSystemInDarkTheme())
 
             MovieHubTheme(darkTheme = useDarkTheme) {
                 SideEffect {

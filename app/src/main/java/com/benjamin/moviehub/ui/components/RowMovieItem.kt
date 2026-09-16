@@ -12,9 +12,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -26,14 +23,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
-import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.core.theme.POSTER_ASPECT_RATIO
 import com.benjamin.moviehub.domain.model.Movie
@@ -45,14 +40,7 @@ fun RowMovieItem(
     onToggleFavorite: (Movie, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val favoriteStateDescription =
-        stringResource(
-            if (movie.isFavorite) {
-                R.string.favorite_state
-            } else {
-                R.string.not_favorite_state
-            },
-        )
+    val favoriteStatus = favoriteStateDescription(movie.isFavorite)
 
     Card(
         onClick = { onMovieClick(movie.id) },
@@ -60,7 +48,7 @@ fun RowMovieItem(
             modifier
                 .testTag("movie_item")
                 .semantics {
-                    stateDescription = favoriteStateDescription
+                    stateDescription = favoriteStatus
                 },
         shape = MaterialTheme.shapes.medium,
         colors =
@@ -105,20 +93,8 @@ fun RowMovieItem(
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
-                            imageVector =
-                                if (movie.isFavorite) {
-                                    Icons.Filled.Favorite
-                                } else {
-                                    Icons.Outlined.FavoriteBorder
-                                },
-                            contentDescription =
-                                stringResource(
-                                    if (movie.isFavorite) {
-                                        R.string.remove_favorite
-                                    } else {
-                                        R.string.favorite
-                                    },
-                                ),
+                            imageVector = favoriteIcon(movie.isFavorite),
+                            contentDescription = favoriteActionLabel(movie.isFavorite),
                             tint =
                                 if (movie.isFavorite) {
                                     MaterialTheme.colorScheme.primary

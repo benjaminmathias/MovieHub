@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.domain.connectivity.ConnectivityStatus
+import com.benjamin.moviehub.domain.connectivity.isOffline
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -23,25 +24,11 @@ class NetworkSnackbarTest {
     @Test
     fun offlineToAvailableShowsRecoveryBanner() {
         var status by mutableStateOf(ConnectivityStatus.LOST)
-
-        composeRule.setContent {
-            MovieHubTheme {
-                val snackbarHostState = remember { SnackbarHostState() }
-                NetworkStatusEffect(status, snackbarHostState)
-                SnackbarHost(snackbarHostState) {
-                    NetworkSnackbar(
-                        it,
-                        status == ConnectivityStatus.LOST || status == ConnectivityStatus.UNAVAILABLE,
-                    )
-                }
-            }
-        }
+        setNetworkContent { status }
 
         composeRule.onNodeWithText("Pas de connexion internet").assertIsDisplayed()
 
-        composeRule.runOnIdle {
-            status = ConnectivityStatus.AVAILABLE
-        }
+        composeRule.runOnIdle { status = ConnectivityStatus.AVAILABLE }
 
         composeRule.onNodeWithText("Connexion rétablie").assertIsDisplayed()
     }
@@ -49,26 +36,12 @@ class NetworkSnackbarTest {
     @Test
     fun unknownToAvailableDoesNotShowNetworkBanner() {
         var status by mutableStateOf(ConnectivityStatus.UNKNOWN)
-
-        composeRule.setContent {
-            MovieHubTheme {
-                val snackbarHostState = remember { SnackbarHostState() }
-                NetworkStatusEffect(status, snackbarHostState)
-                SnackbarHost(snackbarHostState) {
-                    NetworkSnackbar(
-                        it,
-                        status == ConnectivityStatus.LOST || status == ConnectivityStatus.UNAVAILABLE,
-                    )
-                }
-            }
-        }
+        setNetworkContent { status }
 
         assertTrue(composeRule.onAllNodesWithText("Pas de connexion internet").fetchSemanticsNodes().isEmpty())
         assertTrue(composeRule.onAllNodesWithText("Connexion rétablie").fetchSemanticsNodes().isEmpty())
 
-        composeRule.runOnIdle {
-            status = ConnectivityStatus.AVAILABLE
-        }
+        composeRule.runOnIdle { status = ConnectivityStatus.AVAILABLE }
 
         assertTrue(composeRule.onAllNodesWithText("Pas de connexion internet").fetchSemanticsNodes().isEmpty())
         assertTrue(composeRule.onAllNodesWithText("Connexion rétablie").fetchSemanticsNodes().isEmpty())
@@ -76,15 +49,7 @@ class NetworkSnackbarTest {
 
     @Test
     fun offlineBannerRemainsDisplayedAfterTimeAdvances() {
-        composeRule.setContent {
-            MovieHubTheme {
-                val snackbarHostState = remember { SnackbarHostState() }
-                NetworkStatusEffect(ConnectivityStatus.LOST, snackbarHostState)
-                SnackbarHost(snackbarHostState) {
-                    NetworkSnackbar(it, isOffline = true)
-                }
-            }
-        }
+        setNetworkContent { ConnectivityStatus.LOST }
 
         composeRule.mainClock.advanceTimeBy(10_000)
         composeRule.onNodeWithText("Pas de connexion internet").assertIsDisplayed()
@@ -93,21 +58,22 @@ class NetworkSnackbarTest {
     @Test
     fun lostToUnavailableKeepsOneOfflineSnackbar() {
         var status by mutableStateOf(ConnectivityStatus.LOST)
+        setNetworkContent { status }
 
+        composeRule.runOnIdle { status = ConnectivityStatus.UNAVAILABLE }
+
+        composeRule.onNodeWithText("Pas de connexion internet").assertIsDisplayed()
+    }
+
+    private fun setNetworkContent(status: () -> ConnectivityStatus) {
         composeRule.setContent {
             MovieHubTheme {
                 val snackbarHostState = remember { SnackbarHostState() }
-                NetworkStatusEffect(status, snackbarHostState)
+                NetworkStatusEffect(status(), snackbarHostState)
                 SnackbarHost(snackbarHostState) {
-                    NetworkSnackbar(it, isOffline = true)
+                    NetworkSnackbar(it, isOffline = status().isOffline)
                 }
             }
         }
-
-        composeRule.runOnIdle {
-            status = ConnectivityStatus.UNAVAILABLE
-        }
-
-        composeRule.onNodeWithText("Pas de connexion internet").assertIsDisplayed()
     }
 }

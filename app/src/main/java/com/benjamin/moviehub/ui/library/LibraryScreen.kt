@@ -9,15 +9,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BookmarkRemove
-import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material.icons.filled.HeartBroken
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.outlined.BookmarkBorder
-import androidx.compose.material.icons.outlined.CheckCircleOutline
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -59,52 +52,44 @@ fun LibraryScreen(
     val snackbar = remember { SnackbarHostState() }
     val actionErrorMessage = stringResource(R.string.error_updating_library)
     LaunchedEffect(actionErrors, actionErrorMessage) { actionErrors.collect { snackbar.showSnackbar(actionErrorMessage) } }
-    val tabs = listOf(LibraryTab.WATCHLIST, LibraryTab.FAVORITES, LibraryTab.WATCHED)
+
     var savedTab by rememberSaveable { mutableStateOf(LibraryTab.WATCHLIST.name) }
-    val selected = runCatching { LibraryTab.valueOf(savedTab) }.getOrDefault(LibraryTab.WATCHLIST)
+    val selected = LibraryTab.entries.firstOrNull { it.name == savedTab } ?: LibraryTab.WATCHLIST
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.library_tab),
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                },
+                title = { Text(stringResource(R.string.library_tab), color = MaterialTheme.colorScheme.onSurface) },
                 actions = {
-                    IconButton(
-                        onClick = onSettingsClick,
-                    ) { Icon(Icons.Default.Settings, stringResource(R.string.settings_title)) }
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(Icons.Default.Settings, stringResource(R.string.settings_title))
+                    }
                 },
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            PrimaryTabRow(selectedTabIndex = tabs.indexOf(selected)) {
-                tabs.forEach { tab ->
+            PrimaryTabRow(selectedTabIndex = selected.ordinal) {
+                LibraryTab.entries.forEach { tab ->
                     Tab(
                         selected = selected == tab,
                         onClick = { savedTab = tab.name },
                         selectedContentColor = MaterialTheme.colorScheme.primary,
                         unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        text = { Text(stringResource(tab.label()), style = MaterialTheme.typography.labelLarge) },
+                        text = { Text(stringResource(tab.labelRes), style = MaterialTheme.typography.labelLarge) },
                     )
                 }
             }
+
             when (state) {
-                LibraryUiState.Loading -> Column(Modifier.verticalScroll(rememberScrollState())) { repeat(5) { CompactMovieShimmerItem() } }
+                LibraryUiState.Loading ->
+                    Column(Modifier.verticalScroll(rememberScrollState())) { repeat(5) { CompactMovieShimmerItem() } }
+
                 is LibraryUiState.Success -> {
-                    val movies =
-                        state.movies.filter {
-                            when (selected) {
-                                LibraryTab.WATCHLIST -> it.isWatchlist
-                                LibraryTab.FAVORITES -> it.isFavorite
-                                LibraryTab.WATCHED -> it.isWatched
-                            }
-                        }
+                    val movies = state.movies.filter(selected.matches)
                     if (movies.isEmpty()) {
-                        EmptyStateView(message = stringResource(selected.emptyLabel()), icon = selected.emptyIcon())
+                        EmptyStateView(message = stringResource(selected.emptyMessageRes), icon = selected.emptyIcon)
                     } else {
                         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 8.dp)) {
                             items(movies, key = { it.id }) { movie ->
@@ -112,14 +97,15 @@ fun LibraryScreen(
                                     movie = movie,
                                     onMovieClick = onMovieClick,
                                     onRemove = { onRemove(it, selected) },
-                                    removeLabel = stringResource(selected.removeLabel()),
-                                    removeIcon = selected.removeIcon(),
+                                    removeLabel = stringResource(selected.removeLabelRes),
+                                    removeIcon = selected.removeIcon,
                                     modifier = Modifier.animateItem(),
                                 )
                             }
                         }
                     }
                 }
+
                 is LibraryUiState.Error ->
                     EmptyStateView(
                         message = stringResource(R.string.error_prefix, stringResource(state.errorMessage)),
@@ -130,38 +116,3 @@ fun LibraryScreen(
         }
     }
 }
-
-private fun LibraryTab.label() =
-    when (this) {
-        LibraryTab.WATCHLIST -> R.string.watchlist_tab
-        LibraryTab.FAVORITES -> R.string.favorite_tab
-        LibraryTab.WATCHED -> R.string.watched_tab
-    }
-
-private fun LibraryTab.emptyLabel() =
-    when (this) {
-        LibraryTab.WATCHLIST -> R.string.no_watchlist_added
-        LibraryTab.FAVORITES -> R.string.no_favorite_added
-        LibraryTab.WATCHED -> R.string.no_watched_added
-    }
-
-private fun LibraryTab.removeLabel() =
-    when (this) {
-        LibraryTab.WATCHLIST -> R.string.remove_watchlist_accessibility
-        LibraryTab.FAVORITES -> R.string.remove_favorite_accessibility
-        LibraryTab.WATCHED -> R.string.remove_watched_accessibility
-    }
-
-private fun LibraryTab.emptyIcon() =
-    when (this) {
-        LibraryTab.WATCHLIST -> Icons.Outlined.BookmarkBorder
-        LibraryTab.FAVORITES -> Icons.Outlined.FavoriteBorder
-        LibraryTab.WATCHED -> Icons.Filled.CheckCircleOutline
-    }
-
-private fun LibraryTab.removeIcon() =
-    when (this) {
-        LibraryTab.WATCHLIST -> Icons.Filled.BookmarkRemove
-        LibraryTab.FAVORITES -> Icons.Filled.HeartBroken
-        LibraryTab.WATCHED -> Icons.Filled.VisibilityOff
-    }
