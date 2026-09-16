@@ -154,91 +154,38 @@ class MovieDetailViewModel
     }
 
 /**
- * One library flag and its three responsibilities: read it, apply it optimistically
+ * One library flag and its responsibilities: read it, apply it optimistically
  * (watchlist and watched stay mutually exclusive) and restore the previous flags when
  * persistence fails.
  */
-private enum class LibraryFlag {
-    FAVORITE {
-        override fun isSet(movie: Movie) = movie.isFavorite
-
-        override fun apply(
-            movie: Movie,
-            value: Boolean,
-        ) = movie.copy(isFavorite = value)
-
-        override fun restore(
-            movie: Movie,
-            previous: Movie,
-            value: Boolean,
-        ) = movie.copy(isFavorite = previous.isFavorite)
-
-        override suspend fun persist(
-            repository: MovieRepository,
-            movie: Movie,
-            value: Boolean,
-        ) = repository.setFavorite(movie, value)
-    },
-    WATCHLIST {
-        override fun isSet(movie: Movie) = movie.isWatchlist
-
-        override fun apply(
-            movie: Movie,
-            value: Boolean,
-        ) = movie.copy(isWatchlist = value, isWatched = if (value) false else movie.isWatched)
-
-        override fun restore(
-            movie: Movie,
-            previous: Movie,
-            value: Boolean,
-        ) = movie.copy(isWatchlist = previous.isWatchlist, isWatched = if (value) previous.isWatched else movie.isWatched)
-
-        override suspend fun persist(
-            repository: MovieRepository,
-            movie: Movie,
-            value: Boolean,
-        ) = repository.setWatchlist(movie, value)
-    },
-    WATCHED {
-        override fun isSet(movie: Movie) = movie.isWatched
-
-        override fun apply(
-            movie: Movie,
-            value: Boolean,
-        ) = movie.copy(isWatched = value, isWatchlist = if (value) false else movie.isWatchlist)
-
-        override fun restore(
-            movie: Movie,
-            previous: Movie,
-            value: Boolean,
-        ) = movie.copy(isWatched = previous.isWatched, isWatchlist = if (value) previous.isWatchlist else movie.isWatchlist)
-
-        override suspend fun persist(
-            repository: MovieRepository,
-            movie: Movie,
-            value: Boolean,
-        ) = repository.setWatched(movie, value)
-    },
-    ;
-
-    abstract fun isSet(movie: Movie): Boolean
-
-    abstract fun apply(
-        movie: Movie,
-        value: Boolean,
-    ): Movie
-
-    abstract fun restore(
-        movie: Movie,
-        previous: Movie,
-        value: Boolean,
-    ): Movie
-
-    abstract suspend fun persist(
-        repository: MovieRepository,
-        movie: Movie,
-        value: Boolean,
-    )
+private enum class LibraryFlag(
+    val isSet: (Movie) -> Boolean,
+    val apply: (Movie, Boolean) -> Movie,
+    val restore: (Movie, Movie, Boolean) -> Movie,
+    val persist: suspend (MovieRepository, Movie, Boolean) -> Unit,
+) {
+    FAVORITE(
+        isSet = Movie::isFavorite,
+        apply = { movie, value -> movie.copy(isFavorite = value) },
+        restore = { movie, previous, _ -> movie.copy(isFavorite = previous.isFavorite) },
+        persist = { repository, movie, value -> repository.setFavorite(movie, value) },
+    ),
+    WATCHLIST(
+        isSet = Movie::isWatchlist,
+        apply = { movie, value -> movie.copy(isWatchlist = value, isWatched = if (value) false else movie.isWatched) },
+        restore = { movie, previous, value ->
+            movie.copy(isWatchlist = previous.isWatchlist, isWatched = if (value) previous.isWatched else movie.isWatched)
+        },
+        persist = { repository, movie, value -> repository.setWatchlist(movie, value) },
+    ),
+    WATCHED(
+        isSet = Movie::isWatched,
+        apply = { movie, value -> movie.copy(isWatched = value, isWatchlist = if (value) false else movie.isWatchlist) },
+        restore = { movie, previous, value ->
+            movie.copy(isWatched = previous.isWatched, isWatchlist = if (value) previous.isWatchlist else movie.isWatchlist)
+        },
+        persist = { repository, movie, value -> repository.setWatched(movie, value) },
+    ),
 }
 
 private fun MovieRecommendationsUiState.withLocalFlags(localById: Map<Int, Movie>): MovieRecommendationsUiState =
