@@ -22,8 +22,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class LibraryTab { WATCHLIST, FAVORITES, WATCHED }
-
 sealed class LibraryUiState {
     data object Loading : LibraryUiState()
 
@@ -70,11 +68,7 @@ class LibraryViewModel
         ) {
             viewModelScope.launch {
                 try {
-                    when (tab) {
-                        LibraryTab.WATCHLIST -> repository.setWatchlist(movie, false)
-                        LibraryTab.FAVORITES -> repository.setFavorite(movie, false)
-                        LibraryTab.WATCHED -> repository.setWatched(movie, false)
-                    }
+                    tab.removeFrom(repository, movie)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {

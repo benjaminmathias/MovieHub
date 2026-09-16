@@ -35,105 +35,65 @@ class MovieDetailViewModel
         private var loadJob: Job? = null
         private var libraryJob: Job? = null
         private val libraryMutex = Mutex()
-        private val latestLibraryById = MutableStateFlow<Map<Int, Movie>>(emptyMap())
+        private var latestLibraryById: Map<Int, Movie> = emptyMap()
 
         fun loadMovieDetails(movieId: Int) {
-            val currentState = _uiState.value
-            if (currentState is MovieDetailUiState.Success && currentState.movie.id == movieId) {
-                return
-            }
+            val current = _uiState.value
+            if (current is MovieDetailUiState.Success && current.movie.id == movieId) return
 
             loadJob?.cancel()
             libraryJob?.cancel()
             loadJob =
                 viewModelScope.launch {
                     _uiState.value = MovieDetailUiState.Loading
-
                     try {
                         coroutineScope {
-                            val creditsDeferred = async { loadCredits(movieId) }
-                            val recommendationsDeferred = async { loadRecommendations(movieId) }
+                            val credits = async { loadCredits(movieId) }
+                            val recommendations = async { loadRecommendations(movieId) }
                             // A main failure throws out of the scope and cancels both async children.
                             val movie = repository.getMovieDetails(movieId)
 
                             _uiState.value = MovieDetailUiState.Success(movie, MovieCredits())
-                            // Runs in viewModelScope on purpose: the observer must outlive the load job
-                            // so library changes made elsewhere keep reconciling this screen.
+                            // Runs in viewModelScope on purpose: the observer must outlive the load
+                            // job so library changes made elsewhere keep reconciling this screen.
                             libraryJob = viewModelScope.launch { observeLibrary(movieId) }
 
-                            val credits = creditsDeferred.await()
-                            updateSuccess(movieId) { it.copy(credits = credits) }
-                            val recommendations = recommendationsDeferred.await()
-                            val syncedRecommendations = syncRecommendationsWithLibrary(recommendations)
-                            updateSuccess(movieId) { it.copy(recommendations = syncedRecommendations) }
+                            val loadedCredits = credits.await()
+                            updateSuccess(movieId) { it.copy(credits = loadedCredits) }
+                            val loadedRecommendations = recommendations.await()
+                            updateSuccess(movieId) {
+                                it.copy(recommendations = loadedRecommendations.withLocalFlags(latestLibraryById))
+                            }
                         }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
-                        _uiState.value =
-                            MovieDetailUiState.Error(R.string.error_loading_movie_detail)
+                        _uiState.value = MovieDetailUiState.Error(R.string.error_loading_movie_detail)
                     }
                 }
         }
 
-        fun toggleFavorite() {
-            toggleLibraryFlag(
-                current = Movie::isFavorite,
-                persist = { movie, value -> repository.setFavorite(movie, value) },
-                update = { movie, value -> movie.copy(isFavorite = value) },
-                restore = { movie, previous, _ -> movie.copy(isFavorite = previous.isFavorite) },
-            )
-        }
+        fun toggleFavorite() = toggleLibraryFlag(LibraryFlag.FAVORITE)
 
-        fun toggleWatchlist() {
-            toggleLibraryFlag(
-                current = Movie::isWatchlist,
-                persist = { movie, value -> repository.setWatchlist(movie, value) },
-                update = { movie, value -> movie.copy(isWatchlist = value, isWatched = if (value) false else movie.isWatched) },
-                restore = { movie, previous, attempted ->
-                    movie.copy(
-                        isWatchlist = previous.isWatchlist,
-                        isWatched = if (attempted) previous.isWatched else movie.isWatched,
-                    )
-                },
-            )
-        }
+        fun toggleWatchlist() = toggleLibraryFlag(LibraryFlag.WATCHLIST)
 
-        fun toggleWatched() {
-            toggleLibraryFlag(
-                current = Movie::isWatched,
-                persist = { movie, value -> repository.setWatched(movie, value) },
-                update = { movie, value -> movie.copy(isWatched = value, isWatchlist = if (value) false else movie.isWatchlist) },
-                restore = { movie, previous, attempted ->
-                    movie.copy(
-                        isWatched = previous.isWatched,
-                        isWatchlist = if (attempted) previous.isWatchlist else movie.isWatchlist,
-                    )
-                },
-            )
-        }
+        fun toggleWatched() = toggleLibraryFlag(LibraryFlag.WATCHED)
 
-        private fun toggleLibraryFlag(
-            current: (Movie) -> Boolean,
-            persist: suspend (Movie, Boolean) -> Unit,
-            update: (Movie, Boolean) -> Movie,
-            restore: (movie: Movie, previous: Movie, attempted: Boolean) -> Movie,
-        ) {
+        private fun toggleLibraryFlag(flag: LibraryFlag) {
             viewModelScope.launch {
                 libraryMutex.withLock {
-                    val currentState = _uiState.value as? MovieDetailUiState.Success ?: return@withLock
-                    val previous = currentState.movie
-                    val attempted = !current(previous)
-
-                    _uiState.value = currentState.copy(movie = update(previous, attempted))
+                    val state = _uiState.value as? MovieDetailUiState.Success ?: return@withLock
+                    val previous = state.movie
+                    val value = !flag.isSet(previous)
+                    _uiState.value = state.copy(movie = flag.apply(previous, value))
 
                     try {
-                        persist(previous, attempted)
+                        flag.persist(repository, previous, value)
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
                         _libraryActionErrors.tryEmit(Unit)
-                        rollbackLibrary(previous.id, previous, current, attempted, restore)
+                        rollbackLibrary(previous.id, previous, flag, value)
                     }
                 }
             }
@@ -148,99 +108,154 @@ class MovieDetailViewModel
                 MovieCredits()
             }
 
-        private fun updateSuccess(
-            movieId: Int,
-            transform: (MovieDetailUiState.Success) -> MovieDetailUiState.Success,
-        ) {
-            val latest = _uiState.value as? MovieDetailUiState.Success ?: return
-            if (latest.movie.id == movieId) {
-                _uiState.value = transform(latest)
-            }
-        }
-
-        private suspend fun observeLibrary(movieId: Int) {
-            repository.getLibraryMovies().collectLatest { localMovies ->
-                val localById = localMovies.associateBy { it.id }
-                latestLibraryById.value = localById
-                updateSuccess(movieId) { latest -> applyLibraryFlags(latest, localById, movieId) }
-            }
-        }
-
-        private fun applyLibraryFlags(
-            state: MovieDetailUiState.Success,
-            localById: Map<Int, Movie>,
-            movieId: Int,
-        ): MovieDetailUiState.Success {
-            val localMovie = localById[movieId]
-            val updatedMovie =
-                state.movie.copy(
-                    isFavorite = localMovie?.isFavorite ?: false,
-                    isWatchlist = localMovie?.isWatchlist ?: false,
-                    isWatched = localMovie?.isWatched ?: false,
-                )
-            val updatedRecommendations =
-                (state.recommendations as? MovieRecommendationsUiState.Success)?.let { recommendations ->
-                    MovieRecommendationsUiState.Success(
-                        recommendations.movies.map { recommendation ->
-                            localById[recommendation.id]?.let { local ->
-                                recommendation.copy(
-                                    isFavorite = local.isFavorite,
-                                    isWatchlist = local.isWatchlist,
-                                    isWatched = local.isWatched,
-                                )
-                            } ?: recommendation.copy(
-                                isFavorite = false,
-                                isWatchlist = false,
-                                isWatched = false,
-                            )
-                        },
-                    )
-                } ?: state.recommendations
-            return state.copy(movie = updatedMovie, recommendations = updatedRecommendations)
-        }
-
-        private fun syncRecommendationsWithLibrary(recommendations: MovieRecommendationsUiState): MovieRecommendationsUiState =
-            (recommendations as? MovieRecommendationsUiState.Success)?.let { success ->
-                MovieRecommendationsUiState.Success(
-                    success.movies.map { recommendation ->
-                        latestLibraryById.value[recommendation.id]?.let { local ->
-                            recommendation.copy(
-                                isFavorite = local.isFavorite,
-                                isWatchlist = local.isWatchlist,
-                                isWatched = local.isWatched,
-                            )
-                        } ?: recommendation
-                    },
-                )
-            } ?: recommendations
-
         private suspend fun loadRecommendations(movieId: Int): MovieRecommendationsUiState =
             try {
-                val movies = repository.getMovieRecommendations(movieId)
-                if (movies.isEmpty()) {
-                    MovieRecommendationsUiState.Empty
-                } else {
-                    MovieRecommendationsUiState.Success(movies)
-                }
+                repository
+                    .getMovieRecommendations(movieId)
+                    .takeIf(List<Movie>::isNotEmpty)
+                    ?.let(MovieRecommendationsUiState::Success)
+                    ?: MovieRecommendationsUiState.Empty
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
                 MovieRecommendationsUiState.Error
             }
 
+        private suspend fun observeLibrary(movieId: Int) {
+            repository.getLibraryMovies().collectLatest { localMovies ->
+                val localById = localMovies.associateBy { it.id }
+                latestLibraryById = localById
+                updateSuccess(movieId) { it.withLocalFlags(localById) }
+            }
+        }
+
+        private fun updateSuccess(
+            movieId: Int,
+            transform: (MovieDetailUiState.Success) -> MovieDetailUiState.Success,
+        ) {
+            val latest = _uiState.value as? MovieDetailUiState.Success ?: return
+            if (latest.movie.id == movieId) _uiState.value = transform(latest)
+        }
+
         private fun rollbackLibrary(
             movieId: Int,
             previous: Movie,
-            current: (Movie) -> Boolean,
-            attempted: Boolean,
-            restore: (movie: Movie, previous: Movie, attempted: Boolean) -> Movie,
+            flag: LibraryFlag,
+            value: Boolean,
         ) {
             updateSuccess(movieId) { latest ->
-                if (current(latest.movie) == attempted) {
-                    latest.copy(movie = restore(latest.movie, previous, attempted))
-                } else {
+                if (flag.isSet(latest.movie) != value) {
                     latest
+                } else {
+                    latest.copy(movie = flag.restore(latest.movie, previous, value))
                 }
             }
         }
     }
+
+/**
+ * One library flag and its three responsibilities: read it, apply it optimistically
+ * (watchlist and watched stay mutually exclusive) and restore the previous flags when
+ * persistence fails.
+ */
+private enum class LibraryFlag {
+    FAVORITE {
+        override fun isSet(movie: Movie) = movie.isFavorite
+
+        override fun apply(
+            movie: Movie,
+            value: Boolean,
+        ) = movie.copy(isFavorite = value)
+
+        override fun restore(
+            movie: Movie,
+            previous: Movie,
+            value: Boolean,
+        ) = movie.copy(isFavorite = previous.isFavorite)
+
+        override suspend fun persist(
+            repository: MovieRepository,
+            movie: Movie,
+            value: Boolean,
+        ) = repository.setFavorite(movie, value)
+    },
+    WATCHLIST {
+        override fun isSet(movie: Movie) = movie.isWatchlist
+
+        override fun apply(
+            movie: Movie,
+            value: Boolean,
+        ) = movie.copy(isWatchlist = value, isWatched = if (value) false else movie.isWatched)
+
+        override fun restore(
+            movie: Movie,
+            previous: Movie,
+            value: Boolean,
+        ) = movie.copy(isWatchlist = previous.isWatchlist, isWatched = if (value) previous.isWatched else movie.isWatched)
+
+        override suspend fun persist(
+            repository: MovieRepository,
+            movie: Movie,
+            value: Boolean,
+        ) = repository.setWatchlist(movie, value)
+    },
+    WATCHED {
+        override fun isSet(movie: Movie) = movie.isWatched
+
+        override fun apply(
+            movie: Movie,
+            value: Boolean,
+        ) = movie.copy(isWatched = value, isWatchlist = if (value) false else movie.isWatchlist)
+
+        override fun restore(
+            movie: Movie,
+            previous: Movie,
+            value: Boolean,
+        ) = movie.copy(isWatched = previous.isWatched, isWatchlist = if (value) previous.isWatchlist else movie.isWatchlist)
+
+        override suspend fun persist(
+            repository: MovieRepository,
+            movie: Movie,
+            value: Boolean,
+        ) = repository.setWatched(movie, value)
+    },
+    ;
+
+    abstract fun isSet(movie: Movie): Boolean
+
+    abstract fun apply(
+        movie: Movie,
+        value: Boolean,
+    ): Movie
+
+    abstract fun restore(
+        movie: Movie,
+        previous: Movie,
+        value: Boolean,
+    ): Movie
+
+    abstract suspend fun persist(
+        repository: MovieRepository,
+        movie: Movie,
+        value: Boolean,
+    )
+}
+
+private fun MovieRecommendationsUiState.withLocalFlags(localById: Map<Int, Movie>): MovieRecommendationsUiState =
+    (this as? MovieRecommendationsUiState.Success)
+        ?.let { success ->
+            MovieRecommendationsUiState.Success(success.movies.map { it.withFlags(localById[it.id]) })
+        } ?: this
+
+private fun MovieDetailUiState.Success.withLocalFlags(localById: Map<Int, Movie>): MovieDetailUiState.Success =
+    copy(
+        movie = movie.withFlags(localById[movie.id]),
+        recommendations = recommendations.withLocalFlags(localById),
+    )
+
+private fun Movie.withFlags(local: Movie?): Movie =
+    copy(
+        isFavorite = local?.isFavorite ?: false,
+        isWatchlist = local?.isWatchlist ?: false,
+        isWatched = local?.isWatched ?: false,
+    )
