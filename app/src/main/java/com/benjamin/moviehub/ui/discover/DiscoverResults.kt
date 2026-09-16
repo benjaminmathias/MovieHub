@@ -2,12 +2,10 @@ package com.benjamin.moviehub.ui.discover
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -22,12 +20,10 @@ import com.benjamin.moviehub.core.theme.MovieGridMinCellSize
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.CompactMovieShimmerItem
 import com.benjamin.moviehub.ui.components.EmptyStateView
-import com.benjamin.moviehub.ui.components.ErrorRetryItem
+import com.benjamin.moviehub.ui.components.MovieCardShimmer
+import com.benjamin.moviehub.ui.components.PagingStatus
 import com.benjamin.moviehub.ui.components.PosterMovieItem
-import com.benjamin.moviehub.ui.components.PosterMovieShimmerItem
-import com.benjamin.moviehub.ui.components.isEmptyAfterEndOfPagination
-import com.benjamin.moviehub.ui.components.isInitialError
-import com.benjamin.moviehub.ui.components.isInitialLoading
+import com.benjamin.moviehub.ui.components.phase
 import kotlinx.coroutines.flow.Flow
 
 @Composable
@@ -36,24 +32,16 @@ internal fun DiscoverResults(
     onMovieClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val lazyPagingItems = discoverResults.collectAsLazyPagingItems()
+    val items = discoverResults.collectAsLazyPagingItems()
 
-    when {
-        lazyPagingItems.isInitialLoading -> DiscoverLoading(modifier)
-        lazyPagingItems.isInitialError ->
-            EmptyStateView(
-                message = stringResource(R.string.error_loading_movies),
-                icon = Icons.Default.CloudOff,
-                onRetry = { lazyPagingItems.retry() },
-                modifier = modifier,
-            )
-        lazyPagingItems.isEmptyAfterEndOfPagination ->
-            EmptyStateView(
-                message = stringResource(R.string.discover_empty_results),
-                icon = Icons.Default.SearchOff,
-                modifier = modifier,
-            )
-        else -> DiscoverMovieGrid(lazyPagingItems, onMovieClick, modifier)
+    PagingStatus(
+        phase = items.phase,
+        onRetry = { items.retry() },
+        emptyMessage = stringResource(R.string.discover_empty_results),
+        modifier = modifier,
+        loading = { DiscoverLoading(modifier) },
+    ) {
+        DiscoverMovieGrid(items, onMovieClick, modifier)
     }
 }
 
@@ -66,7 +54,7 @@ private fun DiscoverLoading(modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        items(6) { PosterMovieShimmerItem() }
+        items(6) { MovieCardShimmer(modifier = Modifier.fillMaxWidth()) }
     }
 }
 
@@ -95,15 +83,18 @@ private fun DiscoverMovieGrid(
         when (val state = lazyPagingItems.loadState.append) {
             is LoadState.Error ->
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    ErrorRetryItem(
+                    EmptyStateView(
                         message = stringResource(R.string.error_loading_more_movies),
                         onRetry = { lazyPagingItems.retry() },
+                        compact = true,
                     )
                 }
+
             LoadState.Loading ->
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     CompactMovieShimmerItem()
                 }
+
             is LoadState.NotLoading -> Unit
         }
     }

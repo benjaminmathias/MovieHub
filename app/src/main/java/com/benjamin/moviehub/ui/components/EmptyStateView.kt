@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,13 +20,32 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
+/**
+ * Shared status message for empty, error and end-of-list states. Use [compact] for
+ * inline list items (e.g. a failed append page) instead of a full-screen state.
+ */
 @Composable
 fun EmptyStateView(
     message: String,
     modifier: Modifier = Modifier,
     icon: ImageVector = Icons.Default.Info,
     onRetry: (() -> Unit)? = null,
+    compact: Boolean = false,
 ) {
+    if (compact) {
+        Column(
+            modifier = modifier.fillMaxWidth().padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(text = message, color = MaterialTheme.colorScheme.error)
+            if (onRetry != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                RetryButton(onClick = onRetry)
+            }
+        }
+        return
+    }
+
     Column(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,

@@ -12,9 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -37,11 +35,9 @@ import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.CompactMovieItem
 import com.benjamin.moviehub.ui.components.CompactMovieShimmerItem
 import com.benjamin.moviehub.ui.components.EmptyStateView
-import com.benjamin.moviehub.ui.components.ErrorRetryItem
 import com.benjamin.moviehub.ui.components.MovieSearchBar
-import com.benjamin.moviehub.ui.components.isEmptyAfterEndOfPagination
-import com.benjamin.moviehub.ui.components.isInitialError
-import com.benjamin.moviehub.ui.components.isInitialLoading
+import com.benjamin.moviehub.ui.components.PagingStatus
+import com.benjamin.moviehub.ui.components.phase
 import kotlinx.coroutines.flow.Flow
 
 @Composable
@@ -102,41 +98,23 @@ private fun SearchResults(
         EmptyStateView(
             message = stringResource(R.string.search_placeholder),
             icon = Icons.Default.Search,
-            onRetry = null,
         )
         return
     }
 
-    val lazyPagingItems = searchResults.collectAsLazyPagingItems()
+    val items = searchResults.collectAsLazyPagingItems()
 
-    when {
-        lazyPagingItems.isInitialLoading -> {
-            SearchLoadingShimmer()
-        }
-
-        lazyPagingItems.isInitialError -> {
-            EmptyStateView(
-                message = stringResource(R.string.error_loading_movies),
-                icon = Icons.Default.CloudOff,
-                onRetry = { lazyPagingItems.retry() },
-            )
-        }
-
-        lazyPagingItems.isEmptyAfterEndOfPagination -> {
-            EmptyStateView(
-                message = stringResource(R.string.empty_search_results, searchQuery.trim()),
-                icon = Icons.Default.SearchOff,
-                onRetry = null,
-            )
-        }
-
-        else -> {
-            SearchMovieList(
-                lazyPagingItems = lazyPagingItems,
-                onMovieClick = onMovieClick,
-                onRetry = { lazyPagingItems.retry() },
-            )
-        }
+    PagingStatus(
+        phase = items.phase,
+        onRetry = { items.retry() },
+        emptyMessage = stringResource(R.string.empty_search_results, searchQuery.trim()),
+        loading = { SearchLoadingShimmer() },
+    ) {
+        SearchMovieList(
+            lazyPagingItems = items,
+            onMovieClick = onMovieClick,
+            onRetry = { items.retry() },
+        )
     }
 }
 
@@ -159,24 +137,22 @@ private fun SearchMovieList(
             key = lazyPagingItems.itemKey { it.id },
         ) { index ->
             lazyPagingItems[index]?.let { movie ->
-                CompactMovieItem(
-                    movie = movie,
-                    onMovieClick = onMovieClick,
-                )
+                CompactMovieItem(movie = movie, onMovieClick = onMovieClick)
             }
         }
 
-        val appendState = lazyPagingItems.loadState.append
-        if (appendState is LoadState.Error) {
-            item {
-                ErrorRetryItem(
-                    message = stringResource(R.string.error_loading_movies),
-                    onRetry = onRetry,
-                )
-            }
-        }
-        if (appendState is LoadState.Loading) {
-            item { CompactMovieShimmerItem() }
+        when (val appendState = lazyPagingItems.loadState.append) {
+            is LoadState.Error ->
+                item {
+                    EmptyStateView(
+                        message = stringResource(R.string.error_loading_movies),
+                        onRetry = onRetry,
+                        compact = true,
+                    )
+                }
+
+            LoadState.Loading -> item { CompactMovieShimmerItem() }
+            is LoadState.NotLoading -> Unit
         }
     }
 }

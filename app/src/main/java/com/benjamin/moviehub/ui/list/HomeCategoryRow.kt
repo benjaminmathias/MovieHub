@@ -22,9 +22,9 @@ import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.theme.HomeMovieCardWidth
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCategory
-import com.benjamin.moviehub.ui.components.ErrorRetryItem
+import com.benjamin.moviehub.ui.components.EmptyStateView
+import com.benjamin.moviehub.ui.components.MovieCardShimmer
 import com.benjamin.moviehub.ui.components.RowMovieItem
-import com.benjamin.moviehub.ui.components.RowMovieShimmerItem
 import com.benjamin.moviehub.ui.components.isInitialError
 import com.benjamin.moviehub.ui.components.isInitialLoading
 
@@ -46,10 +46,12 @@ internal fun CategoryRow(
         when {
             lazyPagingItems.isInitialLoading -> CategoryRowLoadingShimmer()
             lazyPagingItems.isInitialError ->
-                ErrorRetryItem(
+                EmptyStateView(
                     message = stringResource(R.string.error_loading_movies),
                     onRetry = { lazyPagingItems.retry() },
+                    compact = true,
                 )
+
             else ->
                 CategoryRowList(
                     lazyPagingItems = lazyPagingItems,
@@ -67,10 +69,7 @@ private fun CategoryRowList(
     onToggleFavorite: (Movie, Boolean) -> Unit,
 ) {
     LazyRow(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .testTag("category_row"),
+        modifier = Modifier.fillMaxWidth().testTag("category_row"),
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -89,23 +88,16 @@ private fun CategoryRowList(
         }
 
         when (lazyPagingItems.loadState.append) {
-            is LoadState.Error -> {
+            is LoadState.Error ->
                 item {
-                    ErrorRetryItem(
+                    EmptyStateView(
                         message = stringResource(R.string.error_loading_more_movies),
                         onRetry = lazyPagingItems::retry,
+                        compact = true,
                     )
                 }
-            }
 
-            LoadState.Loading -> {
-                item {
-                    RowMovieShimmerItem(
-                        modifier = Modifier.width(HomeMovieCardWidth),
-                    )
-                }
-            }
-
+            LoadState.Loading -> item { MovieCardShimmer(modifier = Modifier.width(HomeMovieCardWidth)) }
             is LoadState.NotLoading -> Unit
         }
     }
@@ -119,9 +111,7 @@ private fun CategoryRowLoadingShimmer() {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         userScrollEnabled = false,
     ) {
-        items(3) {
-            RowMovieShimmerItem(modifier = Modifier.width(HomeMovieCardWidth))
-        }
+        items(3) { MovieCardShimmer(modifier = Modifier.width(HomeMovieCardWidth)) }
     }
 }
 

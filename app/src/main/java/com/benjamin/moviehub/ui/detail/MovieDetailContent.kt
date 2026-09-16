@@ -40,8 +40,8 @@ import com.benjamin.moviehub.domain.model.Actor
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
 import com.benjamin.moviehub.ui.components.ActorItem
+import com.benjamin.moviehub.ui.components.MovieCardShimmer
 import com.benjamin.moviehub.ui.components.PosterMovieItem
-import com.benjamin.moviehub.ui.components.PosterMovieShimmerItem
 import com.benjamin.moviehub.ui.components.previewMovie
 
 @Composable
@@ -155,7 +155,7 @@ fun MovieDetailContent(
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
                         ) {
                             items(3) {
-                                PosterMovieShimmerItem(modifier = Modifier.width(140.dp))
+                                MovieCardShimmer(modifier = Modifier.width(140.dp))
                             }
                         }
                     }

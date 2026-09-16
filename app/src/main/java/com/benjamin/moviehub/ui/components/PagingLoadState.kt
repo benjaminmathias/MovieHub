@@ -3,6 +3,14 @@ package com.benjamin.moviehub.ui.components
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 
+/** Coarse phase of a paged feed, used for shared loading/empty/error rendering. */
+enum class PagingPhase {
+    LOADING,
+    ERROR,
+    EMPTY,
+    CONTENT,
+}
+
 /** First page is loading and nothing is displayed yet. */
 val LazyPagingItems<*>.isInitialLoading: Boolean
     get() =
@@ -21,3 +29,12 @@ val LazyPagingItems<*>.isEmptyAfterEndOfPagination: Boolean
         itemCount == 0 &&
             loadState.refresh is LoadState.NotLoading &&
             (loadState.append as? LoadState.NotLoading)?.endOfPaginationReached == true
+
+val LazyPagingItems<*>.phase: PagingPhase
+    get() =
+        when {
+            isInitialLoading -> PagingPhase.LOADING
+            isInitialError -> PagingPhase.ERROR
+            isEmptyAfterEndOfPagination -> PagingPhase.EMPTY
+            else -> PagingPhase.CONTENT
+        }

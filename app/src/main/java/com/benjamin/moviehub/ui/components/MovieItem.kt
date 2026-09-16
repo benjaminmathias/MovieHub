@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -23,14 +22,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewFontScale
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
-import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.theme.ContentHorizontalPadding
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.core.theme.POSTER_ASPECT_RATIO
@@ -42,10 +39,7 @@ fun PosterMovieItem(
     onMovieClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val favoriteStateDescription =
-        stringResource(
-            if (movie.isFavorite) R.string.favorite_state else R.string.not_favorite_state,
-        )
+    val favoriteStatus = favoriteStateDescription(movie.isFavorite)
 
     Card(
         onClick = { onMovieClick(movie.id) },
@@ -54,7 +48,7 @@ fun PosterMovieItem(
                 .testTag("movie_item")
                 .fillMaxWidth()
                 .semantics {
-                    stateDescription = favoriteStateDescription
+                    stateDescription = favoriteStatus
                 },
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
@@ -110,10 +104,7 @@ fun CompactMovieItem(
 ) {
     val posterWidth = 64.dp
     val posterHeight = 96.dp
-    val favoriteStateDescription =
-        stringResource(
-            if (movie.isFavorite) R.string.favorite_state else R.string.not_favorite_state,
-        )
+    val favoriteStatus = favoriteStateDescription(movie.isFavorite)
 
     Card(
         onClick = { onMovieClick(movie.id) },
@@ -123,7 +114,7 @@ fun CompactMovieItem(
                 .fillMaxWidth()
                 .padding(horizontal = ContentHorizontalPadding, vertical = 4.dp)
                 .semantics {
-                    stateDescription = favoriteStateDescription
+                    stateDescription = favoriteStatus
                 },
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
@@ -161,7 +152,7 @@ fun CompactMovieItem(
             }
 
             Icon(
-                imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                imageVector = favoriteIcon(movie.isFavorite),
                 contentDescription = null,
                 tint =
                     if (movie.isFavorite) {
