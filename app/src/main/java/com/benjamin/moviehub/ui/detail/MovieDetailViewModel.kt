@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.ui.detail
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benjamin.moviehub.R
@@ -206,3 +207,29 @@ private fun Movie.withFlags(local: Movie?): Movie =
         isWatchlist = local?.isWatchlist ?: false,
         isWatched = local?.isWatched ?: false,
     )
+
+sealed class MovieDetailUiState {
+    data object Loading : MovieDetailUiState()
+
+    data class Success(
+        val movie: Movie,
+        val credits: MovieCredits,
+        val recommendations: MovieRecommendationsUiState = MovieRecommendationsUiState.Loading,
+    ) : MovieDetailUiState()
+
+    data class Error(
+        @param:StringRes val errorMessage: Int,
+    ) : MovieDetailUiState()
+}
+
+sealed interface MovieRecommendationsUiState {
+    data object Loading : MovieRecommendationsUiState
+
+    data class Success(
+        val movies: List<Movie>,
+    ) : MovieRecommendationsUiState
+
+    data object Empty : MovieRecommendationsUiState
+
+    data object Error : MovieRecommendationsUiState
+}

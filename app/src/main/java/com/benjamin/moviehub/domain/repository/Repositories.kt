@@ -1,6 +1,7 @@
 package com.benjamin.moviehub.domain.repository
 
 import androidx.paging.PagingData
+import com.benjamin.moviehub.core.util.AppTheme
 import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCategory
@@ -8,9 +9,7 @@ import com.benjamin.moviehub.domain.model.MovieCredits
 import com.benjamin.moviehub.domain.model.MovieGenre
 import kotlinx.coroutines.flow.Flow
 
-/**
- * Repository interface for managing movies data
- */
+/** Repository contract for movie data. */
 interface MovieRepository {
     /** Get a paged feed for a home [category]. */
     fun getCategoryMovies(category: MovieCategory): Flow<PagingData<Movie>>
@@ -52,4 +51,11 @@ interface MovieRepository {
 
     /** Get movie recommendations from the API. Throws on network error; callers hide the section. */
     suspend fun getMovieRecommendations(movieId: Int): List<Movie>
+}
+
+/** Repository contract for persisted user preferences. */
+interface UserPreferencesRepository {
+    val theme: Flow<AppTheme>
+
+    suspend fun setTheme(theme: AppTheme)
 }

@@ -1,5 +1,12 @@
 package com.benjamin.moviehub.data.repository
 
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.paging.ExperimentalPagingApi
 import androidx.paging.Pager
 import androidx.paging.PagingData
@@ -7,6 +14,7 @@ import androidx.paging.PagingSource
 import androidx.paging.RemoteMediator
 import androidx.paging.cachedIn
 import androidx.paging.map
+import com.benjamin.moviehub.core.util.AppTheme
 import com.benjamin.moviehub.data.local.GenreEntity
 import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.local.MovieDatabase
@@ -26,9 +34,12 @@ import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCategory
 import com.benjamin.moviehub.domain.model.MovieGenre
 import com.benjamin.moviehub.domain.repository.MovieRepository
+import com.benjamin.moviehub.domain.repository.UserPreferencesRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -159,6 +170,28 @@ class MovieRepositoryImpl
                 is HttpException -> code() >= 500 || code() == 408 || code() == 429
                 else -> false
             }
+    }
+
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+private val themeKey = stringPreferencesKey("app_theme")
+
+class UserPreferencesRepositoryImpl
+    @Inject
+    constructor(
+        @param:ApplicationContext private val context: Context,
+    ) : UserPreferencesRepository {
+        override val theme: Flow<AppTheme> =
+            context.dataStore.data
+                .catch { exception ->
+                    if (exception is IOException) emit(emptyPreferences()) else throw exception
+                }.map { preferences ->
+                    val themeName = preferences[themeKey] ?: AppTheme.SYSTEM.name
+                    runCatching { AppTheme.valueOf(themeName) }.getOrDefault(AppTheme.SYSTEM)
+                }
+
+        override suspend fun setTheme(theme: AppTheme) {
+            context.dataStore.edit { preferences -> preferences[themeKey] = theme.name }
+        }
     }
 
 private fun List<GenreEntity>.toNameMap(): Map<Int, String> = associate { it.id to it.name }

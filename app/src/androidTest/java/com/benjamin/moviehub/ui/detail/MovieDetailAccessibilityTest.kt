@@ -29,97 +29,25 @@ class MovieDetailAccessibilityTest {
 
     @Test
     fun favoriteActionUsesDynamicAccessibilityDescription() {
-        val movie =
-            Movie(
-                id = 1,
-                title = "Test movie",
-                overview = "Overview",
-                posterPath = null,
-                backdropPath = null,
-                voteAverage = 7.5,
-                releaseDate = "2024-01-01",
-                webUrl = null,
-                isFavorite = true,
-                genreIds = emptyList(),
-                genres = emptyList(),
-            )
+        setDetailScreen(movie(isFavorite = true))
 
-        composeRule.setContent {
-            MovieHubTheme {
-                MovieDetailScreen(
-                    uiState = MovieDetailUiState.Success(movie, MovieCredits()),
-                    onBackClick = {},
-                    onToggleFavorite = {},
-                    onRetry = {},
-                )
-            }
-        }
-
-        composeRule
-            .onNodeWithContentDescription("Retirer des favoris")
-            .assertHasClickAction()
+        composeRule.onNodeWithContentDescription("Retirer des favoris").assertHasClickAction()
         composeRule.onNodeWithTag("detail_favorite").assertHeightIsAtLeast(48.dp)
     }
 
     @Test
     fun favoriteActionUsesAddAccessibilityDescriptionWhenNotFavorite() {
-        val movie =
-            Movie(
-                id = 1,
-                title = "Test movie",
-                overview = "Overview",
-                posterPath = null,
-                backdropPath = null,
-                voteAverage = 7.5,
-                releaseDate = "2024-01-01",
-                webUrl = null,
-                isFavorite = false,
-                genreIds = emptyList(),
-                genres = emptyList(),
-            )
+        setDetailScreen(movie())
 
-        composeRule.setContent {
-            MovieHubTheme {
-                MovieDetailScreen(
-                    uiState = MovieDetailUiState.Success(movie, MovieCredits()),
-                    onBackClick = {},
-                    onToggleFavorite = {},
-                    onRetry = {},
-                )
-            }
-        }
-
-        composeRule
-            .onNodeWithContentDescription("Ajouter aux favoris")
-            .assertHasClickAction()
+        composeRule.onNodeWithContentDescription("Ajouter aux favoris").assertHasClickAction()
     }
 
     @Test
     fun detailShowsCreditsAndUsefulMetadata() {
-        val movie =
-            Movie(
-                id = 1,
-                title = "Test movie",
-                overview = "Overview",
-                posterPath = null,
-                backdropPath = null,
-                voteAverage = 8.7,
-                releaseDate = "2024-01-01",
-                webUrl = null,
-                isFavorite = false,
-                genreIds = emptyList(),
-                genres = listOf("Action", "Drame"),
-                voteCount = 123,
-            )
-
-        composeRule.setContent {
-            MovieHubTheme {
-                MovieDetailContent(
-                    movie = movie,
-                    credits = MovieCredits(emptyList(), "Director Name"),
-                )
-            }
-        }
+        setDetailContent(
+            movie(voteAverage = 8.7, voteCount = 123, genres = listOf("Action", "Drame")),
+            credits = MovieCredits(emptyList(), "Director Name"),
+        )
 
         composeRule.onNodeWithText("8.7 / 10").assertIsDisplayed()
         composeRule.onNodeWithText("123 votes").assertIsDisplayed()
@@ -129,31 +57,7 @@ class MovieDetailAccessibilityTest {
 
     @Test
     fun longSynopsisCanBeExpandedAndCollapsed() {
-        val movie =
-            Movie(
-                id = 1,
-                title = "Test movie",
-                overview =
-                    "A long synopsis that needs to be truncated before it can be expanded. "
-                        .repeat(8),
-                posterPath = null,
-                backdropPath = null,
-                voteAverage = 0.0,
-                releaseDate = "2024-01-01",
-                webUrl = null,
-                isFavorite = false,
-                genreIds = emptyList(),
-                genres = emptyList(),
-            )
-
-        composeRule.setContent {
-            MovieHubTheme {
-                MovieDetailContent(
-                    movie = movie,
-                    credits = MovieCredits(),
-                )
-            }
-        }
+        setDetailContent(movie(overview = "A long synopsis that needs to be truncated before it can be expanded. ".repeat(8)))
 
         composeRule
             .onNodeWithText("Afficher plus")
@@ -165,30 +69,7 @@ class MovieDetailAccessibilityTest {
 
     @Test
     fun detailOmitsEmptyOptionalInformation() {
-        val movie =
-            Movie(
-                id = 1,
-                title = "Test movie",
-                overview = "",
-                posterPath = null,
-                backdropPath = null,
-                voteAverage = 0.0,
-                releaseDate = "2024-01-01",
-                webUrl = null,
-                isFavorite = false,
-                genreIds = emptyList(),
-                genres = emptyList(),
-                voteCount = 0,
-            )
-
-        composeRule.setContent {
-            MovieHubTheme {
-                MovieDetailContent(
-                    movie = movie,
-                    credits = MovieCredits(),
-                )
-            }
-        }
+        setDetailContent(movie(voteAverage = 0.0, voteCount = 0))
 
         assertTrue(composeRule.onAllNodesWithText("0.0 / 10").fetchSemanticsNodes().isEmpty())
         assertTrue(composeRule.onAllNodesWithText("0 votes").fetchSemanticsNodes().isEmpty())
@@ -198,118 +79,26 @@ class MovieDetailAccessibilityTest {
 
     @Test
     fun detailControlsRemainAccessibleWithLargeTouchTargets() {
-        val movie =
-            Movie(
-                id = 1,
-                title = "Test movie",
-                overview = "Overview",
-                posterPath = null,
-                backdropPath = null,
-                voteAverage = 0.0,
-                releaseDate = "2024-01-01",
-                webUrl = null,
-                isFavorite = false,
-                genreIds = emptyList(),
-                genres = emptyList(),
-            )
+        setDetailScreen(movie())
 
-        composeRule.setContent {
-            MovieHubTheme {
-                MovieDetailScreen(
-                    uiState = MovieDetailUiState.Success(movie, MovieCredits()),
-                    onBackClick = {},
-                    onToggleFavorite = {},
-                    onRetry = {},
-                )
-            }
-        }
-
-        composeRule
-            .onNodeWithContentDescription("Retour")
-            .assertHasClickAction()
-            .assertHeightIsAtLeast(48.dp)
-        composeRule
-            .onNodeWithContentDescription("Partager")
-            .assertHasClickAction()
-            .assertHeightIsAtLeast(48.dp)
+        composeRule.onNodeWithContentDescription("Retour").assertHasClickAction().assertHeightIsAtLeast(48.dp)
+        composeRule.onNodeWithContentDescription("Partager").assertHasClickAction().assertHeightIsAtLeast(48.dp)
     }
 
     @Test
     fun libraryChipsExposeAccessibleActions() {
-        val movie =
-            Movie(
-                id = 1,
-                title = "Test movie",
-                overview = "Overview",
-                posterPath = null,
-                backdropPath = null,
-                voteAverage = 0.0,
-                releaseDate = "2024-01-01",
-                webUrl = null,
-                isFavorite = false,
-                isWatchlist = true,
-                isWatched = false,
-                genreIds = emptyList(),
-                genres = emptyList(),
-            )
-        composeRule.setContent {
-            MovieHubTheme {
-                MovieDetailScreen(
-                    uiState = MovieDetailUiState.Success(movie, MovieCredits()),
-                    onBackClick = {},
-                    onToggleFavorite = {},
-                    onToggleWatchlist = {},
-                    onToggleWatched = {},
-                    onRetry = {},
-                )
-            }
-        }
-        composeRule
-            .onNodeWithTag("detail_favorite")
-            .assertHasClickAction()
-            .assertHeightIsAtLeast(48.dp)
+        setDetailScreen(movie(isWatchlist = true))
+
+        composeRule.onNodeWithTag("detail_favorite").assertHasClickAction().assertHeightIsAtLeast(48.dp)
         composeRule.onNodeWithTag("detail_watchlist").assertHasClickAction()
-        composeRule
-            .onNodeWithContentDescription("Retirer de la liste À voir")
-            .assertHasClickAction()
-            .assertHeightIsAtLeast(48.dp)
+        composeRule.onNodeWithContentDescription("Retirer de la liste À voir").assertHasClickAction().assertHeightIsAtLeast(48.dp)
         composeRule.onNodeWithTag("detail_watched").assertHasClickAction()
-        composeRule
-            .onNodeWithContentDescription("Marquer comme vu")
-            .assertHasClickAction()
-            .assertHeightIsAtLeast(48.dp)
+        composeRule.onNodeWithContentDescription("Marquer comme vu").assertHasClickAction().assertHeightIsAtLeast(48.dp)
     }
 
     @Test
     fun libraryActionsExposeSingleToggleSemantic() {
-        val movie =
-            Movie(
-                id = 1,
-                title = "Test movie",
-                overview = "Overview",
-                posterPath = null,
-                backdropPath = null,
-                voteAverage = 0.0,
-                releaseDate = "2024-01-01",
-                webUrl = null,
-                isFavorite = true,
-                isWatchlist = false,
-                isWatched = false,
-                genreIds = emptyList(),
-                genres = emptyList(),
-            )
-        composeRule.setContent {
-            MovieHubTheme {
-                MovieDetailScreen(
-                    uiState = MovieDetailUiState.Success(movie, MovieCredits()),
-                    onBackClick = {},
-                    onToggleFavorite = {},
-                    onToggleWatchlist = {},
-                    onToggleWatched = {},
-                    onRetry = {},
-                )
-            }
-        }
+        setDetailScreen(movie(isFavorite = true))
 
         composeRule.onAllNodesWithTag("detail_favorite").assertCountEquals(1)
         composeRule.onAllNodesWithTag("detail_watchlist").assertCountEquals(1)
@@ -322,36 +111,66 @@ class MovieDetailAccessibilityTest {
     @Test
     fun libraryActionLabelIsPartOfTheClickableTarget() {
         var favoriteClicks = 0
-        val movie =
-            Movie(
-                id = 1,
-                title = "Test movie",
-                overview = "Overview",
-                posterPath = null,
-                backdropPath = null,
-                voteAverage = 0.0,
-                releaseDate = "2024-01-01",
-                webUrl = null,
-                isFavorite = false,
-                isWatchlist = false,
-                isWatched = false,
-                genreIds = emptyList(),
-                genres = emptyList(),
-            )
+        setDetailScreen(movie(), onToggleFavorite = { favoriteClicks++ })
+
+        composeRule.onNodeWithText("Favoris").performClick()
+        composeRule.runOnIdle { assertEquals(1, favoriteClicks) }
+    }
+
+    private fun setDetailScreen(
+        movie: Movie,
+        onToggleFavorite: () -> Unit = {},
+        onToggleWatchlist: () -> Unit = {},
+        onToggleWatched: () -> Unit = {},
+    ) {
         composeRule.setContent {
             MovieHubTheme {
                 MovieDetailScreen(
                     uiState = MovieDetailUiState.Success(movie, MovieCredits()),
                     onBackClick = {},
-                    onToggleFavorite = { favoriteClicks++ },
-                    onToggleWatchlist = {},
-                    onToggleWatched = {},
+                    onToggleFavorite = onToggleFavorite,
+                    onToggleWatchlist = onToggleWatchlist,
+                    onToggleWatched = onToggleWatched,
                     onRetry = {},
                 )
             }
         }
-
-        composeRule.onNodeWithText("Favoris").performClick()
-        composeRule.runOnIdle { assertEquals(1, favoriteClicks) }
     }
+
+    private fun setDetailContent(
+        movie: Movie,
+        credits: MovieCredits = MovieCredits(),
+    ) {
+        composeRule.setContent {
+            MovieHubTheme {
+                MovieDetailContent(movie = movie, credits = credits)
+            }
+        }
+    }
+
+    private fun movie(
+        isFavorite: Boolean = false,
+        isWatchlist: Boolean = false,
+        isWatched: Boolean = false,
+        overview: String = "Overview",
+        voteAverage: Double = 7.5,
+        voteCount: Int? = null,
+        genres: List<String> = emptyList(),
+    ): Movie =
+        Movie(
+            id = 1,
+            title = "Test movie",
+            overview = overview,
+            posterPath = null,
+            backdropPath = null,
+            voteAverage = voteAverage,
+            releaseDate = "2024-01-01",
+            webUrl = null,
+            isFavorite = isFavorite,
+            isWatchlist = isWatchlist,
+            isWatched = isWatched,
+            genreIds = emptyList(),
+            genres = genres,
+            voteCount = voteCount,
+        )
 }

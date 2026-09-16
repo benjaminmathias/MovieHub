@@ -31,6 +31,7 @@ import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieGenre
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -47,29 +48,16 @@ class DiscoverScreenTest {
         var state by mutableStateOf(initialState())
         var applyCalled = false
 
-        composeRule.setContent {
-            MovieHubTheme {
-                DiscoverScreen(
-                    state = state,
-                    discoverResults = flowOf(PagingData.from(listOf(testMovie()))),
-                    onGenreSelected = { genreId ->
-                        state = state.copy(draftFilters = state.draftFilters.copy(genreId = genreId))
-                    },
-                    onReleaseYearSelected = {},
-                    onMinimumRatingSelected = {},
-                    onSortSelected = {},
-                    onBeginFilterEditing = { state = state.copy(draftFilters = state.appliedFilters) },
-                    onApplyFilters = {
-                        state = state.copy(appliedFilters = state.draftFilters)
-                        applyCalled = true
-                    },
-                    onResetFilters = {},
-                    onDiscardFilterEdits = { state = state.copy(draftFilters = state.appliedFilters) },
-                    onRetryGenres = {},
-                    onMovieClick = {},
-                )
-            }
-        }
+        setDiscoverContent(
+            state = { state },
+            onGenreSelected = { genreId -> state = state.copy(draftFilters = state.draftFilters.copy(genreId = genreId)) },
+            onBeginFilterEditing = { state = state.copy(draftFilters = state.appliedFilters) },
+            onApplyFilters = {
+                state = state.copy(appliedFilters = state.draftFilters)
+                applyCalled = true
+            },
+            onDiscardFilterEdits = { state = state.copy(draftFilters = state.appliedFilters) },
+        )
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
         composeRule.onNodeWithTag("discover_filter_sheet").assertIsDisplayed()
@@ -88,26 +76,11 @@ class DiscoverScreenTest {
     fun selectingOtherYearKeepsDraftSeparateFromAppliedFilters() {
         var state by mutableStateOf(initialState())
 
-        composeRule.setContent {
-            MovieHubTheme {
-                DiscoverScreen(
-                    state = state,
-                    discoverResults = flowOf(PagingData.empty()),
-                    onGenreSelected = {},
-                    onReleaseYearSelected = { year ->
-                        state = state.copy(draftFilters = state.draftFilters.copy(releaseYear = year))
-                    },
-                    onMinimumRatingSelected = {},
-                    onSortSelected = {},
-                    onBeginFilterEditing = { state = state.copy(draftFilters = state.appliedFilters) },
-                    onApplyFilters = {},
-                    onResetFilters = {},
-                    onDiscardFilterEdits = {},
-                    onRetryGenres = {},
-                    onMovieClick = {},
-                )
-            }
-        }
+        setDiscoverContent(
+            state = { state },
+            onReleaseYearSelected = { year -> state = state.copy(draftFilters = state.draftFilters.copy(releaseYear = year)) },
+            onBeginFilterEditing = { state = state.copy(draftFilters = state.appliedFilters) },
+        )
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
         composeRule.onNodeWithTag("discover_year_row").performClick()
@@ -121,27 +94,10 @@ class DiscoverScreenTest {
 
     @Test
     fun activeFilterCountIsDisplayed() {
-        composeRule.setContent {
-            MovieHubTheme {
-                DiscoverScreen(
-                    state =
-                        initialState().copy(
-                            appliedFilters = DiscoverFilters(genreId = 28, releaseYear = 2020),
-                        ),
-                    discoverResults = flowOf(PagingData.empty()),
-                    onGenreSelected = {},
-                    onReleaseYearSelected = {},
-                    onMinimumRatingSelected = {},
-                    onSortSelected = {},
-                    onBeginFilterEditing = {},
-                    onApplyFilters = {},
-                    onResetFilters = {},
-                    onDiscardFilterEdits = {},
-                    onRetryGenres = {},
-                    onMovieClick = {},
-                )
-            }
-        }
+        setDiscoverContent(
+            state = { initialState().copy(appliedFilters = DiscoverFilters(genreId = 28, releaseYear = 2020)) },
+            results = flowOf(PagingData.empty()),
+        )
 
         composeRule.onNodeWithTag("discover_filter_count").assertIsDisplayed()
         composeRule.onNodeWithTag("discover_active_filter_summary").assertIsDisplayed()
@@ -149,24 +105,7 @@ class DiscoverScreenTest {
 
     @Test
     fun applyIsDisabledWhenDraftMatchesAppliedFilters() {
-        composeRule.setContent {
-            MovieHubTheme {
-                DiscoverScreen(
-                    state = initialState(),
-                    discoverResults = flowOf(PagingData.empty()),
-                    onGenreSelected = {},
-                    onReleaseYearSelected = {},
-                    onMinimumRatingSelected = {},
-                    onSortSelected = {},
-                    onBeginFilterEditing = {},
-                    onApplyFilters = {},
-                    onResetFilters = {},
-                    onDiscardFilterEdits = {},
-                    onRetryGenres = {},
-                    onMovieClick = {},
-                )
-            }
-        }
+        setDiscoverContent(state = { initialState() }, results = flowOf(PagingData.empty()))
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
         composeRule.onNodeWithTag("discover_apply_filters").assertIsNotEnabled()
@@ -177,26 +116,11 @@ class DiscoverScreenTest {
         var state by mutableStateOf(initialState())
         val currentYear = Calendar.getInstance().get(Calendar.YEAR)
 
-        composeRule.setContent {
-            MovieHubTheme {
-                DiscoverScreen(
-                    state = state,
-                    discoverResults = flowOf(PagingData.empty()),
-                    onGenreSelected = {},
-                    onReleaseYearSelected = { year ->
-                        state = state.copy(draftFilters = state.draftFilters.copy(releaseYear = year))
-                    },
-                    onMinimumRatingSelected = {},
-                    onSortSelected = {},
-                    onBeginFilterEditing = {},
-                    onApplyFilters = {},
-                    onResetFilters = {},
-                    onDiscardFilterEdits = {},
-                    onRetryGenres = {},
-                    onMovieClick = {},
-                )
-            }
-        }
+        setDiscoverContent(
+            state = { state },
+            onReleaseYearSelected = { year -> state = state.copy(draftFilters = state.draftFilters.copy(releaseYear = year)) },
+            results = flowOf(PagingData.empty()),
+        )
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
         composeRule.onNodeWithTag("discover_year_row").performClick()
@@ -218,26 +142,11 @@ class DiscoverScreenTest {
         var state by mutableStateOf(initialState())
         val validYear = Calendar.getInstance().get(Calendar.YEAR) - 1
 
-        composeRule.setContent {
-            MovieHubTheme {
-                DiscoverScreen(
-                    state = state,
-                    discoverResults = flowOf(PagingData.empty()),
-                    onGenreSelected = {},
-                    onReleaseYearSelected = { year ->
-                        state = state.copy(draftFilters = state.draftFilters.copy(releaseYear = year))
-                    },
-                    onMinimumRatingSelected = {},
-                    onSortSelected = {},
-                    onBeginFilterEditing = {},
-                    onApplyFilters = {},
-                    onResetFilters = {},
-                    onDiscardFilterEdits = {},
-                    onRetryGenres = {},
-                    onMovieClick = {},
-                )
-            }
-        }
+        setDiscoverContent(
+            state = { state },
+            onReleaseYearSelected = { year -> state = state.copy(draftFilters = state.draftFilters.copy(releaseYear = year)) },
+            results = flowOf(PagingData.empty()),
+        )
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
         composeRule.onNodeWithTag("discover_year_row").performClick()
@@ -254,24 +163,11 @@ class DiscoverScreenTest {
     fun genreErrorShowsRetryAndInvokesCallback() {
         var retryCalled = false
 
-        composeRule.setContent {
-            MovieHubTheme {
-                DiscoverScreen(
-                    state = initialState().copy(genres = emptyList(), hasGenreError = true),
-                    discoverResults = flowOf(PagingData.empty()),
-                    onGenreSelected = {},
-                    onReleaseYearSelected = {},
-                    onMinimumRatingSelected = {},
-                    onSortSelected = {},
-                    onBeginFilterEditing = {},
-                    onApplyFilters = {},
-                    onResetFilters = {},
-                    onDiscardFilterEdits = {},
-                    onRetryGenres = { retryCalled = true },
-                    onMovieClick = {},
-                )
-            }
-        }
+        setDiscoverContent(
+            state = { initialState().copy(genres = emptyList(), hasGenreError = true) },
+            onRetryGenres = { retryCalled = true },
+            results = flowOf(PagingData.empty()),
+        )
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
         composeRule.onNodeWithTag("discover_genre_row").performClick()
@@ -282,24 +178,10 @@ class DiscoverScreenTest {
 
     @Test
     fun initialPagingErrorShowsRetry() {
-        composeRule.setContent {
-            MovieHubTheme {
-                DiscoverScreen(
-                    state = initialState(),
-                    discoverResults = Pager(PagingConfig(pageSize = 1)) { ErrorPagingSource() }.flow,
-                    onGenreSelected = {},
-                    onReleaseYearSelected = {},
-                    onMinimumRatingSelected = {},
-                    onSortSelected = {},
-                    onBeginFilterEditing = {},
-                    onApplyFilters = {},
-                    onResetFilters = {},
-                    onDiscardFilterEdits = {},
-                    onRetryGenres = {},
-                    onMovieClick = {},
-                )
-            }
-        }
+        setDiscoverContent(
+            state = { initialState() },
+            results = Pager(PagingConfig(pageSize = 1)) { ErrorPagingSource() }.flow,
+        )
 
         composeRule.onNodeWithText("Impossible de charger les films.").assertIsDisplayed()
         composeRule.onNodeWithText("Réessayer").assertIsDisplayed().performClick()
@@ -309,26 +191,13 @@ class DiscoverScreenTest {
     fun closingSheetDiscardsDraftChanges() {
         var state by mutableStateOf(initialState())
 
-        composeRule.setContent {
-            MovieHubTheme {
-                DiscoverScreen(
-                    state = state,
-                    discoverResults = flowOf(PagingData.empty()),
-                    onGenreSelected = { genreId ->
-                        state = state.copy(draftFilters = state.draftFilters.copy(genreId = genreId))
-                    },
-                    onReleaseYearSelected = {},
-                    onMinimumRatingSelected = {},
-                    onSortSelected = {},
-                    onBeginFilterEditing = { state = state.copy(draftFilters = state.appliedFilters) },
-                    onApplyFilters = {},
-                    onResetFilters = {},
-                    onDiscardFilterEdits = { state = state.copy(draftFilters = state.appliedFilters) },
-                    onRetryGenres = {},
-                    onMovieClick = {},
-                )
-            }
-        }
+        setDiscoverContent(
+            state = { state },
+            onGenreSelected = { genreId -> state = state.copy(draftFilters = state.draftFilters.copy(genreId = genreId)) },
+            onBeginFilterEditing = { state = state.copy(draftFilters = state.appliedFilters) },
+            onDiscardFilterEdits = { state = state.copy(draftFilters = state.appliedFilters) },
+            results = flowOf(PagingData.empty()),
+        )
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
         composeRule.onNodeWithTag("discover_genre_row").performClick()
@@ -343,46 +212,24 @@ class DiscoverScreenTest {
 
     @Test
     fun resetRestoresDefaultsAndClosesSheet() {
-        var state =
-            initialState().copy(
-                draftFilters =
-                    DiscoverFilters(
-                        genreId = 28,
-                        releaseYear = 2020,
-                        minimumVoteAverage = 8.0,
-                        sort = DiscoverSortOption.RATING,
-                    ),
-                appliedFilters =
-                    DiscoverFilters(
-                        genreId = 28,
-                        releaseYear = 2020,
-                        minimumVoteAverage = 8.0,
-                        sort = DiscoverSortOption.RATING,
-                    ),
+        val filters =
+            DiscoverFilters(
+                genreId = 28,
+                releaseYear = 2020,
+                minimumVoteAverage = 8.0,
+                sort = DiscoverSortOption.RATING,
             )
+        var state = initialState().copy(draftFilters = filters, appliedFilters = filters)
         var resetCalled = false
 
-        composeRule.setContent {
-            MovieHubTheme {
-                DiscoverScreen(
-                    state = state,
-                    discoverResults = flowOf(PagingData.empty()),
-                    onGenreSelected = {},
-                    onReleaseYearSelected = {},
-                    onMinimumRatingSelected = {},
-                    onSortSelected = {},
-                    onBeginFilterEditing = {},
-                    onApplyFilters = {},
-                    onResetFilters = {
-                        state = state.copy(draftFilters = DiscoverFilters(), appliedFilters = DiscoverFilters())
-                        resetCalled = true
-                    },
-                    onDiscardFilterEdits = {},
-                    onRetryGenres = {},
-                    onMovieClick = {},
-                )
-            }
-        }
+        setDiscoverContent(
+            state = { state },
+            onResetFilters = {
+                state = state.copy(draftFilters = DiscoverFilters(), appliedFilters = DiscoverFilters())
+                resetCalled = true
+            },
+            results = flowOf(PagingData.empty()),
+        )
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
         composeRule.onNodeWithTag("discover_reset_filters").performClick()
@@ -397,24 +244,7 @@ class DiscoverScreenTest {
 
     @Test
     fun filterButtonIsIconOnlyAccessibleWithLargeTouchTarget() {
-        composeRule.setContent {
-            MovieHubTheme {
-                DiscoverScreen(
-                    state = initialState(),
-                    discoverResults = flowOf(PagingData.empty()),
-                    onGenreSelected = {},
-                    onReleaseYearSelected = {},
-                    onMinimumRatingSelected = {},
-                    onSortSelected = {},
-                    onBeginFilterEditing = {},
-                    onApplyFilters = {},
-                    onResetFilters = {},
-                    onDiscardFilterEdits = {},
-                    onRetryGenres = {},
-                    onMovieClick = {},
-                )
-            }
-        }
+        setDiscoverContent(state = { initialState() }, results = flowOf(PagingData.empty()))
 
         composeRule
             .onNodeWithContentDescription("Filtres")
@@ -426,24 +256,10 @@ class DiscoverScreenTest {
 
     @Test
     fun retryGenreActionUsesSharedRetryStyleText() {
-        composeRule.setContent {
-            MovieHubTheme {
-                DiscoverScreen(
-                    state = initialState().copy(genres = emptyList(), hasGenreError = true),
-                    discoverResults = flowOf(PagingData.empty()),
-                    onGenreSelected = {},
-                    onReleaseYearSelected = {},
-                    onMinimumRatingSelected = {},
-                    onSortSelected = {},
-                    onBeginFilterEditing = {},
-                    onApplyFilters = {},
-                    onResetFilters = {},
-                    onDiscardFilterEdits = {},
-                    onRetryGenres = {},
-                    onMovieClick = {},
-                )
-            }
-        }
+        setDiscoverContent(
+            state = { initialState().copy(genres = emptyList(), hasGenreError = true) },
+            results = flowOf(PagingData.empty()),
+        )
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
         composeRule.onNodeWithTag("discover_genre_row").performClick()
@@ -455,26 +271,11 @@ class DiscoverScreenTest {
     fun selectingSortOptionUpdatesDraft() {
         var state by mutableStateOf(initialState())
 
-        composeRule.setContent {
-            MovieHubTheme {
-                DiscoverScreen(
-                    state = state,
-                    discoverResults = flowOf(PagingData.empty()),
-                    onGenreSelected = {},
-                    onReleaseYearSelected = {},
-                    onMinimumRatingSelected = {},
-                    onSortSelected = { sort ->
-                        state = state.copy(draftFilters = state.draftFilters.copy(sort = sort))
-                    },
-                    onBeginFilterEditing = {},
-                    onApplyFilters = {},
-                    onResetFilters = {},
-                    onDiscardFilterEdits = {},
-                    onRetryGenres = {},
-                    onMovieClick = {},
-                )
-            }
-        }
+        setDiscoverContent(
+            state = { state },
+            onSortSelected = { sort -> state = state.copy(draftFilters = state.draftFilters.copy(sort = sort)) },
+            results = flowOf(PagingData.empty()),
+        )
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
         composeRule.onNodeWithTag("discover_sort_option_RATING").performClick()
@@ -488,26 +289,11 @@ class DiscoverScreenTest {
     fun enablingRatingFilterUpdatesDraft() {
         var state by mutableStateOf(initialState())
 
-        composeRule.setContent {
-            MovieHubTheme {
-                DiscoverScreen(
-                    state = state,
-                    discoverResults = flowOf(PagingData.empty()),
-                    onGenreSelected = {},
-                    onReleaseYearSelected = {},
-                    onMinimumRatingSelected = { rating ->
-                        state = state.copy(draftFilters = state.draftFilters.copy(minimumVoteAverage = rating))
-                    },
-                    onSortSelected = {},
-                    onBeginFilterEditing = {},
-                    onApplyFilters = {},
-                    onResetFilters = {},
-                    onDiscardFilterEdits = {},
-                    onRetryGenres = {},
-                    onMovieClick = {},
-                )
-            }
-        }
+        setDiscoverContent(
+            state = { state },
+            onMinimumRatingSelected = { rating -> state = state.copy(draftFilters = state.draftFilters.copy(minimumVoteAverage = rating)) },
+            results = flowOf(PagingData.empty()),
+        )
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
         composeRule.onNodeWithTag("discover_rating_switch").performScrollTo().performClick()
@@ -523,30 +309,46 @@ class DiscoverScreenTest {
 
     @Test
     fun subViewBackButtonReturnsToMainList() {
-        composeRule.setContent {
-            MovieHubTheme {
-                DiscoverScreen(
-                    state = initialState(),
-                    discoverResults = flowOf(PagingData.empty()),
-                    onGenreSelected = {},
-                    onReleaseYearSelected = {},
-                    onMinimumRatingSelected = {},
-                    onSortSelected = {},
-                    onBeginFilterEditing = {},
-                    onApplyFilters = {},
-                    onResetFilters = {},
-                    onDiscardFilterEdits = {},
-                    onRetryGenres = {},
-                    onMovieClick = {},
-                )
-            }
-        }
+        setDiscoverContent(state = { initialState() }, results = flowOf(PagingData.empty()))
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
         composeRule.onNodeWithTag("discover_genre_row").performClick()
         composeRule.onNodeWithTag("discover_genre_option_all").assertIsDisplayed()
         composeRule.onNodeWithTag("discover_filter_back").performClick()
         composeRule.onNodeWithTag("discover_genre_row").assertIsDisplayed()
+    }
+
+    private fun setDiscoverContent(
+        state: () -> DiscoverUiState,
+        results: Flow<PagingData<Movie>> = flowOf(PagingData.from(listOf(testMovie()))),
+        onGenreSelected: (Int?) -> Unit = {},
+        onReleaseYearSelected: (Int?) -> Unit = {},
+        onMinimumRatingSelected: (Double?) -> Unit = {},
+        onSortSelected: (DiscoverSortOption) -> Unit = {},
+        onBeginFilterEditing: () -> Unit = {},
+        onApplyFilters: () -> Unit = {},
+        onResetFilters: () -> Unit = {},
+        onDiscardFilterEdits: () -> Unit = {},
+        onRetryGenres: () -> Unit = {},
+    ) {
+        composeRule.setContent {
+            MovieHubTheme {
+                DiscoverScreen(
+                    state = state(),
+                    discoverResults = results,
+                    onGenreSelected = onGenreSelected,
+                    onReleaseYearSelected = onReleaseYearSelected,
+                    onMinimumRatingSelected = onMinimumRatingSelected,
+                    onSortSelected = onSortSelected,
+                    onBeginFilterEditing = onBeginFilterEditing,
+                    onApplyFilters = onApplyFilters,
+                    onResetFilters = onResetFilters,
+                    onDiscardFilterEdits = onDiscardFilterEdits,
+                    onRetryGenres = onRetryGenres,
+                    onMovieClick = {},
+                )
+            }
+        }
     }
 
     private fun initialState() =
