@@ -2,22 +2,21 @@ package com.benjamin.moviehub.data.paging
 
 import androidx.paging.AsyncPagingDataDiffer
 import androidx.paging.ExperimentalPagingApi
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListUpdateCallback
-import androidx.room.Room
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.benjamin.moviehub.awaitItems
 import com.benjamin.moviehub.data.local.MovieCategoryEntity
 import com.benjamin.moviehub.data.local.MovieDatabase
-import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.local.RemoteKey
-import com.benjamin.moviehub.data.mapper.toEntity
 import com.benjamin.moviehub.data.remote.FakeMovieApiService
-import com.benjamin.moviehub.data.remote.movieDto
 import com.benjamin.moviehub.data.repository.MovieRepositoryImpl
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCategory
+import com.benjamin.moviehub.inMemoryDatabase
+import com.benjamin.moviehub.movieEntity
+import com.benjamin.moviehub.newMovieDiffer
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -36,12 +35,7 @@ class ColdStartCategoryPagingTest {
 
     @Before
     fun setUp() {
-        database =
-            Room
-                .inMemoryDatabaseBuilder(
-                    ApplicationProvider.getApplicationContext(),
-                    MovieDatabase::class.java,
-                ).build()
+        database = inMemoryDatabase()
     }
 
     @After
@@ -53,17 +47,10 @@ class ColdStartCategoryPagingTest {
     fun emptyCategory_receivesFirstPageThroughRealPager() =
         runBlocking {
             val api = FakeMovieApiService()
-            val repository = MovieRepositoryImpl(api, database, database.movieDao())
-            val differ = newDiffer()
+            val differ = newMovieDiffer()
 
-            val job =
-                launch(Dispatchers.Main) {
-                    repository
-                        .getCategoryMovies(MovieCategory.UPCOMING)
-                        .collect { differ.submitData(it) }
-                }
-
-            val items = awaitItems(differ)
+            val job = collectCategory(MovieCategory.UPCOMING, api, differ)
+            val items = differ.awaitItems()
             job.cancel()
 
             assertTrue("Expected the upcoming page to load, got $items", items.isNotEmpty())
@@ -76,21 +63,13 @@ class ColdStartCategoryPagingTest {
     fun cachedCategory_isRefreshedInBackgroundOnColdStart() =
         runBlocking {
             seedCachedUpcoming()
-
             val api = FakeMovieApiService()
-            val repository = MovieRepositoryImpl(api, database, database.movieDao())
-            val differ = newDiffer()
+            val differ = newMovieDiffer()
 
-            val job =
-                launch(Dispatchers.Main) {
-                    repository
-                        .getCategoryMovies(MovieCategory.UPCOMING)
-                        .collect { differ.submitData(it) }
-                }
-
+            val job = collectCategory(MovieCategory.UPCOMING, api, differ)
             // Even though the category is cached, stale-while-revalidate refreshes it once.
             awaitRequest { api.upcomingPagesRequested.contains(1) }
-            val items = awaitItems(differ) { snapshot -> snapshot.any { it.title == "Film Prochainement 1" } }
+            val items = differ.awaitItems { snapshot -> snapshot.any { it.title == "Film Prochainement 1" } }
             job.cancel()
 
             assertEquals(listOf(1), api.upcomingPagesRequested)
@@ -101,103 +80,42 @@ class ColdStartCategoryPagingTest {
     fun failedRefresh_keepsCachedCategoryUsable() =
         runBlocking {
             seedCachedUpcoming()
-
             val api = FakeMovieApiService(failRequests = true)
-            val repository = MovieRepositoryImpl(api, database, database.movieDao())
-            val differ = newDiffer()
+            val differ = newMovieDiffer()
 
-            val job =
-                launch(Dispatchers.Main) {
-                    repository
-                        .getCategoryMovies(MovieCategory.UPCOMING)
-                        .collect { differ.submitData(it) }
-                }
-
+            val job = collectCategory(MovieCategory.UPCOMING, api, differ)
             awaitRequest { api.upcomingPagesRequested.isNotEmpty() }
             // The failed refresh must not clear the cached rows.
             assertEquals(listOf(500), database.movieDao().getCategoryMovieIds(MovieCategory.UPCOMING.key))
-            val items = awaitItems(differ)
+            val items = differ.awaitItems()
             job.cancel()
 
             assertEquals(listOf(500), items.map { it.id })
+        }
+
+    private fun CoroutineScope.collectCategory(
+        category: MovieCategory,
+        api: FakeMovieApiService,
+        differ: AsyncPagingDataDiffer<Movie>,
+    ): Job =
+        launch(Dispatchers.Main) {
+            MovieRepositoryImpl(api, database, database.movieDao())
+                .getCategoryMovies(category)
+                .collect { differ.submitData(it) }
         }
 
     private suspend fun seedCachedUpcoming() {
         val dao = database.movieDao()
         dao.upsertMovies(listOf(movieEntity(id = 500, title = "Cached Upcoming")))
         dao.insertCategoryMovies(
-            listOf(
-                MovieCategoryEntity(
-                    movieId = 500,
-                    category = MovieCategory.UPCOMING.key,
-                    pageOrder = 0,
-                ),
-            ),
+            listOf(MovieCategoryEntity(movieId = 500, category = MovieCategory.UPCOMING.key, pageOrder = 0)),
         )
         dao.upsertRemoteKey(RemoteKey(type = MovieCategory.UPCOMING.key, nextKey = null))
     }
 
-    private suspend fun awaitItems(
-        differ: AsyncPagingDataDiffer<Movie>,
-        condition: (List<Movie>) -> Boolean = { it.isNotEmpty() },
-    ): List<Movie> =
-        withTimeout(10_000) {
-            while (!condition(differ.snapshot().filterNotNull())) {
-                delay(20)
-            }
-            differ.snapshot().filterNotNull()
-        }
-
     private suspend fun awaitRequest(condition: () -> Boolean) {
         withTimeout(10_000) {
-            while (!condition()) {
-                delay(20)
-            }
+            while (!condition()) delay(20)
         }
     }
-
-    private fun newDiffer(): AsyncPagingDataDiffer<Movie> =
-        AsyncPagingDataDiffer(
-            diffCallback =
-                object : DiffUtil.ItemCallback<Movie>() {
-                    override fun areItemsTheSame(
-                        oldItem: Movie,
-                        newItem: Movie,
-                    ): Boolean = oldItem.id == newItem.id
-
-                    override fun areContentsTheSame(
-                        oldItem: Movie,
-                        newItem: Movie,
-                    ): Boolean = oldItem == newItem
-                },
-            updateCallback =
-                object : ListUpdateCallback {
-                    override fun onInserted(
-                        position: Int,
-                        count: Int,
-                    ) = Unit
-
-                    override fun onRemoved(
-                        position: Int,
-                        count: Int,
-                    ) = Unit
-
-                    override fun onMoved(
-                        fromPosition: Int,
-                        toPosition: Int,
-                    ) = Unit
-
-                    override fun onChanged(
-                        position: Int,
-                        count: Int,
-                        payload: Any?,
-                    ) = Unit
-                },
-            mainDispatcher = Dispatchers.Main,
-        )
-
-    private fun movieEntity(
-        id: Int,
-        title: String,
-    ): MovieEntity = movieDto(id = id, title = title).toEntity()
 }
