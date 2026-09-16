@@ -13,8 +13,8 @@ internal val moviePagingConfig =
         initialLoadSize = INITIAL_LOAD_SIZE,
         enablePlaceholders = false,
     ).also {
-        // MediatorPagingHelper computes the persisted pageOrder from these sizes, and
-        // TMDB returns a fixed 20 items per page, so the three must stay aligned.
+        // OfflineRemoteMediator persists pageOrder from these sizes, and TMDB returns a
+        // fixed 20 items per page, so the three must stay aligned.
         check(it.initialLoadSize == it.pageSize) {
             "initialLoadSize (${it.initialLoadSize}) must equal pageSize (${it.pageSize}) for pageOrder math"
         }

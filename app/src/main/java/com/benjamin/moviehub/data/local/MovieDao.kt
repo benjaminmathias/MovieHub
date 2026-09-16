@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface MovieDao {
-    // --- FILMS : ACTIONS UNITAIRES ---
     @Query("SELECT * FROM movies WHERE id = :movieId")
     suspend fun getMovieById(movieId: Int): MovieEntity?
 
@@ -27,60 +26,35 @@ interface MovieDao {
         return getMovieById(movie.id) ?: movie
     }
 
+    /**
+     * Applies the non-null library flags, inserting the movie first when it is not
+     * cached yet. Watchlist and watched are mutually exclusive: setting one true
+     * clears the other.
+     */
     @Transaction
-    suspend fun setFavorite(
+    suspend fun setLibraryFlag(
         movie: MovieEntity,
-        isFavorite: Boolean,
-    ) {
-        if (getMovieById(movie.id) == null) {
-            insertMovie(movie.copy(isFavorite = isFavorite))
-        } else {
-            updateLocalFlags(movie.id, isFavorite = isFavorite, isWatchlist = null, isWatched = null)
-        }
-    }
-
-    @Transaction
-    suspend fun setWatchlist(
-        movie: MovieEntity,
-        isWatchlist: Boolean,
+        isFavorite: Boolean? = null,
+        isWatchlist: Boolean? = null,
+        isWatched: Boolean? = null,
     ) {
         if (getMovieById(movie.id) == null) {
             insertMovie(
                 movie.copy(
-                    isWatchlist = isWatchlist,
-                    isWatched = if (isWatchlist) false else movie.isWatched,
+                    isFavorite = isFavorite ?: movie.isFavorite,
+                    isWatchlist = (isWatchlist ?: movie.isWatchlist) && isWatched != true,
+                    isWatched = (isWatched ?: movie.isWatched) && isWatchlist != true,
                 ),
             )
-        } else {
-            updateLocalFlags(
-                movie.id,
-                isFavorite = null,
-                isWatchlist = isWatchlist,
-                isWatched = if (isWatchlist) false else null,
-            )
+            return
         }
-    }
 
-    @Transaction
-    suspend fun setWatched(
-        movie: MovieEntity,
-        isWatched: Boolean,
-    ) {
-        if (getMovieById(movie.id) == null) {
-            insertMovie(
-                movie.copy(
-                    isWatched = isWatched,
-                    isWatchlist = if (isWatched) false else movie.isWatchlist,
-                ),
-            )
-        } else {
-            updateLocalFlags(
-                movie.id,
-                isFavorite = null,
-                isWatchlist = if (isWatched) false else null,
-                isWatched = isWatched,
-            )
-        }
+        updateLocalFlags(
+            movieId = movie.id,
+            isFavorite = isFavorite,
+            isWatchlist = isWatchlist ?: if (isWatched == true) false else null,
+            isWatched = isWatched ?: if (isWatchlist == true) false else null,
+        )
     }
 
     @Query(
@@ -97,16 +71,8 @@ interface MovieDao {
         isWatched: Boolean?,
     )
 
-    // --- FILMS : LISTES & FLOWS ---
     @Query("SELECT * FROM movies WHERE isFavorite = 1 OR isWatchlist = 1 OR isWatched = 1 ORDER BY title COLLATE NOCASE ASC, id ASC")
     fun getLibraryMoviesFlow(): Flow<List<MovieEntity>>
-
-    // --- CATEGORIES (ASSOCIATION + PAGINATION) ---
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCategoryMovies(items: List<MovieCategoryEntity>)
-
-    @Query("DELETE FROM movie_categories WHERE category = :category")
-    suspend fun clearCategoryMovies(category: String)
 
     @Query(
         """
@@ -120,6 +86,12 @@ interface MovieDao {
 
     @Query("SELECT movieId FROM movie_categories WHERE category = :category ORDER BY pageOrder ASC")
     suspend fun getCategoryMovieIds(category: String): List<Int>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCategoryMovies(items: List<MovieCategoryEntity>)
+
+    @Query("DELETE FROM movie_categories WHERE category = :category")
+    suspend fun clearCategoryMovies(category: String)
 
     @Query(
         """
@@ -150,22 +122,20 @@ interface MovieDao {
     suspend fun upsertMovies(movies: List<MovieEntity>) {
         if (movies.isEmpty()) return
         val localById = getMoviesByIds(movies.map { it.id }).associateBy { it.id }
-        val merged =
+        upsertMoviesRaw(
             movies.map { incoming ->
                 val local = localById[incoming.id]
                 val watched = local?.isWatched ?: incoming.isWatched
-                val watchlist = local?.isWatchlist ?: incoming.isWatchlist
                 incoming.copy(
                     isFavorite = local?.isFavorite ?: incoming.isFavorite,
-                    isWatchlist = watchlist && !watched,
+                    isWatchlist = (local?.isWatchlist ?: incoming.isWatchlist) && !watched,
                     isWatched = watched,
                     runtimeMinutes = incoming.runtimeMinutes ?: local?.runtimeMinutes,
                 )
-            }
-        upsertMoviesRaw(merged)
+            },
+        )
     }
 
-    // --- CLÉS DE PAGINATION (UNE PAR FEED) ---
     @Upsert
     suspend fun upsertRemoteKey(remoteKey: RemoteKey)
 
@@ -175,7 +145,9 @@ interface MovieDao {
     @Query("DELETE FROM remote_keys WHERE type = :type")
     suspend fun clearRemoteKeysByType(type: String)
 
-    // --- RECHERCHE ---
+    @Query("DELETE FROM remote_keys WHERE type LIKE 'SEARCH:%'")
+    suspend fun clearSearchRemoteKeys()
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSearchResults(results: List<MovieSearchResultEntity>)
 
@@ -184,9 +156,6 @@ interface MovieDao {
 
     @Query("DELETE FROM movie_search_results")
     suspend fun clearSearchResults()
-
-    @Query("DELETE FROM remote_keys WHERE type LIKE 'SEARCH:%'")
-    suspend fun clearSearchRemoteKeys()
 
     @Query("SELECT movieId FROM movie_search_results WHERE queryKey = :queryKey ORDER BY pageOrder ASC")
     suspend fun getSearchResultMovieIds(queryKey: String): List<Int>
@@ -212,13 +181,9 @@ interface MovieDao {
         preserveMovieIds: List<Int>,
     )
 
-    // --- GENRES (DICTIONNAIRE LOCALISÉ) ---
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertGenres(genres: List<GenreEntity>)
 
     @Query("SELECT * FROM genres")
     suspend fun getGenres(): List<GenreEntity>
-
-    @Query("SELECT * FROM genres")
-    fun getGenresFlow(): Flow<List<GenreEntity>>
 }

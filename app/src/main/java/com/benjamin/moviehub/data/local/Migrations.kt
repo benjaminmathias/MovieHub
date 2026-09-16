@@ -3,6 +3,22 @@ package com.benjamin.moviehub.data.local
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
+private const val MOVIES_COLUMNS_V2 =
+    "`id` INTEGER NOT NULL, `title` TEXT NOT NULL, `overview` TEXT NOT NULL, " +
+        "`posterPath` TEXT, `backdropPath` TEXT, `voteAverage` REAL NOT NULL, " +
+        "`releaseDate` TEXT NOT NULL, `genreIds` TEXT NOT NULL, " +
+        "`isFavorite` INTEGER NOT NULL, `isSearchResult` INTEGER NOT NULL, `runtimeMinutes` INTEGER"
+
+private const val MOVIES_COLUMNS_V3 =
+    "`id` INTEGER NOT NULL, `title` TEXT NOT NULL, `overview` TEXT NOT NULL, " +
+        "`posterPath` TEXT, `backdropPath` TEXT, `voteAverage` REAL NOT NULL, " +
+        "`releaseDate` TEXT NOT NULL, `genreIds` TEXT NOT NULL, " +
+        "`isFavorite` INTEGER NOT NULL, `runtimeMinutes` INTEGER"
+
+private const val MOVIES_COLUMNS_CSV =
+    "`id`, `title`, `overview`, `posterPath`, `backdropPath`, `voteAverage`, " +
+        "`releaseDate`, `genreIds`, `isFavorite`, `isSearchResult`, `runtimeMinutes`"
+
 /**
  * Adds the normalized `movie_categories` association (plus its `(category, pageOrder)` index) and
  * removes the legacy popular-only columns (`isPopular`, `pageOrder`) from `movies`.
@@ -15,16 +31,13 @@ internal val MIGRATION_1_2 =
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL(
                 "CREATE TABLE IF NOT EXISTS `movie_categories` (" +
-                    "`movieId` INTEGER NOT NULL, " +
-                    "`category` TEXT NOT NULL, " +
-                    "`pageOrder` INTEGER NOT NULL, " +
-                    "PRIMARY KEY(`movieId`, `category`))",
+                    "`movieId` INTEGER NOT NULL, `category` TEXT NOT NULL, " +
+                    "`pageOrder` INTEGER NOT NULL, PRIMARY KEY(`movieId`, `category`))",
             )
             db.execSQL(
                 "CREATE INDEX IF NOT EXISTS `index_movie_categories_category_pageOrder` " +
                     "ON `movie_categories` (`category`, `pageOrder`)",
             )
-
             // Be robust to a v1 database that predates these tables.
             db.execSQL(
                 "CREATE TABLE IF NOT EXISTS `remote_keys` (" +
@@ -37,7 +50,7 @@ internal val MIGRATION_1_2 =
                     "PRIMARY KEY(`queryKey`, `movieId`))",
             )
 
-            val movieColumns = columnNames(db, "movies")
+            val movieColumns = db.columnNames("movies")
 
             if ("isPopular" in movieColumns && "pageOrder" in movieColumns) {
                 db.execSQL(
@@ -48,36 +61,19 @@ internal val MIGRATION_1_2 =
 
             if (movieColumns.isEmpty()) {
                 // No movies table to preserve: create the current schema directly.
-                db.execSQL(
-                    "CREATE TABLE IF NOT EXISTS `movies` (" +
-                        "`id` INTEGER NOT NULL, `title` TEXT NOT NULL, `overview` TEXT NOT NULL, " +
-                        "`posterPath` TEXT, `backdropPath` TEXT, `voteAverage` REAL NOT NULL, " +
-                        "`releaseDate` TEXT NOT NULL, `genreIds` TEXT NOT NULL, " +
-                        "`isFavorite` INTEGER NOT NULL, `isSearchResult` INTEGER NOT NULL, " +
-                        "`runtimeMinutes` INTEGER, PRIMARY KEY(`id`))",
-                )
+                db.createMoviesTable(MOVIES_COLUMNS_V2)
                 return
             }
 
             // SQLite cannot drop columns in place, so rebuild `movies` without the legacy ones.
-            db.execSQL(
-                "CREATE TABLE IF NOT EXISTS `movies_new` (" +
-                    "`id` INTEGER NOT NULL, `title` TEXT NOT NULL, `overview` TEXT NOT NULL, " +
-                    "`posterPath` TEXT, `backdropPath` TEXT, `voteAverage` REAL NOT NULL, " +
-                    "`releaseDate` TEXT NOT NULL, `genreIds` TEXT NOT NULL, " +
-                    "`isFavorite` INTEGER NOT NULL, `isSearchResult` INTEGER NOT NULL, " +
-                    "`runtimeMinutes` INTEGER, PRIMARY KEY(`id`))",
-            )
+            db.createMoviesTable(MOVIES_COLUMNS_V2, table = "movies_new")
             val runtimeColumn = if ("runtimeMinutes" in movieColumns) "`runtimeMinutes`" else "NULL"
             db.execSQL(
-                "INSERT OR REPLACE INTO `movies_new` (" +
-                    "`id`, `title`, `overview`, `posterPath`, `backdropPath`, `voteAverage`, " +
-                    "`releaseDate`, `genreIds`, `isFavorite`, `isSearchResult`, `runtimeMinutes`) " +
+                "INSERT OR REPLACE INTO `movies_new` ($MOVIES_COLUMNS_CSV) " +
                     "SELECT `id`, `title`, `overview`, `posterPath`, `backdropPath`, `voteAverage`, " +
                     "`releaseDate`, `genreIds`, `isFavorite`, `isSearchResult`, $runtimeColumn FROM `movies`",
             )
-            db.execSQL("DROP TABLE `movies`")
-            db.execSQL("ALTER TABLE `movies_new` RENAME TO `movies`")
+            db.renameMoviesTable()
         }
     }
 
@@ -107,15 +103,9 @@ internal val MIGRATION_2_3 =
             db.execSQL("DROP TABLE `remote_keys`")
             db.execSQL("ALTER TABLE `remote_keys_new` RENAME TO `remote_keys`")
 
-            if ("isSearchResult" !in columnNames(db, "movies")) return
+            if ("isSearchResult" !in db.columnNames("movies")) return
 
-            db.execSQL(
-                "CREATE TABLE IF NOT EXISTS `movies_new` (" +
-                    "`id` INTEGER NOT NULL, `title` TEXT NOT NULL, `overview` TEXT NOT NULL, " +
-                    "`posterPath` TEXT, `backdropPath` TEXT, `voteAverage` REAL NOT NULL, " +
-                    "`releaseDate` TEXT NOT NULL, `genreIds` TEXT NOT NULL, " +
-                    "`isFavorite` INTEGER NOT NULL, `runtimeMinutes` INTEGER, PRIMARY KEY(`id`))",
-            )
+            db.createMoviesTable(MOVIES_COLUMNS_V3, table = "movies_new")
             db.execSQL(
                 "INSERT OR REPLACE INTO `movies_new` (" +
                     "`id`, `title`, `overview`, `posterPath`, `backdropPath`, `voteAverage`, " +
@@ -123,15 +113,14 @@ internal val MIGRATION_2_3 =
                     "SELECT `id`, `title`, `overview`, `posterPath`, `backdropPath`, `voteAverage`, " +
                     "`releaseDate`, `genreIds`, `isFavorite`, `runtimeMinutes` FROM `movies`",
             )
-            db.execSQL("DROP TABLE `movies`")
-            db.execSQL("ALTER TABLE `movies_new` RENAME TO `movies`")
+            db.renameMoviesTable()
         }
     }
 
 internal val MIGRATION_3_4 =
     object : Migration(3, 4) {
         override fun migrate(db: SupportSQLiteDatabase) {
-            val columns = columnNames(db, "movies")
+            val columns = db.columnNames("movies")
             if ("isWatchlist" !in columns) {
                 db.execSQL("ALTER TABLE `movies` ADD COLUMN `isWatchlist` INTEGER NOT NULL DEFAULT 0")
             }
@@ -144,7 +133,7 @@ internal val MIGRATION_3_4 =
 internal val MIGRATION_4_5 =
     object : Migration(4, 5) {
         override fun migrate(db: SupportSQLiteDatabase) {
-            // Resolve the only invalid historical combination deterministically: Vu wins.
+            // Resolve the only invalid historical combination deterministically: watched wins.
             db.execSQL("UPDATE `movies` SET `isWatchlist` = 0 WHERE `isWatchlist` = 1 AND `isWatched` = 1")
         }
     }
@@ -164,12 +153,19 @@ internal val MIGRATION_5_6 =
         }
     }
 
-private fun columnNames(
-    db: SupportSQLiteDatabase,
-    table: String,
-): Set<String> {
+private fun SupportSQLiteDatabase.createMoviesTable(
+    columns: String,
+    table: String = "movies",
+) = execSQL("CREATE TABLE IF NOT EXISTS `$table` ($columns, PRIMARY KEY(`id`))")
+
+private fun SupportSQLiteDatabase.renameMoviesTable() {
+    execSQL("DROP TABLE `movies`")
+    execSQL("ALTER TABLE `movies_new` RENAME TO `movies`")
+}
+
+private fun SupportSQLiteDatabase.columnNames(table: String): Set<String> {
     val columns = mutableSetOf<String>()
-    db.query("PRAGMA table_info(`$table`)").use { cursor ->
+    query("PRAGMA table_info(`$table`)").use { cursor ->
         val nameIndex = cursor.getColumnIndex("name")
         while (cursor.moveToNext()) {
             if (nameIndex >= 0) columns += cursor.getString(nameIndex)

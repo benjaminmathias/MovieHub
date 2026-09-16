@@ -184,6 +184,10 @@ fun Movie.withLocalFlags(local: MovieEntity?): Movie =
         )
     } ?: this
 
+/** Overlays [localById] flags on a list of movies, keeping entries without a cached row. */
+fun List<Movie>.withLocalFlags(localById: Map<Int, MovieEntity>): List<Movie> =
+    map { movie -> if (localById.containsKey(movie.id)) movie.withLocalFlags(localById[movie.id]) else movie }
+
 /**
  * Re-resolves genre names from the localized dictionary. Used for network-backed
  * feeds whose movies were mapped before the dictionary was available.
