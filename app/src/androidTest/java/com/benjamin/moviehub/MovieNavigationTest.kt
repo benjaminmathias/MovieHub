@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -53,9 +54,9 @@ class MovieNavigationTest {
         }
 
         composeTestRule.onNodeWithTag("discover_filter_button").performClick()
-        composeTestRule.onNodeWithTag("discover_year_section").performClick()
-        composeTestRule.onNodeWithTag("discover_year_option_other").performClick()
-        composeTestRule.onNodeWithTag("discover_custom_year").performTextInput("2020")
+        composeTestRule.onNodeWithTag("discover_year_row").performClick()
+        composeTestRule.onNodeWithTag("discover_year_option_other").performScrollTo().performClick()
+        composeTestRule.onNodeWithTag("discover_custom_year").performScrollTo().performTextInput("2020")
         composeTestRule.onNodeWithTag("discover_apply_filters").performClick()
         composeTestRule.onNodeWithTag("discover_filter_count").assertIsDisplayed()
 
