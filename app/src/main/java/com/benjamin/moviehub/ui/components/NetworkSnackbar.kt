@@ -15,13 +15,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.connectivity.ConnectivityStatus
+import com.benjamin.moviehub.domain.connectivity.isOffline
 
 @Composable
 fun NetworkStatusEffect(
     status: ConnectivityStatus,
     snackbarHostState: SnackbarHostState,
 ) {
-    val isOffline = status == ConnectivityStatus.LOST || status == ConnectivityStatus.UNAVAILABLE
+    val isOffline = status.isOffline
     val offlineMessage = stringResource(R.string.no_internet_connection)
     val restoredMessage = stringResource(R.string.connection_restored)
 
