@@ -338,10 +338,11 @@ private fun LibraryAction(
         if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
     val labelColor =
         if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-    val indicatorColor = animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-        label = "libraryActionIndicator",
-    )
+    val indicatorColor =
+        animateColorAsState(
+            targetValue = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+            label = "libraryActionIndicator",
+        )
     Column(
         modifier =
             modifier
@@ -366,3 +367,4 @@ private fun LibraryAction(
         Text(text = label, style = MaterialTheme.typography.labelMedium, color = labelColor, maxLines = 1)
     }
 }
+
