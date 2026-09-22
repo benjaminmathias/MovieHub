@@ -76,6 +76,7 @@ private fun CategoryRowList(
         items(
             count = lazyPagingItems.itemCount,
             key = lazyPagingItems.itemKey { it.id },
+            contentType = { "movie" },
         ) { index ->
             lazyPagingItems[index]?.let { movie ->
                 RowMovieItem(
@@ -89,7 +90,7 @@ private fun CategoryRowList(
 
         when (lazyPagingItems.loadState.append) {
             is LoadState.Error ->
-                item {
+                item(contentType = "append-error") {
                     EmptyStateView(
                         message = stringResource(R.string.error_loading_more_movies),
                         onRetry = lazyPagingItems::retry,
@@ -97,7 +98,10 @@ private fun CategoryRowList(
                     )
                 }
 
-            LoadState.Loading -> item { MovieCardShimmer(modifier = Modifier.width(HomeMovieCardWidth)) }
+            LoadState.Loading ->
+                item(contentType = "append-loading") {
+                    MovieCardShimmer(modifier = Modifier.width(HomeMovieCardWidth))
+                }
             is LoadState.NotLoading -> Unit
         }
     }

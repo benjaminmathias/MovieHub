@@ -135,6 +135,7 @@ private fun SearchMovieList(
         items(
             count = lazyPagingItems.itemCount,
             key = lazyPagingItems.itemKey { it.id },
+            contentType = { "movie" },
         ) { index ->
             lazyPagingItems[index]?.let { movie ->
                 CompactMovieItem(movie = movie, onMovieClick = onMovieClick)
@@ -143,7 +144,7 @@ private fun SearchMovieList(
 
         when (val appendState = lazyPagingItems.loadState.append) {
             is LoadState.Error ->
-                item {
+                item(contentType = "append-error") {
                     EmptyStateView(
                         message = stringResource(R.string.error_loading_movies),
                         onRetry = onRetry,
@@ -151,7 +152,7 @@ private fun SearchMovieList(
                     )
                 }
 
-            LoadState.Loading -> item { CompactMovieShimmerItem() }
+            LoadState.Loading -> item(contentType = "append-loading") { CompactMovieShimmerItem() }
             is LoadState.NotLoading -> Unit
         }
     }

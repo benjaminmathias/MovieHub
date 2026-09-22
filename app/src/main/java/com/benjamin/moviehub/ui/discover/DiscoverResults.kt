@@ -74,6 +74,7 @@ private fun DiscoverMovieGrid(
         items(
             count = lazyPagingItems.itemCount,
             key = lazyPagingItems.itemKey { it.id },
+            contentType = { "movie" },
         ) { index ->
             lazyPagingItems[index]?.let { movie ->
                 PosterMovieItem(movie = movie, onMovieClick = onMovieClick)
@@ -82,7 +83,7 @@ private fun DiscoverMovieGrid(
 
         when (val state = lazyPagingItems.loadState.append) {
             is LoadState.Error ->
-                item(span = { GridItemSpan(maxLineSpan) }) {
+                item(span = { GridItemSpan(maxLineSpan) }, contentType = "append-error") {
                     EmptyStateView(
                         message = stringResource(R.string.error_loading_more_movies),
                         onRetry = { lazyPagingItems.retry() },
@@ -91,7 +92,7 @@ private fun DiscoverMovieGrid(
                 }
 
             LoadState.Loading ->
-                item(span = { GridItemSpan(maxLineSpan) }) {
+                item(span = { GridItemSpan(maxLineSpan) }, contentType = "append-loading") {
                     CompactMovieShimmerItem()
                 }
 

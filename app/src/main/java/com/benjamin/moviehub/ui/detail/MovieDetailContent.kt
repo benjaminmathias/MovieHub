@@ -47,6 +47,7 @@ import com.benjamin.moviehub.ui.components.previewMovie
 fun MovieDetailContent(
     movie: Movie,
     credits: MovieCredits,
+    modifier: Modifier = Modifier,
     recommendations: MovieRecommendationsUiState = MovieRecommendationsUiState.Empty,
     listState: LazyListState = rememberLazyListState(),
     onToggleFavorite: (() -> Unit)? = null,
@@ -60,7 +61,7 @@ fun MovieDetailContent(
     val navigationInsets = WindowInsets.navigationBars.asPaddingValues()
     val layoutDirection = LocalLayoutDirection.current
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         state = listState,
         contentPadding =
             PaddingValues(
