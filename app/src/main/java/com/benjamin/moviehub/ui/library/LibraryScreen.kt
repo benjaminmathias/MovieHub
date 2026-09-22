@@ -87,7 +87,7 @@ fun LibraryScreen(
                     Column(Modifier.verticalScroll(rememberScrollState())) { repeat(5) { CompactMovieShimmerItem() } }
 
                 is LibraryUiState.Success -> {
-                    val movies = state.movies.filter(selected.matches)
+                    val movies = remember(state.movies, selected) { state.movies.filter(selected.matches) }
                     if (movies.isEmpty()) {
                         EmptyStateView(message = stringResource(selected.emptyMessageRes), icon = selected.emptyIcon)
                     } else {

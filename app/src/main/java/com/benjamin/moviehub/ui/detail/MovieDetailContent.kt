@@ -92,35 +92,25 @@ fun MovieDetailContent(
                         var expanded by rememberSaveable(movie.id, movie.overview) {
                             mutableStateOf(false)
                         }
-                        var hasVisualOverflow by remember(movie.id, movie.overview) {
-                            mutableStateOf(false)
-                        }
                         Text(
                             text = movie.overview,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = if (expanded) Int.MAX_VALUE else 4,
                             overflow = TextOverflow.Ellipsis,
-                            onTextLayout = { result ->
-                                if (!expanded && hasVisualOverflow != result.hasVisualOverflow) {
-                                    hasVisualOverflow = result.hasVisualOverflow
-                                }
-                            },
                         )
-                        if (expanded || hasVisualOverflow) {
-                            TextButton(
-                                onClick = { expanded = !expanded },
-                                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
-                            ) {
-                                Text(
-                                    text =
-                                        stringResource(
-                                            if (expanded) R.string.show_less else R.string.read_more,
-                                        ),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                )
-                            }
+                        TextButton(
+                            onClick = { expanded = !expanded },
+                            contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
+                        ) {
+                            Text(
+                                text =
+                                    stringResource(
+                                        if (expanded) R.string.show_less else R.string.read_more,
+                                    ),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
                         }
                     }
                 }

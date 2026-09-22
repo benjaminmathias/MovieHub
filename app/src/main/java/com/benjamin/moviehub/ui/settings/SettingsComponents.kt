@@ -29,9 +29,10 @@ import com.benjamin.moviehub.core.util.AppTheme
 @Composable
 internal fun SettingsSection(
     title: String,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall,
@@ -46,8 +47,9 @@ internal fun SettingsSection(
 internal fun ThemeSelector(
     currentTheme: AppTheme,
     onThemeSelected: (AppTheme) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Column(modifier = Modifier.selectableGroup()) {
+    Column(modifier = modifier.selectableGroup()) {
         listOf(AppTheme.SYSTEM, AppTheme.LIGHT, AppTheme.DARK).forEachIndexed { index, theme ->
             if (index > 0) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -88,6 +90,7 @@ internal fun SettingsItem(
     icon: ImageVector,
     enabled: Boolean = true,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val disabledAlpha = 0.38f
     val iconTint =
@@ -110,7 +113,7 @@ internal fun SettingsItem(
         }
     Row(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
                 .padding(vertical = 8.dp)
