@@ -34,17 +34,24 @@ class LibraryViewModelTest {
     @Test
     fun `library emits all flagged movies reactively`() =
         runTest {
-            val source = MutableStateFlow(listOf(movie(1, favorite = true), movie(2, watchlist = true)))
+            val source = MutableStateFlow(listOf(movie(1, favorite = true, watchlist = true), movie(2, watchlist = true)))
             every { repository.getLibraryMovies() } returns source
             val viewModel = LibraryViewModel(repository)
             val job = launch { viewModel.uiState.collect {} }
 
             advanceUntilIdle()
-            assertEquals(2, (viewModel.uiState.value as LibraryUiState.Success).movies.size)
+            val initialState = viewModel.uiState.value as LibraryUiState.Success
+            assertEquals(2, initialState.movies.size)
+            assertEquals(listOf(1, 2), initialState.moviesByTab.getValue(LibraryTab.WATCHLIST).map { it.id })
+            assertEquals(listOf(1), initialState.moviesByTab.getValue(LibraryTab.FAVORITES).map { it.id })
+            assertTrue(initialState.moviesByTab.getValue(LibraryTab.WATCHED).isEmpty())
 
             source.value = listOf(movie(3, watched = true))
             advanceUntilIdle()
-            assertEquals(listOf(3), (viewModel.uiState.value as LibraryUiState.Success).movies.map { it.id })
+            val updatedState = viewModel.uiState.value as LibraryUiState.Success
+            assertEquals(listOf(3), updatedState.movies.map { it.id })
+            assertEquals(listOf(3), updatedState.moviesByTab.getValue(LibraryTab.WATCHED).map { it.id })
+            assertTrue(updatedState.moviesByTab.getValue(LibraryTab.WATCHLIST).isEmpty())
             job.cancel()
         }
 

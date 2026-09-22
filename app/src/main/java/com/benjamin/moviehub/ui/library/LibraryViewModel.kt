@@ -7,7 +7,9 @@ import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -24,11 +26,17 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private fun ImmutableList<Movie>.byLibraryTab(): ImmutableMap<LibraryTab, ImmutableList<Movie>> =
+    LibraryTab.entries
+        .associateWith { tab -> filter(tab.matches).toImmutableList() }
+        .toImmutableMap()
+
 sealed class LibraryUiState {
     data object Loading : LibraryUiState()
 
     data class Success(
         val movies: ImmutableList<Movie>,
+        val moviesByTab: ImmutableMap<LibraryTab, ImmutableList<Movie>> = movies.byLibraryTab(),
     ) : LibraryUiState()
 
     data class Error(

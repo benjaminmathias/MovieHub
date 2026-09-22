@@ -103,7 +103,7 @@ private fun HomeContent(
             modifier = Modifier.fillMaxSize().testTag("home_sections"),
             contentPadding = PaddingValues(bottom = 8.dp),
         ) {
-            item(key = "hero") {
+            item(key = "hero", contentType = "hero") {
                 if (heroMovie != null) {
                     HeroMovieBanner(
                         movie = heroMovie,
@@ -116,7 +116,7 @@ private fun HomeContent(
             }
 
             MovieCategory.entries.forEach { category ->
-                item(key = category.key) {
+                item(key = category.key, contentType = "category") {
                     CategoryRow(
                         category = category,
                         lazyPagingItems = homeMovies.getValue(category),

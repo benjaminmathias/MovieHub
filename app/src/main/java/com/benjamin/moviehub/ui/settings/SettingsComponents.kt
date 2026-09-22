@@ -88,9 +88,9 @@ internal fun SettingsItem(
     title: String,
     subtitle: String,
     icon: ImageVector,
-    enabled: Boolean = true,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     val disabledAlpha = 0.38f
     val iconTint =
