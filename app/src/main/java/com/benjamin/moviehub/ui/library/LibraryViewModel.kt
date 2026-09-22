@@ -6,6 +6,8 @@ import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -26,7 +28,7 @@ sealed class LibraryUiState {
     data object Loading : LibraryUiState()
 
     data class Success(
-        val movies: List<Movie>,
+        val movies: ImmutableList<Movie>,
     ) : LibraryUiState()
 
     data class Error(
@@ -50,7 +52,7 @@ class LibraryViewModel
                 .flatMapLatest {
                     repository
                         .getLibraryMovies()
-                        .map { movies -> LibraryUiState.Success(movies) as LibraryUiState }
+                        .map { movies -> LibraryUiState.Success(movies.toImmutableList()) as LibraryUiState }
                         .onStart { emit(LibraryUiState.Loading) }
                         .catch { error ->
                             if (error is CancellationException) throw error

@@ -32,6 +32,7 @@ import com.benjamin.moviehub.core.theme.ContentHorizontalPadding
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.core.theme.POSTER_ASPECT_RATIO
 import com.benjamin.moviehub.domain.model.Movie
+import kotlinx.collections.immutable.persistentListOf
 
 @Composable
 fun PosterMovieItem(
@@ -216,6 +217,6 @@ internal fun previewMovie() =
         overview = "Test, \n test \n test",
         backdropPath = "",
         webUrl = "",
-        genreIds = emptyList(),
-        genres = emptyList(),
+        genreIds = persistentListOf(),
+        genres = persistentListOf(),
     )

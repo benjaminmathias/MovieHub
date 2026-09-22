@@ -8,6 +8,8 @@ import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -114,7 +116,7 @@ class MovieDetailViewModel
                 repository
                     .getMovieRecommendations(movieId)
                     .takeIf(List<Movie>::isNotEmpty)
-                    ?.let(MovieRecommendationsUiState::Success)
+                    ?.let { MovieRecommendationsUiState.Success(it.toImmutableList()) }
                     ?: MovieRecommendationsUiState.Empty
             } catch (e: CancellationException) {
                 throw e
@@ -192,7 +194,7 @@ private enum class LibraryFlag(
 private fun MovieRecommendationsUiState.withLocalFlags(localById: Map<Int, Movie>): MovieRecommendationsUiState =
     (this as? MovieRecommendationsUiState.Success)
         ?.let { success ->
-            MovieRecommendationsUiState.Success(success.movies.map { it.withFlags(localById[it.id]) })
+            MovieRecommendationsUiState.Success(success.movies.map { it.withFlags(localById[it.id]) }.toImmutableList())
         } ?: this
 
 private fun MovieDetailUiState.Success.withLocalFlags(localById: Map<Int, Movie>): MovieDetailUiState.Success =
@@ -226,7 +228,7 @@ sealed interface MovieRecommendationsUiState {
     data object Loading : MovieRecommendationsUiState
 
     data class Success(
-        val movies: List<Movie>,
+        val movies: ImmutableList<Movie>,
     ) : MovieRecommendationsUiState
 
     data object Empty : MovieRecommendationsUiState

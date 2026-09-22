@@ -1,5 +1,8 @@
 package com.benjamin.moviehub.domain.model
 
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+
 data class Movie(
     val id: Int,
     val title: String,
@@ -10,8 +13,8 @@ data class Movie(
     val releaseDate: String,
     val webUrl: String?,
     val isFavorite: Boolean,
-    val genreIds: List<Int>,
-    val genres: List<String>,
+    val genreIds: ImmutableList<Int>,
+    val genres: ImmutableList<String>,
     val isWatchlist: Boolean = false,
     val isWatched: Boolean = false,
     val runtimeMinutes: Int? = null,
@@ -28,7 +31,7 @@ data class Actor(
 )
 
 data class MovieCredits(
-    val actors: List<Actor> = emptyList(),
+    val actors: ImmutableList<Actor> = persistentListOf(),
     val director: String? = null,
 )
 

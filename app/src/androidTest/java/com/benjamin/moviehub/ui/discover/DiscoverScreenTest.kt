@@ -31,6 +31,8 @@ import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieGenre
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
@@ -164,7 +166,7 @@ class DiscoverScreenTest {
         var retryCalled = false
 
         setDiscoverContent(
-            state = { initialState().copy(genres = emptyList(), hasGenreError = true) },
+            state = { initialState().copy(genres = persistentListOf(), hasGenreError = true) },
             onRetryGenres = { retryCalled = true },
             results = flowOf(PagingData.empty()),
         )
@@ -257,7 +259,7 @@ class DiscoverScreenTest {
     @Test
     fun retryGenreActionUsesSharedRetryStyleText() {
         setDiscoverContent(
-            state = { initialState().copy(genres = emptyList(), hasGenreError = true) },
+            state = { initialState().copy(genres = persistentListOf(), hasGenreError = true) },
             results = flowOf(PagingData.empty()),
         )
 
@@ -353,7 +355,7 @@ class DiscoverScreenTest {
 
     private fun initialState() =
         DiscoverUiState(
-            genres = listOf(MovieGenre(id = 28, name = "Action")),
+            genres = listOf(MovieGenre(id = 28, name = "Action")).toImmutableList(),
             isLoadingGenres = false,
         )
 
@@ -368,8 +370,8 @@ class DiscoverScreenTest {
             releaseDate = "2024-01-01",
             webUrl = null,
             isFavorite = false,
-            genreIds = emptyList(),
-            genres = emptyList(),
+            genreIds = persistentListOf(),
+            genres = persistentListOf(),
         )
 
     private class ErrorPagingSource : PagingSource<Int, Movie>() {

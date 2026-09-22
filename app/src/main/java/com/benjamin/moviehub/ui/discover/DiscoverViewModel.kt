@@ -10,6 +10,9 @@ import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieGenre
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -26,7 +29,7 @@ import javax.inject.Inject
 data class DiscoverUiState(
     val draftFilters: DiscoverFilters = DiscoverFilters(),
     val appliedFilters: DiscoverFilters = DiscoverFilters(),
-    val genres: List<MovieGenre> = emptyList(),
+    val genres: ImmutableList<MovieGenre> = persistentListOf(),
     val isLoadingGenres: Boolean = true,
     val hasGenreError: Boolean = false,
 )
@@ -94,7 +97,7 @@ class DiscoverViewModel
                 try {
                     _uiState.update {
                         it.copy(
-                            genres = repository.getMovieGenres(),
+                            genres = repository.getMovieGenres().toImmutableList(),
                             isLoadingGenres = false,
                         )
                     }

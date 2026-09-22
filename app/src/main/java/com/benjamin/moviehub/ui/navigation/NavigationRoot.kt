@@ -47,6 +47,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
@@ -99,7 +102,11 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val useNavigationRail = maxWidth >= 600.dp
 
-        fun openMovieDetails(movieId: Int) {
+        fun openMovieDetails(
+            movieId: Int,
+            lifecycle: Lifecycle,
+        ) {
+            if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return
             val route = Route.Detail(movieId)
             if (backStack.lastOrNull() != route) backStack.add(route)
         }
@@ -107,37 +114,42 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
         val entryProvider =
             entryProvider<NavKey> {
                 entry<Route.List> {
+                    val lifecycle = LocalLifecycleOwner.current.lifecycle
                     MovieListEntry(
-                        onOpenDetails = ::openMovieDetails,
-                        onOpenSettings = { backStack.add(Route.Settings) },
-                        onOpenSearch = { backStack.add(Route.Search) },
+                        onOpenDetails = { movieId -> openMovieDetails(movieId, lifecycle) },
+                        onOpenSettings = dropUnlessResumed { backStack.add(Route.Settings) },
+                        onOpenSearch = dropUnlessResumed { backStack.add(Route.Search) },
                         snackbarHostState = snackbarHostState,
                     )
                 }
 
                 entry<Route.Discover> {
-                    DiscoverEntry(onOpenDetails = ::openMovieDetails)
+                    val lifecycle = LocalLifecycleOwner.current.lifecycle
+                    DiscoverEntry(onOpenDetails = { movieId -> openMovieDetails(movieId, lifecycle) })
                 }
 
                 entry<Route.Search> {
+                    val lifecycle = LocalLifecycleOwner.current.lifecycle
                     SearchEntry(
                         onBack = { backStack.removeLastOrNull() },
-                        onOpenDetails = ::openMovieDetails,
+                        onOpenDetails = { movieId -> openMovieDetails(movieId, lifecycle) },
                     )
                 }
 
                 entry<Route.Detail> { key ->
+                    val lifecycle = LocalLifecycleOwner.current.lifecycle
                     MovieDetailEntry(
                         movieId = key.movieId,
                         onBack = { backStack.removeLastOrNull() },
-                        onOpenRecommendation = ::openMovieDetails,
+                        onOpenRecommendation = { movieId -> openMovieDetails(movieId, lifecycle) },
                     )
                 }
 
                 entry<Route.Library> {
+                    val lifecycle = LocalLifecycleOwner.current.lifecycle
                     LibraryEntry(
-                        onOpenSettings = { backStack.add(Route.Settings) },
-                        onOpenDetails = ::openMovieDetails,
+                        onOpenSettings = dropUnlessResumed { backStack.add(Route.Settings) },
+                        onOpenDetails = { movieId -> openMovieDetails(movieId, lifecycle) },
                     )
                 }
 

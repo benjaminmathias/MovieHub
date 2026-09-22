@@ -10,6 +10,8 @@ import androidx.compose.ui.test.performClick
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.domain.model.Movie
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -25,7 +27,7 @@ class LibraryScreenTest {
         composeRule.setContent {
             MovieHubTheme {
                 LibraryScreen(
-                    state = LibraryUiState.Success(listOf(watchlist, favorite)),
+                    state = LibraryUiState.Success(listOf(watchlist, favorite).toImmutableList()),
                     onRemove = { _, _ -> },
                     onMovieClick = {},
                     onSettingsClick = {},
@@ -48,7 +50,7 @@ class LibraryScreenTest {
         composeRule.setContent {
             MovieHubTheme {
                 LibraryScreen(
-                    state = LibraryUiState.Success(emptyList()),
+                    state = LibraryUiState.Success(persistentListOf()),
                     onRemove = { _, _ -> },
                     onMovieClick = {},
                     onSettingsClick = {},
@@ -88,7 +90,7 @@ class LibraryScreenTest {
         composeRule.setContent {
             MovieHubTheme {
                 LibraryScreen(
-                    state = LibraryUiState.Success(listOf(watchlist)),
+                    state = LibraryUiState.Success(listOf(watchlist).toImmutableList()),
                     onRemove = { _, _ -> },
                     onMovieClick = {},
                     onSettingsClick = {},
@@ -121,7 +123,7 @@ class LibraryScreenTest {
         isFavorite = favorite,
         isWatchlist = watchlist,
         isWatched = false,
-        genreIds = emptyList(),
-        genres = emptyList(),
+        genreIds = persistentListOf(),
+        genres = persistentListOf(),
     )
 }

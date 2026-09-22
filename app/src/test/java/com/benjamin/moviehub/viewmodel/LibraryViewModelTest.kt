@@ -10,6 +10,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
@@ -105,7 +106,7 @@ class LibraryViewModelTest {
         isFavorite = favorite,
         isWatchlist = watchlist,
         isWatched = watched,
-        genreIds = emptyList(),
-        genres = emptyList(),
+        genreIds = persistentListOf(),
+        genres = persistentListOf(),
     )
 }

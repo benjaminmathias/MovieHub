@@ -21,6 +21,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -55,21 +56,24 @@ fun HeroMovieBanner(
                 modifier = Modifier.matchParentSize(),
             )
 
+            val background = MaterialTheme.colorScheme.background
+            val scrim =
+                remember(background) {
+                    Brush.verticalGradient(
+                        colors =
+                            listOf(
+                                background.copy(alpha = 0.55f),
+                                Color.Transparent,
+                                background.copy(alpha = 0.75f),
+                                background,
+                            ),
+                    )
+                }
             Box(
                 modifier =
                     Modifier
                         .matchParentSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors =
-                                    listOf(
-                                        MaterialTheme.colorScheme.background.copy(alpha = 0.55f),
-                                        Color.Transparent,
-                                        MaterialTheme.colorScheme.background.copy(alpha = 0.75f),
-                                        MaterialTheme.colorScheme.background,
-                                    ),
-                            ),
-                        ),
+                        .background(scrim),
             )
 
             Row(

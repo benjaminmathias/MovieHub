@@ -36,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,6 +64,9 @@ private val HeroHeight = 264.dp
 private val PosterHeight = 180.dp
 private val PosterWidth = 120.dp
 private val SummaryOverlap = 32.dp
+
+private val HeroTopScrim =
+    Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.32f), Color.Transparent))
 
 @Composable
 internal fun MovieDetailHeader(
@@ -92,6 +96,8 @@ internal fun MovieDetailHeader(
 
 @Composable
 private fun MovieDetailHero(backdropPath: String?) {
+    val surface = MaterialTheme.colorScheme.surface
+    val bottomScrim = remember(surface) { Brush.verticalGradient(listOf(Color.Transparent, surface)) }
     Box(
         modifier = Modifier.fillMaxWidth().height(HeroHeight).testTag("detail_hero"),
     ) {
@@ -102,7 +108,7 @@ private fun MovieDetailHero(backdropPath: String?) {
                     .fillMaxWidth()
                     .height(120.dp)
                     .align(Alignment.TopCenter)
-                    .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.32f), Color.Transparent))),
+                    .background(HeroTopScrim),
         )
         Box(
             modifier =
@@ -110,7 +116,7 @@ private fun MovieDetailHero(backdropPath: String?) {
                     .fillMaxWidth()
                     .height(140.dp)
                     .align(Alignment.BottomCenter)
-                    .background(Brush.verticalGradient(listOf(Color.Transparent, MaterialTheme.colorScheme.surface))),
+                    .background(bottomScrim),
         )
     }
 }
@@ -197,6 +203,7 @@ private fun MovieDetailSummary(
 
 @Composable
 private fun MovieDetailRating(movie: Movie) {
+    val integerFormat = remember { NumberFormat.getIntegerInstance(Locale.FRANCE) }
     Row(
         modifier = Modifier.padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -220,7 +227,7 @@ private fun MovieDetailRating(movie: Movie) {
                     text =
                         stringResource(
                             R.string.vote_count,
-                            NumberFormat.getIntegerInstance(Locale.FRANCE).format(voteCount),
+                            integerFormat.format(voteCount),
                         ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

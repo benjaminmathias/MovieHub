@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -46,7 +48,7 @@ class MovieDetailAccessibilityTest {
     fun detailShowsCreditsAndUsefulMetadata() {
         setDetailContent(
             movie(voteAverage = 8.7, voteCount = 123, genres = listOf("Action", "Drame")),
-            credits = MovieCredits(emptyList(), "Director Name"),
+            credits = MovieCredits(director = "Director Name"),
         )
 
         composeRule.onNodeWithText("8.7 / 10").assertIsDisplayed()
@@ -169,8 +171,8 @@ class MovieDetailAccessibilityTest {
             isFavorite = isFavorite,
             isWatchlist = isWatchlist,
             isWatched = isWatched,
-            genreIds = emptyList(),
-            genres = genres,
+            genreIds = persistentListOf(),
+            genres = genres.toImmutableList(),
             voteCount = voteCount,
         )
 }

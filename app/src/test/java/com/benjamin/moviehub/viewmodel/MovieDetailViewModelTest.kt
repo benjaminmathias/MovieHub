@@ -11,6 +11,8 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,8 +46,8 @@ class MovieDetailViewModelTest {
             releaseDate = "2024-01-01",
             webUrl = null,
             isFavorite = false,
-            genreIds = emptyList(),
-            genres = listOf("Drama"),
+            genreIds = persistentListOf(),
+            genres = persistentListOf("Drama"),
         )
 
     @Before
@@ -302,7 +304,7 @@ class MovieDetailViewModelTest {
             advanceUntilIdle()
 
             assertEquals(
-                MovieRecommendationsUiState.Success(listOf(suggested)),
+                MovieRecommendationsUiState.Success(listOf(suggested).toImmutableList()),
                 (viewModel.uiState.value as MovieDetailUiState.Success).recommendations,
             )
         }

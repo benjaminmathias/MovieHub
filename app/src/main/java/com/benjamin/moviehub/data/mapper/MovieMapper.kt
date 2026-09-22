@@ -7,6 +7,7 @@ import com.benjamin.moviehub.data.remote.MovieDto
 import com.benjamin.moviehub.domain.model.Actor
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
+import kotlinx.collections.immutable.toImmutableList
 
 private const val TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/"
 
@@ -99,7 +100,7 @@ fun ActorDto.toDomain(): Actor = Actor(id, name.orEmpty(), character.orEmpty(), 
 
 fun MovieCreditsDto.toDomain(): MovieCredits =
     MovieCredits(
-        actors = cast.take(15).map { it.toDomain() },
+        actors = cast.take(15).map { it.toDomain() }.toImmutableList(),
         director =
             crew.firstOrNull { it.job == "Director" && !it.name.isNullOrBlank() }?.name?.trim(),
     )
@@ -118,7 +119,7 @@ fun MovieDto.toDomain(baseMovie: Movie): Movie {
     val detailGenres = genres.orEmpty().mapNotNull { it.name?.trim()?.takeIf(String::isNotEmpty) }
 
     return baseMovie.copy(
-        genres = detailGenres.ifEmpty { baseMovie.genres },
+        genres = detailGenres.ifEmpty { baseMovie.genres }.toImmutableList(),
         voteCount = voteCount?.takeIf { it > 0 },
     )
 }
@@ -141,8 +142,8 @@ fun MovieEntity.toDomain(genreNames: Map<Int, String> = emptyMap()): Movie {
         isFavorite = isFavorite,
         isWatchlist = isWatchlist,
         isWatched = isWatched,
-        genreIds = genreIds,
-        genres = genreIds.mapNotNull { resolvedGenres[it] },
+        genreIds = genreIds.toImmutableList(),
+        genres = genreIds.mapNotNull { resolvedGenres[it] }.toImmutableList(),
         runtimeMinutes = runtimeMinutes,
         posterPathSmall = toTmdbImageUrl(posterPath, "w342"),
     )
@@ -196,5 +197,5 @@ fun Movie.withGenreNames(genreNames: Map<Int, String>): Movie {
     if (genreNames.isEmpty()) return this
     val resolved = resolvedGenreNames(genreNames)
     val names = genreIds.mapNotNull { resolved[it] }
-    return if (names == genres) this else copy(genres = names)
+    return if (names == genres) this else copy(genres = names.toImmutableList())
 }

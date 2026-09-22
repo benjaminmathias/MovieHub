@@ -15,6 +15,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
@@ -72,8 +73,8 @@ class MovieRepositoryTest {
                     releaseDate = "2024-01-01",
                     webUrl = "https://www.themoviedb.org/movie/7",
                     isFavorite = false,
-                    genreIds = emptyList(),
-                    genres = emptyList(),
+                    genreIds = persistentListOf(),
+                    genres = persistentListOf(),
                 )
 
             coEvery { dao.setLibraryFlag(capture(entitySlot), isFavorite = true) } just runs
@@ -104,8 +105,8 @@ class MovieRepositoryTest {
                     releaseDate = "",
                     webUrl = null,
                     isFavorite = false,
-                    genreIds = emptyList(),
-                    genres = emptyList(),
+                    genreIds = persistentListOf(),
+                    genres = persistentListOf(),
                 )
             coEvery { dao.setLibraryFlag(any(), isWatchlist = true) } just runs
             coEvery { dao.setLibraryFlag(any(), isWatched = true) } just runs

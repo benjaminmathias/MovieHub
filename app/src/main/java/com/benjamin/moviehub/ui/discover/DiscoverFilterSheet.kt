@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.FlowRowScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -446,17 +447,16 @@ private fun GenrePicker(
                     onClick = { onGenreSelected(null) },
                     modifier = Modifier.fillMaxWidth().testTag("discover_genre_option_all"),
                 )
-                OptionGrid(
-                    options =
-                        state.genres.map { genre ->
-                            FilterOptionItem(
-                                label = genre.name,
-                                selected = filters.genreId == genre.id,
-                                testTag = "discover_genre_option_${genre.id}",
-                                onClick = { onGenreSelected(genre.id) },
-                            )
-                        },
-                )
+                OptionGrid {
+                    state.genres.forEach { genre ->
+                        FilterOption(
+                            label = genre.name,
+                            selected = filters.genreId == genre.id,
+                            onClick = { onGenreSelected(genre.id) },
+                            modifier = Modifier.testTag("discover_genre_option_${genre.id}"),
+                        )
+                    }
+                }
             }
         }
     }
@@ -489,36 +489,35 @@ private fun YearPicker(
             modifier = Modifier.fillMaxWidth().testTag("discover_year_option_all"),
         )
 
-        OptionGrid(
-            options =
-                yearOptions.drop(1).map { year ->
-                    FilterOptionItem(
-                        label = year.toString(),
-                        selected = !customYearMode && filters.releaseYear == year,
-                        testTag = "discover_year_option_$year",
-                        onClick = {
-                            onCustomYearModeChange(false)
-                            onCustomYearTextChange("")
-                            onReleaseYearSelected(year)
-                        },
+        OptionGrid {
+            yearOptions.drop(1).forEach { year ->
+                FilterOption(
+                    label = year.toString(),
+                    selected = !customYearMode && filters.releaseYear == year,
+                    onClick = {
+                        onCustomYearModeChange(false)
+                        onCustomYearTextChange("")
+                        onReleaseYearSelected(year)
+                    },
+                    modifier = Modifier.testTag("discover_year_option_$year"),
+                )
+            }
+            FilterOption(
+                label = stringResource(R.string.discover_other_year),
+                selected = customYearMode,
+                onClick = {
+                    onCustomYearModeChange(true)
+                    onCustomYearTextChange(
+                        filters.releaseYear
+                            ?.takeIf { it !in recentYears }
+                            ?.toString()
+                            .orEmpty(),
                     )
-                } +
-                    FilterOptionItem(
-                        label = stringResource(R.string.discover_other_year),
-                        selected = customYearMode,
-                        testTag = "discover_year_option_other",
-                        onClick = {
-                            onCustomYearModeChange(true)
-                            onCustomYearTextChange(
-                                filters.releaseYear
-                                    ?.takeIf { it !in recentYears }
-                                    ?.toString()
-                                    .orEmpty(),
-                            )
-                            onReleaseYearSelected(null)
-                        },
-                    ),
-        )
+                    onReleaseYearSelected(null)
+                },
+                modifier = Modifier.testTag("discover_year_option_other"),
+            )
+        }
 
         if (customYearMode) {
             val showError = customYearInvalid && customYearText.isNotEmpty()
@@ -551,13 +550,6 @@ private fun YearPicker(
         }
     }
 }
-
-private data class FilterOptionItem(
-    val label: String,
-    val selected: Boolean,
-    val testTag: String,
-    val onClick: () -> Unit,
-)
 
 @Composable
 private fun PickerColumn(
@@ -595,21 +587,13 @@ private fun FilterOption(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun OptionGrid(options: List<FilterOptionItem>) {
+private fun OptionGrid(content: @Composable FlowRowScope.() -> Unit) {
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        options.forEach { option ->
-            FilterOption(
-                label = option.label,
-                selected = option.selected,
-                onClick = option.onClick,
-                modifier = Modifier.testTag(option.testTag),
-            )
-        }
-    }
+        content = content,
+    )
 }
 
 internal fun customYearIsInvalid(

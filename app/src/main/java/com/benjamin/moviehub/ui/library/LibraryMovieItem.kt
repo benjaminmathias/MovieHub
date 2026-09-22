@@ -26,7 +26,7 @@ internal fun LibraryMovieItem(
     onRemove: (Movie) -> Unit,
     removeLabel: String,
     removeIcon: ImageVector,
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
     val dismissState = rememberSwipeToDismissBoxState()

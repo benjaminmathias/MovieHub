@@ -11,6 +11,7 @@ import io.mockk.coVerify
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
@@ -110,7 +111,7 @@ class MovieListViewModelTest {
             releaseDate = "2024-01-01",
             webUrl = null,
             isFavorite = false,
-            genreIds = emptyList(),
-            genres = emptyList(),
+            genreIds = persistentListOf(),
+            genres = persistentListOf(),
         )
 }

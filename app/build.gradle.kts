@@ -118,6 +118,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.kotlinx.serialization.core)
 
+    // Immutable collections (Compose stability)
+    implementation(libs.kotlinx.collections.immutable)
+
     // Unit Tests
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
