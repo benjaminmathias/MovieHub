@@ -367,4 +367,3 @@ private fun LibraryAction(
         Text(text = label, style = MaterialTheme.typography.labelMedium, color = labelColor, maxLines = 1)
     }
 }
-
