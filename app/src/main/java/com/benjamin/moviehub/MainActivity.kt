@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -40,8 +41,9 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val appTheme by userPreferencesRepository.theme.collectAsStateWithLifecycle(AppTheme.SYSTEM)
+            val connectivityFlow = remember(connectivityObserver) { connectivityObserver.observe() }
             val networkStatus by
-                connectivityObserver.observe().collectAsStateWithLifecycle(ConnectivityStatus.UNKNOWN)
+                connectivityFlow.collectAsStateWithLifecycle(ConnectivityStatus.UNKNOWN)
             val useDarkTheme = appTheme.isDark(isSystemInDarkTheme())
 
             MovieHubTheme(darkTheme = useDarkTheme) {
