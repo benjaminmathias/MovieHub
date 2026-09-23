@@ -310,6 +310,31 @@ class MovieDetailViewModelTest {
         }
 
     @Test
+    fun `recommendations appear while credits are still loading`() =
+        runTest {
+            val creditsGate = CompletableDeferred<MovieCredits>()
+            val suggested = movie.copy(id = 2, title = "Suggested")
+            coEvery { repository.getMovieDetails(1) } returns movie
+            coEvery { repository.getMovieCredits(1) } coAnswers { creditsGate.await() }
+            coEvery { repository.getMovieRecommendations(1) } returns listOf(suggested)
+            val viewModel = MovieDetailViewModel(repository)
+
+            viewModel.loadMovieDetails(1)
+            runCurrent()
+
+            val state = viewModel.uiState.value as MovieDetailUiState.Success
+            assertEquals(MovieCredits(), state.credits)
+            assertEquals(
+                MovieRecommendationsUiState.Success(listOf(suggested).toImmutableList()),
+                state.recommendations,
+            )
+
+            creditsGate.complete(MovieCredits(director = "Director"))
+            advanceUntilIdle()
+            assertEquals("Director", (viewModel.uiState.value as MovieDetailUiState.Success).credits.director)
+        }
+
+    @Test
     fun `empty recommendations map to the empty state`() =
         runTest {
             coEvery { repository.getMovieDetails(1) } returns movie

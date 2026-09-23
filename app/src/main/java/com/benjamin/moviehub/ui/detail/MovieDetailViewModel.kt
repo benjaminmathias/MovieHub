@@ -61,11 +61,15 @@ class MovieDetailViewModel
                             // job so library changes made elsewhere keep reconciling this screen.
                             libraryJob = viewModelScope.launch { observeLibrary(movieId) }
 
-                            val loadedCredits = credits.await()
-                            updateSuccess(movieId) { it.copy(credits = loadedCredits) }
-                            val loadedRecommendations = recommendations.await()
-                            updateSuccess(movieId) {
-                                it.copy(recommendations = loadedRecommendations.withLocalFlags(latestLibraryById))
+                            launch {
+                                val loadedCredits = credits.await()
+                                updateSuccess(movieId) { it.copy(credits = loadedCredits) }
+                            }
+                            launch {
+                                val loadedRecommendations = recommendations.await()
+                                updateSuccess(movieId) {
+                                    it.copy(recommendations = loadedRecommendations.withLocalFlags(latestLibraryById))
+                                }
                             }
                         }
                     } catch (e: CancellationException) {

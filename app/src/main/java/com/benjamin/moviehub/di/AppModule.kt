@@ -9,6 +9,7 @@ import com.benjamin.moviehub.data.local.MIGRATION_2_3
 import com.benjamin.moviehub.data.local.MIGRATION_3_4
 import com.benjamin.moviehub.data.local.MIGRATION_4_5
 import com.benjamin.moviehub.data.local.MIGRATION_5_6
+import com.benjamin.moviehub.data.local.MIGRATION_6_7
 import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.local.MovieDatabase
 import com.benjamin.moviehub.data.remote.MovieApiService
@@ -59,7 +60,7 @@ object DatabaseModule {
     ): MovieDatabase =
         Room
             .databaseBuilder(context, MovieDatabase::class.java, "movie_hub_db")
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
             .build()
 
     @Provides

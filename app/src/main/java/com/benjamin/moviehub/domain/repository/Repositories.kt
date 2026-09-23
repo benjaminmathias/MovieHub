@@ -34,6 +34,9 @@ interface MovieRepository {
         isFavorite: Boolean,
     )
 
+    /** Toggle a favorite from its current persisted state. */
+    suspend fun toggleFavorite(movie: Movie)
+
     suspend fun setWatchlist(
         movie: Movie,
         isWatchlist: Boolean,

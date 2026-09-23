@@ -43,13 +43,10 @@ class MovieListViewModel
                     initialValue = null,
                 )
 
-        fun onToggleFavorite(
-            movie: Movie,
-            isFavorite: Boolean,
-        ) {
+        fun onToggleFavorite(movie: Movie) {
             viewModelScope.launch {
                 try {
-                    repository.setFavorite(movie, isFavorite)
+                    repository.toggleFavorite(movie)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {

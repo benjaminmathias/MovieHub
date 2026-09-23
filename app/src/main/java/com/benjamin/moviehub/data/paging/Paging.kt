@@ -159,9 +159,9 @@ internal class SearchMovieRemoteMediator(
     override suspend fun fetchPage(page: Int): MovieResponse = apiService.searchMovies(query = query, page = page)
 
     override suspend fun clearFeed(fetched: List<MovieDto>) {
-        val previousResultIds = movieDao.getAllSearchResultMovieIds()
-        movieDao.clearSearchResults()
-        movieDao.clearSearchRemoteKeys()
+        val previousResultIds = movieDao.getSearchResultMovieIds(queryKey)
+        movieDao.clearSearchResults(queryKey)
+        movieDao.clearRemoteKeysByType(remoteKeyType)
         movieDao.deleteSearchOrphans(previousResultIds, fetched.map { it.id })
     }
 

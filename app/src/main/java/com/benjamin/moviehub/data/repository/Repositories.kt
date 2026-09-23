@@ -121,6 +121,8 @@ class MovieRepositoryImpl
             isFavorite: Boolean,
         ) = movieDao.setLibraryFlag(movie.toEntity(isFavorite = isFavorite), isFavorite = isFavorite)
 
+        override suspend fun toggleFavorite(movie: Movie) = movieDao.toggleFavorite(movie.toEntity())
+
         override suspend fun setWatchlist(
             movie: Movie,
             isWatchlist: Boolean,

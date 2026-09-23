@@ -44,6 +44,7 @@ data class MovieCategoryEntity(
 @Entity(
     tableName = "movie_search_results",
     primaryKeys = ["queryKey", "movieId"],
+    indices = [Index(value = ["queryKey", "pageOrder"])],
 )
 data class MovieSearchResultEntity(
     val queryKey: String,

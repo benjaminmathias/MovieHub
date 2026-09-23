@@ -57,6 +57,17 @@ interface MovieDao {
         )
     }
 
+    /** Toggle against the persisted value so rapid taps cannot reuse a stale UI flag. */
+    @Transaction
+    suspend fun toggleFavorite(movie: MovieEntity) {
+        val current = getMovieById(movie.id)
+        if (current == null) {
+            insertMovie(movie.copy(isFavorite = true))
+        } else {
+            updateLocalFlags(movie.id, !current.isFavorite, null, null)
+        }
+    }
+
     @Query(
         """UPDATE movies SET
             isFavorite = COALESCE(:isFavorite, isFavorite),
@@ -145,17 +156,11 @@ interface MovieDao {
     @Query("DELETE FROM remote_keys WHERE type = :type")
     suspend fun clearRemoteKeysByType(type: String)
 
-    @Query("DELETE FROM remote_keys WHERE type LIKE 'SEARCH:%'")
-    suspend fun clearSearchRemoteKeys()
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSearchResults(results: List<MovieSearchResultEntity>)
 
-    @Query("SELECT DISTINCT movieId FROM movie_search_results")
-    suspend fun getAllSearchResultMovieIds(): List<Int>
-
-    @Query("DELETE FROM movie_search_results")
-    suspend fun clearSearchResults()
+    @Query("DELETE FROM movie_search_results WHERE queryKey = :queryKey")
+    suspend fun clearSearchResults(queryKey: String)
 
     @Query("SELECT movieId FROM movie_search_results WHERE queryKey = :queryKey ORDER BY pageOrder ASC")
     suspend fun getSearchResultMovieIds(queryKey: String): List<Int>

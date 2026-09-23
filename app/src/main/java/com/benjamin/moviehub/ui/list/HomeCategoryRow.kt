@@ -33,7 +33,7 @@ internal fun CategoryRow(
     category: MovieCategory,
     lazyPagingItems: LazyPagingItems<Movie>,
     onMovieClick: (Int) -> Unit,
-    onToggleFavorite: (Movie, Boolean) -> Unit,
+    onToggleFavorite: (Movie) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
@@ -66,7 +66,7 @@ internal fun CategoryRow(
 private fun CategoryRowList(
     lazyPagingItems: LazyPagingItems<Movie>,
     onMovieClick: (Int) -> Unit,
-    onToggleFavorite: (Movie, Boolean) -> Unit,
+    onToggleFavorite: (Movie) -> Unit,
 ) {
     LazyRow(
         modifier = Modifier.fillMaxWidth().testTag("category_row"),

@@ -37,7 +37,7 @@ import com.benjamin.moviehub.domain.model.Movie
 fun RowMovieItem(
     movie: Movie,
     onMovieClick: (Int) -> Unit,
-    onToggleFavorite: (Movie, Boolean) -> Unit,
+    onToggleFavorite: (Movie) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val favoriteStatus = favoriteStateDescription(movie.isFavorite)
@@ -73,7 +73,7 @@ fun RowMovieItem(
 
                 IconButton(
                     onClick = {
-                        onToggleFavorite(movie, !movie.isFavorite)
+                        onToggleFavorite(movie)
                     },
                     modifier =
                         Modifier
@@ -164,7 +164,7 @@ private fun RowMovieItemPreview() {
         RowMovieItem(
             movie = previewMovie(),
             onMovieClick = {},
-            onToggleFavorite = { _, _ -> },
+            onToggleFavorite = {},
         )
     }
 }

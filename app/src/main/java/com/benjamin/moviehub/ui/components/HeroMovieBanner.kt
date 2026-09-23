@@ -41,7 +41,7 @@ import com.benjamin.moviehub.domain.model.Movie
 fun HeroMovieBanner(
     movie: Movie,
     onMovieClick: (Int) -> Unit,
-    onToggleFavorite: (Movie, Boolean) -> Unit,
+    onToggleFavorite: (Movie) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -137,7 +137,7 @@ fun HeroMovieBanner(
                     }
 
                     FilledTonalIconButton(
-                        onClick = { onToggleFavorite(movie, !movie.isFavorite) },
+                        onClick = { onToggleFavorite(movie) },
                         colors =
                             IconButtonDefaults.filledTonalIconButtonColors(
                                 containerColor =
@@ -174,7 +174,7 @@ private fun HeroMovieBannerPreview() {
         HeroMovieBanner(
             movie = previewMovie(),
             onMovieClick = {},
-            onToggleFavorite = { _, _ -> },
+            onToggleFavorite = {},
         )
     }
 }

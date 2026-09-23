@@ -33,7 +33,7 @@ class MovieDatabaseMigrationTest {
     }
 
     @Test
-    fun migrate1To5_preservesMovieAndMigratesPopularMembership() =
+    fun migrate1To7_preservesMovieAndMigratesPopularMembership() =
         runBlocking {
             createVersionOneDatabase(includeRuntimeColumn = true)
 
@@ -60,7 +60,7 @@ class MovieDatabaseMigrationTest {
         }
 
     @Test
-    fun migrate1To5_withoutRuntimeColumn_opensAndPreservesData() =
+    fun migrate1To7_withoutRuntimeColumn_opensAndPreservesData() =
         runBlocking {
             createVersionOneDatabase(includeRuntimeColumn = false)
 
@@ -85,7 +85,7 @@ class MovieDatabaseMigrationTest {
         }
 
     @Test
-    fun migrate2To5_collapsesRemoteKeysAndAddsLibraryFlags() =
+    fun migrate2To7_collapsesRemoteKeysAndAddsLibraryFlags() =
         runBlocking {
             createVersionTwoDatabase()
 
@@ -109,7 +109,7 @@ class MovieDatabaseMigrationTest {
         }
 
     @Test
-    fun migrate3To5_addsIndependentLibraryFlags() =
+    fun migrate3To7_addsIndependentLibraryFlags() =
         runBlocking {
             createVersionThreeDatabase()
             val database = openMigratedDatabase()
@@ -126,11 +126,11 @@ class MovieDatabaseMigrationTest {
     private fun openMigratedDatabase(): MovieDatabase =
         Room
             .databaseBuilder(context, MovieDatabase::class.java, dbName)
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
             .build()
 
     @Test
-    fun migrate4To5_resolvesConflictingLibraryFlagsKeepingWatched() =
+    fun migrate4To7_resolvesConflictingLibraryFlagsKeepingWatched() =
         runBlocking {
             createVersionFourDatabaseWithConflict()
             val database = openMigratedDatabase()

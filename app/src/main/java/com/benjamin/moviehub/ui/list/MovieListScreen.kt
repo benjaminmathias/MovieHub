@@ -29,6 +29,7 @@ import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCategory
 import com.benjamin.moviehub.ui.components.HeroMovieBanner
 import com.benjamin.moviehub.ui.components.HeroMovieShimmer
+import com.benjamin.moviehub.ui.components.isInitialLoading
 import kotlinx.coroutines.flow.Flow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,7 +38,7 @@ fun MovieListScreen(
     categoryMovies: Map<MovieCategory, Flow<PagingData<Movie>>>,
     heroMovie: Movie?,
     onMovieClick: (Int) -> Unit,
-    onToggleFavorite: (Movie, Boolean) -> Unit,
+    onToggleFavorite: (Movie) -> Unit,
     onSearchClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
@@ -84,7 +85,7 @@ private fun HomeContent(
     categoryMovies: Map<MovieCategory, Flow<PagingData<Movie>>>,
     heroMovie: Movie?,
     onMovieClick: (Int) -> Unit,
-    onToggleFavorite: (Movie, Boolean) -> Unit,
+    onToggleFavorite: (Movie) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val refreshState = rememberPullToRefreshState()
@@ -110,7 +111,7 @@ private fun HomeContent(
                         onMovieClick = onMovieClick,
                         onToggleFavorite = onToggleFavorite,
                     )
-                } else {
+                } else if (homeMovies.getValue(MovieCategory.POPULAR).isInitialLoading) {
                     HeroMovieShimmer()
                 }
             }

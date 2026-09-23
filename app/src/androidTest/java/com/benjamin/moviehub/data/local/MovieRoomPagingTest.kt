@@ -68,6 +68,18 @@ class MovieRoomPagingTest {
         }
 
     @Test
+    fun toggleFavorite_usesPersistedValueForRapidActions() =
+        runBlocking {
+            val dao = database.movieDao()
+            val staleMovie = movieEntity(id = 44)
+
+            dao.toggleFavorite(staleMovie)
+            dao.toggleFavorite(staleMovie)
+
+            assertEquals(false, dao.getMovieById(44)?.isFavorite)
+        }
+
+    @Test
     fun libraryFlags_areIndependent() =
         runBlocking {
             val dao = database.movieDao()
@@ -111,7 +123,7 @@ class MovieRoomPagingTest {
         }
 
     @Test
-    fun refreshingSearch_keepsOnlyCurrentQueryCacheAndReferencedMovies() =
+    fun refreshingSearch_keepsOtherQueryCachesAndReferencedMovies() =
         runBlocking {
             val dao = database.movieDao()
             dao.upsertMovies(listOf(movieEntity(200, isFavorite = true), movieEntity(300)))
@@ -131,12 +143,12 @@ class MovieRoomPagingTest {
             SearchMovieRemoteMediator(api, database, " alpha ").load(LoadType.REFRESH, emptyPagingState())
             SearchMovieRemoteMediator(api, database, "beta").load(LoadType.REFRESH, emptyPagingState())
 
-            assertEquals(emptyList<Int>(), dao.getSearchResultMovieIds("alpha"))
+            assertEquals(listOf(100, 200, 300), dao.getSearchResultMovieIds("alpha"))
             assertEquals(listOf(400), dao.getSearchResultMovieIds("beta"))
-            assertEquals(null, dao.getMovieById(100))
+            assertEquals(100, dao.getMovieById(100)?.id)
             assertEquals(true, dao.getMovieById(200)?.isFavorite)
             assertEquals(300, dao.getMovieById(300)?.id)
-            assertEquals(null, dao.getRemoteKey("SEARCH:alpha"))
+            assertEquals(2, dao.getRemoteKey("SEARCH:alpha")?.nextKey)
             assertEquals(2, dao.getRemoteKey("SEARCH:beta")?.nextKey)
         }
 

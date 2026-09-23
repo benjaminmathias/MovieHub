@@ -44,6 +44,7 @@ import kotlinx.coroutines.flow.Flow
 fun SearchScreen(
     searchResults: Flow<PagingData<Movie>>,
     searchQuery: String,
+    activeSearchQuery: String,
     onSearchChanged: (String) -> Unit,
     onMovieClick: (Int) -> Unit,
     onBack: () -> Unit,
@@ -82,6 +83,7 @@ fun SearchScreen(
             SearchResults(
                 searchResults = searchResults,
                 searchQuery = searchQuery,
+                activeSearchQuery = activeSearchQuery,
                 onMovieClick = onMovieClick,
             )
         }
@@ -92,8 +94,11 @@ fun SearchScreen(
 private fun SearchResults(
     searchResults: Flow<PagingData<Movie>>,
     searchQuery: String,
+    activeSearchQuery: String,
     onMovieClick: (Int) -> Unit,
 ) {
+    val items = searchResults.collectAsLazyPagingItems()
+
     if (searchQuery.isBlank()) {
         EmptyStateView(
             message = stringResource(R.string.search_placeholder),
@@ -102,7 +107,10 @@ private fun SearchResults(
         return
     }
 
-    val items = searchResults.collectAsLazyPagingItems()
+    if (searchQuery.trim() != activeSearchQuery) {
+        SearchLoadingShimmer()
+        return
+    }
 
     PagingStatus(
         phase = items.phase,

@@ -55,7 +55,7 @@ class MovieRepositoryTest {
         }
 
     @Test
-    fun `toggle favorite inserts missing movie with relative image paths`() =
+    fun `set favorite inserts missing movie with relative image paths`() =
         runBlocking {
             val apiService = mockk<MovieApiService>()
             val database = mockk<MovieDatabase>()
@@ -78,10 +78,13 @@ class MovieRepositoryTest {
                 )
 
             coEvery { dao.setLibraryFlag(capture(entitySlot), isFavorite = true) } just runs
+            coEvery { dao.toggleFavorite(any()) } just runs
 
             repository.setFavorite(movie, true)
+            repository.toggleFavorite(movie)
 
             coVerify(exactly = 1) { dao.setLibraryFlag(any(), isFavorite = true) }
+            coVerify(exactly = 1) { dao.toggleFavorite(any()) }
             assertEquals(true, entitySlot.captured.isFavorite)
             assertEquals("/poster.jpg", entitySlot.captured.posterPath)
             assertEquals("/backdrop.jpg", entitySlot.captured.backdropPath)

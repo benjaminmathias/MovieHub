@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -52,6 +53,20 @@ class SearchViewModelTest {
             coVerify(exactly = 0) { repository.searchMovies("A") }
             coVerify(exactly = 0) { repository.searchMovies("Av") }
 
+            job.cancel()
+        }
+
+    @Test
+    fun `active query tracks the debounced results`() =
+        runTest {
+            val job = launch { viewModel.searchResults.collect() }
+            viewModel.onSearchQueryChanged("Avatar")
+            advanceTimeBy(400)
+            assertEquals("", viewModel.activeSearchQuery.value)
+
+            advanceTimeBy(200)
+            runCurrent()
+            assertEquals("Avatar", viewModel.activeSearchQuery.value)
             job.cancel()
         }
 

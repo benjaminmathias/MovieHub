@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 
 @HiltViewModel
@@ -28,6 +29,8 @@ class SearchViewModel
     ) : ViewModel() {
         private val _searchQuery = MutableStateFlow("")
         val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+        private val _activeSearchQuery = MutableStateFlow("")
+        val activeSearchQuery: StateFlow<String> = _activeSearchQuery.asStateFlow()
 
         @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
         val searchResults: Flow<PagingData<Movie>> =
@@ -35,6 +38,7 @@ class SearchViewModel
                 .debounce { query -> if (query.isBlank()) 0L else 500L }
                 .map(String::trim)
                 .distinctUntilChanged()
+                .onEach { _activeSearchQuery.value = it }
                 .flatMapLatest { query ->
                     if (query.isEmpty()) {
                         flowOf(PagingData.empty())

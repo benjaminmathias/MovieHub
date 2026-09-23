@@ -56,10 +56,12 @@ internal fun SearchEntry(
 ) {
     val viewModel: SearchViewModel = hiltViewModel()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val activeSearchQuery by viewModel.activeSearchQuery.collectAsStateWithLifecycle()
 
     SearchScreen(
         searchResults = viewModel.searchResults,
         searchQuery = searchQuery,
+        activeSearchQuery = activeSearchQuery,
         onSearchChanged = viewModel::onSearchQueryChanged,
         onMovieClick = onOpenDetails,
         onBack = onBack,

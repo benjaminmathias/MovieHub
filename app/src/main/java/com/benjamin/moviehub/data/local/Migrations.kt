@@ -153,6 +153,16 @@ internal val MIGRATION_5_6 =
         }
     }
 
+internal val MIGRATION_6_7 =
+    object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_movie_search_results_queryKey_pageOrder` " +
+                    "ON `movie_search_results` (`queryKey`, `pageOrder`)",
+            )
+        }
+    }
+
 private fun SupportSQLiteDatabase.createMoviesTable(
     columns: String,
     table: String = "movies",

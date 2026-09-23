@@ -88,11 +88,11 @@ MovieHub uses a pragmatic layered architecture with ViewModels and unidirectiona
 
 ## Testing & quality
 
-The current suites contain **65 local unit tests** and **57 instrumented tests** covering:
+The local and instrumented test suites cover:
 
 - DTO/domain/entity mapping, repositories, ViewModels, debounce, and error handling;
 - Paging sources, remote mediators, cached refresh behavior, and duplicate-page results;
-- Room paging behavior, local-flag preservation, and database migrations through schema version 5;
+- Room paging behavior, local-flag preservation, and database migrations through schema version 7;
 - Compose UI, navigation, accessibility semantics, and Library interactions;
 - optimistic Library updates, rapid state changes, failure rollback, and cross-screen reconciliation.
 
