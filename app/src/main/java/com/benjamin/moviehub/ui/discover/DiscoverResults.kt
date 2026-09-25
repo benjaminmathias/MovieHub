@@ -4,25 +4,23 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
-import androidx.paging.compose.itemKey
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.theme.MovieGridMinCellSize
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.CompactMovieShimmerItem
-import com.benjamin.moviehub.ui.components.EmptyStateView
 import com.benjamin.moviehub.ui.components.MovieCardShimmer
 import com.benjamin.moviehub.ui.components.PagingStatus
 import com.benjamin.moviehub.ui.components.PosterMovieItem
+import com.benjamin.moviehub.ui.components.movieAppendFooter
+import com.benjamin.moviehub.ui.components.moviePagingItems
 import com.benjamin.moviehub.ui.components.phase
 import kotlinx.coroutines.flow.Flow
 
@@ -64,6 +62,8 @@ private fun DiscoverMovieGrid(
     onMovieClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val appendErrorMessage = stringResource(R.string.error_loading_more_movies)
+
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = MovieGridMinCellSize),
         modifier = modifier,
@@ -71,32 +71,13 @@ private fun DiscoverMovieGrid(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        items(
-            count = lazyPagingItems.itemCount,
-            key = lazyPagingItems.itemKey { it.id },
-            contentType = { "movie" },
-        ) { index ->
-            lazyPagingItems[index]?.let { movie ->
-                PosterMovieItem(movie = movie, onMovieClick = onMovieClick)
-            }
+        moviePagingItems(lazyPagingItems) { movie ->
+            PosterMovieItem(movie = movie, onMovieClick = onMovieClick)
         }
-
-        when (val state = lazyPagingItems.loadState.append) {
-            is LoadState.Error ->
-                item(span = { GridItemSpan(maxLineSpan) }, contentType = "append-error") {
-                    EmptyStateView(
-                        message = stringResource(R.string.error_loading_more_movies),
-                        onRetry = { lazyPagingItems.retry() },
-                        compact = true,
-                    )
-                }
-
-            LoadState.Loading ->
-                item(span = { GridItemSpan(maxLineSpan) }, contentType = "append-loading") {
-                    CompactMovieShimmerItem()
-                }
-
-            is LoadState.NotLoading -> Unit
-        }
+        movieAppendFooter(
+            items = lazyPagingItems,
+            errorMessage = appendErrorMessage,
+            loading = { CompactMovieShimmerItem() },
+        )
     }
 }

@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -70,7 +68,7 @@ fun PosterMovieItem(
                         shape = MaterialTheme.shapes.small,
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.Favorite,
+                            imageVector = favoriteIcon(movie.isFavorite),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(8.dp).size(20.dp),

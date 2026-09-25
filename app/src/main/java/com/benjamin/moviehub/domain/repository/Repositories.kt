@@ -3,6 +3,7 @@ package com.benjamin.moviehub.domain.repository
 import androidx.paging.PagingData
 import com.benjamin.moviehub.core.util.AppTheme
 import com.benjamin.moviehub.domain.model.DiscoverFilters
+import com.benjamin.moviehub.domain.model.LibraryFlag
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCategory
 import com.benjamin.moviehub.domain.model.MovieCredits
@@ -54,6 +55,17 @@ interface MovieRepository {
 
     /** Get movie recommendations from the API. Throws on network error; callers hide the section. */
     suspend fun getMovieRecommendations(movieId: Int): List<Movie>
+}
+
+/** Persists [flag] for [movie] through the matching repository setter. */
+suspend fun MovieRepository.setLibraryFlag(
+    movie: Movie,
+    flag: LibraryFlag,
+    value: Boolean,
+) = when (flag) {
+    LibraryFlag.FAVORITE -> setFavorite(movie, value)
+    LibraryFlag.WATCHLIST -> setWatchlist(movie, value)
+    LibraryFlag.WATCHED -> setWatched(movie, value)
 }
 
 /** Repository contract for persisted user preferences. */

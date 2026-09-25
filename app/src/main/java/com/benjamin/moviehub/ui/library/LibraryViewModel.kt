@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.MovieRepository
+import com.benjamin.moviehub.domain.repository.setLibraryFlag
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
@@ -28,7 +29,7 @@ import javax.inject.Inject
 
 private fun ImmutableList<Movie>.byLibraryTab(): ImmutableMap<LibraryTab, ImmutableList<Movie>> =
     LibraryTab.entries
-        .associateWith { tab -> filter(tab.matches).toImmutableList() }
+        .associateWith { tab -> filter(tab.flag.isSet).toImmutableList() }
         .toImmutableMap()
 
 sealed class LibraryUiState {
@@ -78,7 +79,7 @@ class LibraryViewModel
         ) {
             viewModelScope.launch {
                 try {
-                    tab.removeFrom(repository, movie)
+                    repository.setLibraryFlag(movie, tab.flag, false)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {

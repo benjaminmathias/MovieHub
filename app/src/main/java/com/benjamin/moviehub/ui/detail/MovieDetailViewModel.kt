@@ -4,9 +4,11 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benjamin.moviehub.R
+import com.benjamin.moviehub.domain.model.LibraryFlag
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
 import com.benjamin.moviehub.domain.repository.MovieRepository
+import com.benjamin.moviehub.domain.repository.setLibraryFlag
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -38,7 +40,7 @@ class MovieDetailViewModel
         private var loadJob: Job? = null
         private var libraryJob: Job? = null
         private val libraryMutex = Mutex()
-        private var latestLibraryById: Map<Int, Movie> = emptyMap()
+        private val libraryById = MutableStateFlow<Map<Int, Movie>>(emptyMap())
 
         fun loadMovieDetails(movieId: Int) {
             val current = _uiState.value
@@ -57,9 +59,7 @@ class MovieDetailViewModel
                             val movie = repository.getMovieDetails(movieId)
 
                             _uiState.value = MovieDetailUiState.Success(movie, MovieCredits())
-                            // Runs in viewModelScope on purpose: the observer must outlive the load
-                            // job so library changes made elsewhere keep reconciling this screen.
-                            libraryJob = viewModelScope.launch { observeLibrary(movieId) }
+                            startObservingLibrary(movieId)
 
                             launch {
                                 val loadedCredits = credits.await()
@@ -68,7 +68,7 @@ class MovieDetailViewModel
                             launch {
                                 val loadedRecommendations = recommendations.await()
                                 updateSuccess(movieId) {
-                                    it.copy(recommendations = loadedRecommendations.withLocalFlags(latestLibraryById))
+                                    it.copy(recommendations = loadedRecommendations.withLocalFlags(libraryById.value))
                                 }
                             }
                         }
@@ -95,7 +95,7 @@ class MovieDetailViewModel
                     _uiState.value = state.copy(movie = flag.apply(previous, value))
 
                     try {
-                        flag.persist(repository, previous, value)
+                        repository.setLibraryFlag(previous, flag, value)
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
@@ -128,12 +128,19 @@ class MovieDetailViewModel
                 MovieRecommendationsUiState.Error
             }
 
-        private suspend fun observeLibrary(movieId: Int) {
-            repository.getLibraryMovies().collectLatest { localMovies ->
-                val localById = localMovies.associateBy { it.id }
-                latestLibraryById = localById
-                updateSuccess(movieId) { it.withLocalFlags(localById) }
-            }
+        /**
+         * Observes the library in [viewModelScope] so the observer outlives the load job:
+         * library changes made on other screens keep reconciling this one.
+         */
+        private fun startObservingLibrary(movieId: Int) {
+            libraryJob =
+                viewModelScope.launch {
+                    repository.getLibraryMovies().collectLatest { localMovies ->
+                        val localById = localMovies.associateBy(Movie::id)
+                        libraryById.value = localById
+                        updateSuccess(movieId) { it.withLocalFlags(localById) }
+                    }
+                }
         }
 
         private fun updateSuccess(
@@ -159,41 +166,6 @@ class MovieDetailViewModel
             }
         }
     }
-
-/**
- * One library flag and its responsibilities: read it, apply it optimistically
- * (watchlist and watched stay mutually exclusive) and restore the previous flags when
- * persistence fails.
- */
-private enum class LibraryFlag(
-    val isSet: (Movie) -> Boolean,
-    val apply: (Movie, Boolean) -> Movie,
-    val restore: (Movie, Movie, Boolean) -> Movie,
-    val persist: suspend (MovieRepository, Movie, Boolean) -> Unit,
-) {
-    FAVORITE(
-        isSet = Movie::isFavorite,
-        apply = { movie, value -> movie.copy(isFavorite = value) },
-        restore = { movie, previous, _ -> movie.copy(isFavorite = previous.isFavorite) },
-        persist = { repository, movie, value -> repository.setFavorite(movie, value) },
-    ),
-    WATCHLIST(
-        isSet = Movie::isWatchlist,
-        apply = { movie, value -> movie.copy(isWatchlist = value, isWatched = if (value) false else movie.isWatched) },
-        restore = { movie, previous, value ->
-            movie.copy(isWatchlist = previous.isWatchlist, isWatched = if (value) previous.isWatched else movie.isWatched)
-        },
-        persist = { repository, movie, value -> repository.setWatchlist(movie, value) },
-    ),
-    WATCHED(
-        isSet = Movie::isWatched,
-        apply = { movie, value -> movie.copy(isWatched = value, isWatchlist = if (value) false else movie.isWatchlist) },
-        restore = { movie, previous, value ->
-            movie.copy(isWatched = previous.isWatched, isWatchlist = if (value) previous.isWatchlist else movie.isWatchlist)
-        },
-        persist = { repository, movie, value -> repository.setWatched(movie, value) },
-    ),
-}
 
 private fun MovieRecommendationsUiState.withLocalFlags(localById: Map<Int, Movie>): MovieRecommendationsUiState =
     (this as? MovieRecommendationsUiState.Success)

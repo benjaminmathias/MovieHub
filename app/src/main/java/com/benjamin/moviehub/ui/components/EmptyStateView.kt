@@ -38,39 +38,38 @@ fun EmptyStateView(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(text = message, color = MaterialTheme.colorScheme.error)
-            if (onRetry != null) {
+            onRetry?.let { retry ->
                 Spacer(modifier = Modifier.height(8.dp))
-                RetryButton(onClick = onRetry)
+                RetryButton(onClick = retry)
             }
         }
-        return
-    }
+    } else {
+        Column(
+            modifier = modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
+            )
 
-    Column(
-        modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
-        )
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 32.dp),
+            )
 
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 32.dp),
-        )
-
-        onRetry?.let {
-            Spacer(modifier = Modifier.height(24.dp))
-            RetryButton(onClick = it)
+            onRetry?.let { retry ->
+                Spacer(modifier = Modifier.height(24.dp))
+                RetryButton(onClick = retry)
+            }
         }
     }
 }

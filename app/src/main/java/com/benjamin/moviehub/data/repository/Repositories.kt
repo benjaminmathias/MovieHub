@@ -22,6 +22,7 @@ import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.local.SearchQueryKey
 import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.mapper.toEntity
+import com.benjamin.moviehub.data.mapper.validName
 import com.benjamin.moviehub.data.mapper.withGenreNames
 import com.benjamin.moviehub.data.mapper.withLocalFlags
 import com.benjamin.moviehub.data.paging.DiscoverMoviePagingSource
@@ -89,12 +90,7 @@ class MovieRepositoryImpl
                 apiService
                     .getMovieGenres()
                     .genres
-                    .mapNotNull { genre ->
-                        genre.name
-                            ?.trim()
-                            ?.takeIf(String::isNotEmpty)
-                            ?.let { name -> MovieGenre(id = genre.id, name = name) }
-                    }
+                    .mapNotNull { genre -> genre.validName()?.let { name -> MovieGenre(id = genre.id, name = name) } }
             movieDao.upsertGenres(genres.map { GenreEntity(id = it.id, name = it.name) })
             return genres
         }

@@ -12,7 +12,6 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -93,8 +92,7 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
             TopLevelDestination.LIBRARY to libraryBackStack,
         )
 
-    var savedTab by rememberSaveable { mutableStateOf(TopLevelDestination.HOME.name) }
-    val selected = TopLevelDestination.entries.firstOrNull { it.name == savedTab } ?: TopLevelDestination.HOME
+    var selected by rememberSaveable { mutableStateOf(TopLevelDestination.HOME) }
     val backStack = backStacks.getValue(selected)
     val showTopLevelNavigation = TopLevelDestination.of(backStack.lastOrNull()) != null
     val snackbarHostState = remember { SnackbarHostState() }
@@ -179,7 +177,7 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
             },
             bottomBar = {
                 if (!useNavigationRail && showTopLevelNavigation) {
-                    TopLevelNavigationBar(selected = selected, onSelect = { savedTab = it.name })
+                    TopLevelNavigationBar(selected = selected, onSelect = { selected = it })
                 }
             },
         ) { paddingValues ->
@@ -191,7 +189,7 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                         .consumeWindowInsets(paddingValues),
             ) {
                 if (useNavigationRail && showTopLevelNavigation) {
-                    TopLevelNavigationRail(selected = selected, onSelect = { savedTab = it.name })
+                    TopLevelNavigationRail(selected = selected, onSelect = { selected = it })
                 }
 
                 Box(modifier = Modifier.weight(1f).fillMaxSize()) {
@@ -200,7 +198,7 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
                         onBack = {
                             when {
                                 backStack.size > 1 -> backStack.removeLastOrNull()
-                                selected != TopLevelDestination.HOME -> savedTab = TopLevelDestination.HOME.name
+                                selected != TopLevelDestination.HOME -> selected = TopLevelDestination.HOME
                             }
                         },
                         transitionSpec = { forwardTransition() },
@@ -234,35 +232,22 @@ private fun TopLevelNavigationBar(
 ) {
     NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
         TopLevelDestination.entries.forEach { destination ->
-            TopLevelNavigationBarItem(
-                destination = destination,
+            NavigationBarItem(
                 selected = selected == destination,
                 onClick = { onSelect(destination) },
+                icon = { TopLevelIcon(destination, selected == destination) },
+                label = { Text(stringResource(destination.labelRes)) },
+                colors =
+                    NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
             )
         }
     }
-}
-
-@Composable
-private fun RowScope.TopLevelNavigationBarItem(
-    destination: TopLevelDestination,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    NavigationBarItem(
-        selected = selected,
-        onClick = onClick,
-        icon = { TopLevelIcon(destination, selected) },
-        label = { Text(stringResource(destination.labelRes)) },
-        colors =
-            NavigationBarItemDefaults.colors(
-                selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                selectedTextColor = MaterialTheme.colorScheme.primary,
-                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            ),
-    )
 }
 
 @Composable
@@ -272,35 +257,22 @@ private fun TopLevelNavigationRail(
 ) {
     NavigationRail(containerColor = MaterialTheme.colorScheme.surface) {
         TopLevelDestination.entries.forEach { destination ->
-            TopLevelNavigationRailItem(
-                destination = destination,
+            NavigationRailItem(
                 selected = selected == destination,
                 onClick = { onSelect(destination) },
+                icon = { TopLevelIcon(destination, selected == destination) },
+                label = { Text(stringResource(destination.labelRes)) },
+                colors =
+                    NavigationRailItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
             )
         }
     }
-}
-
-@Composable
-private fun TopLevelNavigationRailItem(
-    destination: TopLevelDestination,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    NavigationRailItem(
-        selected = selected,
-        onClick = onClick,
-        icon = { TopLevelIcon(destination, selected) },
-        label = { Text(stringResource(destination.labelRes)) },
-        colors =
-            NavigationRailItemDefaults.colors(
-                selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                selectedTextColor = MaterialTheme.colorScheme.primary,
-                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            ),
-    )
 }
 
 @Composable

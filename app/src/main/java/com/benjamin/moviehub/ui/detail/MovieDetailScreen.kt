@@ -2,7 +2,6 @@ package com.benjamin.moviehub.ui.detail
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -52,6 +51,7 @@ import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.core.net.toUri
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.EmptyStateView
@@ -254,7 +254,7 @@ private fun DetailControlButton(
 }
 
 private fun isValidHttpUrl(url: String): Boolean {
-    val uri = Uri.parse(url.trim())
+    val uri = url.trim().toUri()
     return uri.host?.isNotBlank() == true && uri.scheme?.lowercase() in setOf("http", "https")
 }
 
@@ -262,7 +262,7 @@ private fun openMovieInBrowser(
     context: Context,
     url: String,
 ) {
-    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+    val intent = Intent(Intent.ACTION_VIEW, url.toUri())
     if (intent.resolveActivity(context.packageManager) != null) {
         context.startActivity(intent)
     }

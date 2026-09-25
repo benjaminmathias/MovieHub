@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,9 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
-import androidx.paging.compose.itemKey
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.theme.HomeMovieCardWidth
 import com.benjamin.moviehub.domain.model.Movie
@@ -27,6 +24,8 @@ import com.benjamin.moviehub.ui.components.MovieCardShimmer
 import com.benjamin.moviehub.ui.components.RowMovieItem
 import com.benjamin.moviehub.ui.components.isInitialError
 import com.benjamin.moviehub.ui.components.isInitialLoading
+import com.benjamin.moviehub.ui.components.movieAppendFooter
+import com.benjamin.moviehub.ui.components.moviePagingItems
 
 @Composable
 internal fun CategoryRow(
@@ -35,6 +34,8 @@ internal fun CategoryRow(
     onMovieClick: (Int) -> Unit,
     onToggleFavorite: (Movie) -> Unit,
 ) {
+    val appendErrorMessage = stringResource(R.string.error_loading_more_movies)
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = stringResource(category.labelRes),
@@ -57,6 +58,7 @@ internal fun CategoryRow(
                     lazyPagingItems = lazyPagingItems,
                     onMovieClick = onMovieClick,
                     onToggleFavorite = onToggleFavorite,
+                    appendErrorMessage = appendErrorMessage,
                 )
         }
     }
@@ -67,43 +69,26 @@ private fun CategoryRowList(
     lazyPagingItems: LazyPagingItems<Movie>,
     onMovieClick: (Int) -> Unit,
     onToggleFavorite: (Movie) -> Unit,
+    appendErrorMessage: String,
 ) {
     LazyRow(
         modifier = Modifier.fillMaxWidth().testTag("category_row"),
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        items(
-            count = lazyPagingItems.itemCount,
-            key = lazyPagingItems.itemKey { it.id },
-            contentType = { "movie" },
-        ) { index ->
-            lazyPagingItems[index]?.let { movie ->
-                RowMovieItem(
-                    movie = movie,
-                    onMovieClick = onMovieClick,
-                    onToggleFavorite = onToggleFavorite,
-                    modifier = Modifier.width(HomeMovieCardWidth),
-                )
-            }
+        moviePagingItems(lazyPagingItems) { movie ->
+            RowMovieItem(
+                movie = movie,
+                onMovieClick = onMovieClick,
+                onToggleFavorite = onToggleFavorite,
+                modifier = Modifier.width(HomeMovieCardWidth),
+            )
         }
-
-        when (lazyPagingItems.loadState.append) {
-            is LoadState.Error ->
-                item(contentType = "append-error") {
-                    EmptyStateView(
-                        message = stringResource(R.string.error_loading_more_movies),
-                        onRetry = lazyPagingItems::retry,
-                        compact = true,
-                    )
-                }
-
-            LoadState.Loading ->
-                item(contentType = "append-loading") {
-                    MovieCardShimmer(modifier = Modifier.width(HomeMovieCardWidth))
-                }
-            is LoadState.NotLoading -> Unit
-        }
+        movieAppendFooter(
+            items = lazyPagingItems,
+            errorMessage = appendErrorMessage,
+            loading = { MovieCardShimmer(modifier = Modifier.width(HomeMovieCardWidth)) },
+        )
     }
 }
 

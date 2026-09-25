@@ -15,6 +15,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,6 +43,7 @@ class DiscoverViewModel
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(DiscoverUiState())
         val uiState: StateFlow<DiscoverUiState> = _uiState.asStateFlow()
+        private var genresJob: Job? = null
 
         @OptIn(ExperimentalCoroutinesApi::class)
         val discoverResults: Flow<PagingData<Movie>> =
@@ -92,20 +94,22 @@ class DiscoverViewModel
         }
 
         private fun loadGenres() {
+            genresJob?.cancel()
             _uiState.update { it.copy(isLoadingGenres = true, hasGenreError = false) }
-            viewModelScope.launch {
-                try {
-                    _uiState.update {
-                        it.copy(
-                            genres = repository.getMovieGenres().toImmutableList(),
-                            isLoadingGenres = false,
-                        )
+            genresJob =
+                viewModelScope.launch {
+                    try {
+                        _uiState.update {
+                            it.copy(
+                                genres = repository.getMovieGenres().toImmutableList(),
+                                isLoadingGenres = false,
+                            )
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        _uiState.update { it.copy(isLoadingGenres = false, hasGenreError = true) }
                     }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    _uiState.update { it.copy(isLoadingGenres = false, hasGenreError = true) }
                 }
-            }
         }
     }

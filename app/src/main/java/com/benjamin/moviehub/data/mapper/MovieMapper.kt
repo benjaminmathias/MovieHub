@@ -2,6 +2,7 @@ package com.benjamin.moviehub.data.mapper
 
 import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.remote.ActorDto
+import com.benjamin.moviehub.data.remote.GenreDto
 import com.benjamin.moviehub.data.remote.MovieCreditsDto
 import com.benjamin.moviehub.data.remote.MovieDto
 import com.benjamin.moviehub.domain.model.Actor
@@ -40,6 +41,9 @@ private val tmdbGenreNames =
  */
 internal fun resolvedGenreNames(genreNames: Map<Int, String>): Map<Int, String> =
     if (genreNames.isEmpty()) tmdbGenreNames else tmdbGenreNames + genreNames
+
+/** Non-blank, trimmed genre name, or null when the API omits/locally blanks it. */
+internal fun GenreDto.validName(): String? = name?.trim()?.takeIf(String::isNotEmpty)
 
 private fun normalizeImagePath(path: String?): String? {
     val value = path?.trim().orEmpty()
@@ -116,7 +120,7 @@ fun MovieDto.toDomain(): Movie = toEntity().toDomain()
 fun MovieDto.toDomain(genreNames: Map<Int, String>): Movie = toEntity().toDomain(genreNames)
 
 fun MovieDto.toDomain(baseMovie: Movie): Movie {
-    val detailGenres = genres.orEmpty().mapNotNull { it.name?.trim()?.takeIf(String::isNotEmpty) }
+    val detailGenres = genres.orEmpty().mapNotNull { it.validName() }
 
     return baseMovie.copy(
         genres = detailGenres.ifEmpty { baseMovie.genres }.toImmutableList(),

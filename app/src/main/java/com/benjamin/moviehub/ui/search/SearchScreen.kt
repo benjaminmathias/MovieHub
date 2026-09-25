@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
@@ -25,18 +24,19 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
-import androidx.paging.compose.itemKey
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.CompactMovieItem
 import com.benjamin.moviehub.ui.components.CompactMovieShimmerItem
+import com.benjamin.moviehub.ui.components.CompactMovieShimmerList
 import com.benjamin.moviehub.ui.components.EmptyStateView
 import com.benjamin.moviehub.ui.components.MovieSearchBar
 import com.benjamin.moviehub.ui.components.PagingStatus
+import com.benjamin.moviehub.ui.components.movieAppendFooter
+import com.benjamin.moviehub.ui.components.moviePagingItems
 import com.benjamin.moviehub.ui.components.phase
 import kotlinx.coroutines.flow.Flow
 
@@ -108,7 +108,7 @@ private fun SearchResults(
     }
 
     if (searchQuery.trim() != activeSearchQuery) {
-        SearchLoadingShimmer()
+        CompactMovieShimmerList()
         return
     }
 
@@ -116,20 +116,12 @@ private fun SearchResults(
         phase = items.phase,
         onRetry = { items.retry() },
         emptyMessage = stringResource(R.string.empty_search_results, searchQuery.trim()),
-        loading = { SearchLoadingShimmer() },
+        loading = { CompactMovieShimmerList() },
     ) {
         SearchMovieList(
             lazyPagingItems = items,
             onMovieClick = onMovieClick,
-            onRetry = { items.retry() },
         )
-    }
-}
-
-@Composable
-private fun SearchLoadingShimmer() {
-    LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
-        items(5) { CompactMovieShimmerItem() }
     }
 }
 
@@ -137,31 +129,17 @@ private fun SearchLoadingShimmer() {
 private fun SearchMovieList(
     lazyPagingItems: LazyPagingItems<Movie>,
     onMovieClick: (Int) -> Unit,
-    onRetry: () -> Unit,
 ) {
+    val appendErrorMessage = stringResource(R.string.error_loading_movies)
+
     LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
-        items(
-            count = lazyPagingItems.itemCount,
-            key = lazyPagingItems.itemKey { it.id },
-            contentType = { "movie" },
-        ) { index ->
-            lazyPagingItems[index]?.let { movie ->
-                CompactMovieItem(movie = movie, onMovieClick = onMovieClick)
-            }
+        moviePagingItems(lazyPagingItems) { movie ->
+            CompactMovieItem(movie = movie, onMovieClick = onMovieClick)
         }
-
-        when (val appendState = lazyPagingItems.loadState.append) {
-            is LoadState.Error ->
-                item(contentType = "append-error") {
-                    EmptyStateView(
-                        message = stringResource(R.string.error_loading_movies),
-                        onRetry = onRetry,
-                        compact = true,
-                    )
-                }
-
-            LoadState.Loading -> item(contentType = "append-loading") { CompactMovieShimmerItem() }
-            is LoadState.NotLoading -> Unit
-        }
+        movieAppendFooter(
+            items = lazyPagingItems,
+            errorMessage = appendErrorMessage,
+            loading = { CompactMovieShimmerItem() },
+        )
     }
 }

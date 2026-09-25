@@ -85,7 +85,7 @@ fun ActorItem(
 
 @Preview(showBackground = true)
 @Composable
-fun ActorItemPreview() {
+private fun ActorItemPreview() {
     val fakeActor =
         Actor(
             id = 1,

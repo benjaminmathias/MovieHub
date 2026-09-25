@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.ui.components
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,6 +28,7 @@ fun MovieRating(
     modifier: Modifier = Modifier,
     iconSize: Dp = 18.dp,
     textStyle: TextStyle = MaterialTheme.typography.labelLarge,
+    @StringRes textRes: Int = R.string.rating_value,
 ) {
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         Icon(
@@ -37,7 +39,7 @@ fun MovieRating(
         )
         Text(
             modifier = Modifier.padding(horizontal = 2.dp),
-            text = stringResource(R.string.rating_value, value),
+            text = stringResource(textRes, value),
             style = textStyle,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.tertiary,

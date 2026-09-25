@@ -23,11 +23,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CheckCircleOutline
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -56,6 +54,9 @@ import com.benjamin.moviehub.core.theme.POSTER_ASPECT_RATIO
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.MovieBackdropArtwork
 import com.benjamin.moviehub.ui.components.MoviePosterArtwork
+import com.benjamin.moviehub.ui.components.MovieRating
+import com.benjamin.moviehub.ui.components.favoriteActionLabel
+import com.benjamin.moviehub.ui.components.favoriteIcon
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -208,18 +209,12 @@ private fun MovieDetailRating(movie: Movie) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Icon(
-            imageVector = Icons.Default.Star,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.tertiary,
-            modifier = Modifier.size(18.dp),
-        )
         if (movie.voteAverage > 0) {
-            Text(
-                text = stringResource(R.string.rating_out_of_ten, movie.voteAverage),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.tertiary,
-                maxLines = 1,
+            MovieRating(
+                value = movie.voteAverage,
+                iconSize = 18.dp,
+                textStyle = MaterialTheme.typography.titleMedium,
+                textRes = R.string.rating_out_of_ten,
             )
             movie.voteCount?.takeIf { it > 0 }?.let { voteCount ->
                 Text(
@@ -235,6 +230,12 @@ private fun MovieDetailRating(movie: Movie) {
                 )
             }
         } else {
+            Icon(
+                imageVector = Icons.Default.Star,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.size(18.dp),
+            )
             Text(
                 text = stringResource(R.string.rating_not_available),
                 style = MaterialTheme.typography.titleMedium,
@@ -252,7 +253,7 @@ private fun MovieDetailActions(
     onToggleWatched: (() -> Unit)?,
     onOpenTmdb: (() -> Unit)?,
 ) {
-    val favoriteLabel = stringResource(if (movie.isFavorite) R.string.remove_favorite else R.string.favorite)
+    val favoriteLabel = favoriteActionLabel(movie.isFavorite)
     val favoriteScale by animateFloatAsState(
         targetValue = if (movie.isFavorite) 1.25f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
@@ -270,7 +271,7 @@ private fun MovieDetailActions(
                     selected = movie.isFavorite,
                     label = stringResource(R.string.favorite_tab),
                     contentDescription = favoriteLabel,
-                    icon = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    icon = favoriteIcon(movie.isFavorite),
                     onClick = toggle,
                     modifier = Modifier.weight(1f),
                     testTag = "detail_favorite",

@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Settings
@@ -34,7 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.Movie
-import com.benjamin.moviehub.ui.components.CompactMovieShimmerItem
+import com.benjamin.moviehub.ui.components.CompactMovieShimmerList
 import com.benjamin.moviehub.ui.components.EmptyStateView
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -53,8 +51,7 @@ fun LibraryScreen(
     val actionErrorMessage = stringResource(R.string.error_updating_library)
     LaunchedEffect(actionErrors, actionErrorMessage) { actionErrors.collect { snackbar.showSnackbar(actionErrorMessage) } }
 
-    var savedTab by rememberSaveable { mutableStateOf(LibraryTab.WATCHLIST.name) }
-    val selected = LibraryTab.entries.firstOrNull { it.name == savedTab } ?: LibraryTab.WATCHLIST
+    var selected by rememberSaveable { mutableStateOf(LibraryTab.WATCHLIST) }
 
     Scaffold(
         topBar = {
@@ -74,7 +71,7 @@ fun LibraryScreen(
                 LibraryTab.entries.forEach { tab ->
                     Tab(
                         selected = selected == tab,
-                        onClick = { savedTab = tab.name },
+                        onClick = { selected = tab },
                         selectedContentColor = MaterialTheme.colorScheme.primary,
                         unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         text = { Text(stringResource(tab.labelRes), style = MaterialTheme.typography.labelLarge) },
@@ -83,8 +80,7 @@ fun LibraryScreen(
             }
 
             when (state) {
-                LibraryUiState.Loading ->
-                    Column(Modifier.verticalScroll(rememberScrollState())) { repeat(5) { CompactMovieShimmerItem() } }
+                LibraryUiState.Loading -> CompactMovieShimmerList(Modifier.fillMaxSize())
 
                 is LibraryUiState.Success -> {
                     val movies = state.moviesByTab.getValue(selected)

@@ -189,14 +189,12 @@ private fun RecommendationsSection(content: @Composable () -> Unit) {
 @Composable
 private fun DetailSection(
     title: String,
-    modifier: Modifier = Modifier,
-    horizontalPadding: Dp = 16.dp,
     topPadding: Dp = 12.dp,
     fullBleed: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     Column(
-        modifier = modifier.fillMaxWidth().padding(top = topPadding, bottom = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = topPadding, bottom = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
@@ -205,13 +203,13 @@ private fun DetailSection(
             color = MaterialTheme.colorScheme.primary,
             modifier =
                 Modifier
-                    .padding(horizontal = horizontalPadding)
+                    .padding(horizontal = 16.dp)
                     .semantics { heading() },
         )
         if (fullBleed) {
             content()
         } else {
-            Box(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                 content()
             }
         }

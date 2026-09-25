@@ -10,12 +10,11 @@ import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.benjamin.moviehub.R
-import com.benjamin.moviehub.domain.model.Movie
-import com.benjamin.moviehub.domain.repository.MovieRepository
+import com.benjamin.moviehub.domain.model.LibraryFlag
 
 /**
- * The three local movie collections. Each entry owns its labels, icons, the predicate
- * that selects its movies and the repository call that removes one from it.
+ * The three local movie collections. Each entry owns its labels, icons and the
+ * [LibraryFlag] that selects its movies and removes one from it.
  */
 enum class LibraryTab(
     @param:StringRes val labelRes: Int,
@@ -23,7 +22,7 @@ enum class LibraryTab(
     @param:StringRes val removeLabelRes: Int,
     val emptyIcon: ImageVector,
     val removeIcon: ImageVector,
-    val matches: (Movie) -> Boolean,
+    val flag: LibraryFlag,
 ) {
     WATCHLIST(
         labelRes = R.string.watchlist_tab,
@@ -31,43 +30,22 @@ enum class LibraryTab(
         removeLabelRes = R.string.remove_watchlist_accessibility,
         emptyIcon = Icons.Outlined.BookmarkBorder,
         removeIcon = Icons.Filled.BookmarkRemove,
-        matches = Movie::isWatchlist,
-    ) {
-        override suspend fun removeFrom(
-            repository: MovieRepository,
-            movie: Movie,
-        ) = repository.setWatchlist(movie, false)
-    },
+        flag = LibraryFlag.WATCHLIST,
+    ),
     FAVORITES(
         labelRes = R.string.favorite_tab,
         emptyMessageRes = R.string.no_favorite_added,
         removeLabelRes = R.string.remove_favorite_accessibility,
         emptyIcon = Icons.Outlined.FavoriteBorder,
         removeIcon = Icons.Filled.HeartBroken,
-        matches = Movie::isFavorite,
-    ) {
-        override suspend fun removeFrom(
-            repository: MovieRepository,
-            movie: Movie,
-        ) = repository.setFavorite(movie, false)
-    },
+        flag = LibraryFlag.FAVORITE,
+    ),
     WATCHED(
         labelRes = R.string.watched_tab,
         emptyMessageRes = R.string.no_watched_added,
         removeLabelRes = R.string.remove_watched_accessibility,
         emptyIcon = Icons.Filled.CheckCircleOutline,
         removeIcon = Icons.Filled.VisibilityOff,
-        matches = Movie::isWatched,
-    ) {
-        override suspend fun removeFrom(
-            repository: MovieRepository,
-            movie: Movie,
-        ) = repository.setWatched(movie, false)
-    },
-    ;
-
-    abstract suspend fun removeFrom(
-        repository: MovieRepository,
-        movie: Movie,
-    )
+        flag = LibraryFlag.WATCHED,
+    ),
 }
