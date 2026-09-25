@@ -1,3 +1,4 @@
+import org.gradle.api.tasks.testing.Test
 import java.util.Properties
 
 plugins {
@@ -142,4 +143,10 @@ dependencies {
     // Debug
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+// Forke les classes de tests unitaires JVM en parallèle (plafonné, sûr car chaque fork
+// est un process isolé). Gain notable en local sur les suites > quelques centaines de tests.
+tasks.withType<Test>().configureEach {
+    maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceIn(1, 2)
 }
