@@ -58,6 +58,11 @@ class MovieNavigationTest {
         composeTestRule.onNodeWithTag("discover_year_option_other").performScrollTo().performClick()
         composeTestRule.onNodeWithTag("discover_custom_year").performScrollTo().performTextInput("2020")
         composeTestRule.onNodeWithTag("discover_apply_filters").performClick()
+        // Wait for the sheet dismissal animation to finish before asserting the badge,
+        // otherwise the badge can be reported as not displayed while still covered.
+        composeTestRule.waitUntil(timeoutMillis = 5_000) {
+            composeTestRule.onAllNodesWithTag("discover_filter_sheet").fetchSemanticsNodes().isEmpty()
+        }
         composeTestRule.onNodeWithTag("discover_filter_count").assertIsDisplayed()
 
         composeTestRule.onNodeWithText("Accueil").performClick()
