@@ -5,17 +5,7 @@
 /capture-nettetee.png
 /screenshots/*
 !/screenshots/portfolio_*.png
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-/.idea/androidTestResultsUserPreferences.xml
-/.idea/appInsightsSettings.xml
-/.idea/deploymentTargetSelector.xml
-/.idea/deviceManager.xml
-/.idea/studiobot.xml
+/.idea/
 .DS_Store
 /build
 /captures
@@ -27,3 +17,5 @@ apikeys.properties
 /design-system/
 /moviehub-*.png
 /window*.xml
+/MovieHub-Showcase-Video/
+/COMPOSE-AUDIT-REPORT*.md
