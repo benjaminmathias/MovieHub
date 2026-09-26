@@ -100,7 +100,7 @@ Instrumented integration paths use an in-process Room database and a determinist
 
 ## Continuous integration
 
-The [`Android CI`](.github/workflows/android.yml) workflow runs on pushes and pull requests targeting `main` or `master`. It verifies:
+The [`Android CI`](.github/workflows/android.yml) workflow runs on pushes and pull requests targeting `main`. It verifies:
 
 ```text
 ktlintCheck -> lintDebug -> testDebugUnitTest -> assembleDebug
