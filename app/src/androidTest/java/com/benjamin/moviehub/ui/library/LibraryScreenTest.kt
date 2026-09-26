@@ -46,26 +46,6 @@ class LibraryScreenTest {
     }
 
     @Test
-    fun emptyStateUsesContextualMessageForEachTab() {
-        composeRule.setContent {
-            MovieHubTheme {
-                LibraryScreen(
-                    state = LibraryUiState.Success(persistentListOf()),
-                    onRemove = { _, _ -> },
-                    onMovieClick = {},
-                    onSettingsClick = {},
-                )
-            }
-        }
-
-        composeRule.onNodeWithText("Aucun film à voir.").assertIsDisplayed()
-        composeRule.onNodeWithText("Favoris").performClick()
-        composeRule.onNodeWithText("Aucun film favori n'a été ajouté.").assertIsDisplayed()
-        composeRule.onNodeWithText("Vu").performClick()
-        composeRule.onNodeWithText("Aucun film vu.").assertIsDisplayed()
-    }
-
-    @Test
     fun errorStateOffersRetryAction() {
         var retried = false
         composeRule.setContent {

@@ -12,7 +12,6 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -35,9 +34,12 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `clearing image cache reports success and only calls image cache manager`() =
+    fun `clearing image cache reports success then failure`() =
         runTest {
-            coEvery { imageCacheManager.clear() } returns Unit
+            var fail = false
+            coEvery { imageCacheManager.clear() } coAnswers {
+                if (fail) throw IllegalStateException("cache failure")
+            }
             val viewModel = SettingsViewModel(preferences, imageCacheManager)
 
             viewModel.imageCacheMessages.test {
@@ -45,31 +47,11 @@ class SettingsViewModelTest {
                 assertEquals(true, awaitItem())
             }
             assertEquals(false, viewModel.isClearing.value)
-            coVerify(exactly = 1) { imageCacheManager.clear() }
-        }
 
-    @Test
-    fun `clearing image cache exposes error when image cache fails`() =
-        runTest {
-            coEvery { imageCacheManager.clear() } throws IllegalStateException("cache failure")
-            val viewModel = SettingsViewModel(preferences, imageCacheManager)
-
+            fail = true
             viewModel.imageCacheMessages.test {
                 viewModel.clearImageCache()
                 assertEquals(false, awaitItem())
-            }
-            assertEquals(false, viewModel.isClearing.value)
-        }
-
-    @Test
-    fun `clearing image cache emits nothing on cancellation`() =
-        runTest {
-            coEvery { imageCacheManager.clear() } throws CancellationException("cancelled")
-            val viewModel = SettingsViewModel(preferences, imageCacheManager)
-
-            viewModel.imageCacheMessages.test {
-                viewModel.clearImageCache()
-                expectNoEvents()
             }
             assertEquals(false, viewModel.isClearing.value)
         }

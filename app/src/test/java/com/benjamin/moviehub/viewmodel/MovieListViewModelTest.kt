@@ -40,13 +40,9 @@ class MovieListViewModelTest {
     }
 
     @Test
-    fun `category movies expose the four home categories`() {
-        assertEquals(MovieCategory.entries.toSet(), viewModel.categoryMovies.keys)
-    }
-
-    @Test
     fun `each home category is loaded independently`() =
         runTest {
+            assertEquals(MovieCategory.entries.toSet(), viewModel.categoryMovies.keys)
             val jobs = viewModel.categoryMovies.values.map { flow -> launch { flow.collect() } }
 
             MovieCategory.entries.forEach { category ->
@@ -73,26 +69,18 @@ class MovieListViewModelTest {
         }
 
     @Test
-    fun `toggle favorite is persisted through the repository`() =
+    fun `toggle favorite is persisted and its failure emits an error`() =
         runTest {
             val target = movie()
             coEvery { repository.toggleFavorite(target) } just runs
-
             viewModel.onToggleFavorite(target)
             advanceUntilIdle()
-
             coVerify { repository.toggleFavorite(target) }
-        }
 
-    @Test
-    fun `toggle favorite failure emits an error`() =
-        runTest {
-            val target = movie()
-            coEvery { repository.toggleFavorite(target) } throws IOException("offline")
             val errors = mutableListOf<Unit>()
             val job = launch { viewModel.favoriteActionErrors.collect { errors += it } }
             advanceUntilIdle()
-
+            coEvery { repository.toggleFavorite(target) } throws IOException("offline")
             viewModel.onToggleFavorite(target)
             advanceUntilIdle()
 

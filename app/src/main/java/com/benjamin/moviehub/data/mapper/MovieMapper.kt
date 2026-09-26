@@ -77,7 +77,6 @@ fun MovieDto.toEntity(
     isFavorite: Boolean = false,
     isWatchlist: Boolean = false,
     isWatched: Boolean = false,
-    runtimeMinutesOverride: Int? = null,
 ): MovieEntity {
     val finalGenreIds =
         this.genreIds
@@ -96,7 +95,7 @@ fun MovieDto.toEntity(
         isFavorite = isFavorite,
         isWatchlist = isWatchlist,
         isWatched = isWatched,
-        runtimeMinutes = runtimeMinutesOverride ?: runtimeMinutes,
+        runtimeMinutes = runtimeMinutes,
     )
 }
 
@@ -109,15 +108,8 @@ fun MovieCreditsDto.toDomain(): MovieCredits =
             crew.firstOrNull { it.job == "Director" && !it.name.isNullOrBlank() }?.name?.trim(),
     )
 
-/**
- * Convert a standalone MovieDto (list endpoints such as recommendations) to a Movie.
- */
-fun MovieDto.toDomain(): Movie = toEntity().toDomain()
-
-/**
- * Convert a standalone MovieDto using the localized [genreNames] dictionary.
- */
-fun MovieDto.toDomain(genreNames: Map<Int, String>): Movie = toEntity().toDomain(genreNames)
+/** Convert a list-endpoint MovieDto to a Movie, resolving genre names when available. */
+fun MovieDto.toDomain(genreNames: Map<Int, String> = emptyMap()): Movie = toEntity().toDomain(genreNames)
 
 fun MovieDto.toDomain(baseMovie: Movie): Movie {
     val detailGenres = genres.orEmpty().mapNotNull { it.validName() }
@@ -188,10 +180,6 @@ fun Movie.withLocalFlags(local: MovieEntity?): Movie =
             isWatched = it.isWatched,
         )
     } ?: this
-
-/** Overlays [localById] flags on a list of movies, keeping entries without a cached row. */
-fun List<Movie>.withLocalFlags(localById: Map<Int, MovieEntity>): List<Movie> =
-    map { movie -> if (localById.containsKey(movie.id)) movie.withLocalFlags(localById[movie.id]) else movie }
 
 /**
  * Re-resolves genre names from the localized dictionary. Used for network-backed

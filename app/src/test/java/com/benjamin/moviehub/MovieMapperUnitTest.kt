@@ -20,54 +20,19 @@ class MovieMapperUnitTest {
         assertEquals("Name", actor.name)
         assertEquals("Role", actor.character)
         assertEquals("https://image.tmdb.org/t/p/w185/profile.jpg", actor.profileUrl)
-    }
-
-    @Test
-    fun `actor dto maps null profile path to empty url`() {
         assertEquals("", ActorDto(7, "Name", "Role", null).toDomain().profileUrl)
     }
 
-    private fun createFakeEntity(
-        id: Int = 1,
-        isFavorite: Boolean = false,
-    ) = MovieEntity(
-        id = id,
-        title = "Test Movie",
-        overview = "Description",
-        posterPath = "",
-        backdropPath = "",
-        voteAverage = 7.5,
-        releaseDate = "2024-01-01",
-        isFavorite = isFavorite,
-    )
-
-    private fun createFakeDto(
-        id: Int = 1,
-        posterPath: String? = null,
-    ) = MovieDto(
-        id = id,
-        title = "Test Movie",
-        description = "Description",
-        posterPath = posterPath,
-        backdropPath = "",
-        voteAverage = 7.5,
-        releaseDate = "2024-01-01",
-    )
-
     @Test
-    fun `toEntity should handle null fields and use default empty strings`() {
-        val dto = createFakeDto(posterPath = null)
-        val entity = dto.toEntity(isFavorite = true)
+    fun `toEntity normalizes image paths and keeps missing ones null`() {
+        val nullPoster = createFakeDto(posterPath = null).toEntity(isFavorite = true)
 
-        assertEquals(null, entity.posterPath)
-        assertEquals(true, entity.isFavorite)
-    }
-
-    @Test
-    fun `toEntity stores relative paths when dto contains a complete TMDB url`() {
-        val dto = createFakeDto(posterPath = "https://image.tmdb.org/t/p/w500/pic.jpg")
-
-        assertEquals("/pic.jpg", dto.toEntity().posterPath)
+        assertEquals(null, nullPoster.posterPath)
+        assertEquals(true, nullPoster.isFavorite)
+        assertEquals(
+            "/pic.jpg",
+            createFakeDto(posterPath = "https://image.tmdb.org/t/p/w500/pic.jpg").toEntity().posterPath,
+        )
     }
 
     @Test
@@ -78,6 +43,7 @@ class MovieMapperUnitTest {
 
         assertEquals(1, domain.id)
         assertEquals("https://image.tmdb.org/t/p/w500/pic.jpg", domain.posterPath)
+        assertEquals("https://image.tmdb.org/t/p/w342/pic.jpg", domain.posterPathSmall)
         assertEquals("https://www.themoviedb.org/movie/1", domain.webUrl)
         assertEquals(listOf("Drame"), domain.genres)
         assertEquals(false, domain.isFavorite)
@@ -85,24 +51,16 @@ class MovieMapperUnitTest {
 
     @Test
     fun `toDomain from Entity should keep all status flags intact`() {
-        val entity = createFakeEntity(isFavorite = true)
-        val domain = entity.toDomain()
+        val domain = createFakeEntity(isFavorite = true).toDomain()
 
         assertEquals(true, domain.isFavorite)
         assertEquals("https://www.themoviedb.org/movie/1", domain.webUrl)
     }
 
     @Test
-    fun `toEntity should extract genre IDs from genre objects when genreIds is null`() {
+    fun `toEntity extracts genre ids from genre objects when genreIds is null`() {
         val detailDto =
-            MovieDto(
-                id = 1,
-                title = "Test Movie",
-                description = "Desc",
-                posterPath = null,
-                backdropPath = null,
-                voteAverage = 8.0,
-                releaseDate = "2025-01-01",
+            createFakeDto().copy(
                 genreIds = null,
                 genres =
                     listOf(
@@ -111,51 +69,17 @@ class MovieMapperUnitTest {
                     ),
             )
 
-        val entity = detailDto.toEntity()
-
-        val expectedGenreIds = listOf(28, 12)
-        assertEquals(expectedGenreIds, entity.genreIds)
-    }
-
-    @Test
-    fun `toEntity and toDomain preserve runtime`() {
-        val dto = createFakeDto().copy(runtimeMinutes = 169)
-
-        val domain = dto.toEntity().toDomain()
-
-        assertEquals(169, domain.runtimeMinutes)
-    }
-
-    @Test
-    fun `toEntity should prioritize genreIds if available`() {
-        val listDto =
-            MovieDto(
-                id = 1,
-                title = "Test Movie",
-                description = "Desc",
-                posterPath = null,
-                backdropPath = null,
-                voteAverage = 8.0,
-                releaseDate = "2025-01-01",
-                genreIds = listOf(99, 100),
-                genres = null,
-            )
-
-        val entity = listDto.toEntity()
-
-        assertEquals(listOf(99, 100), entity.genreIds)
+        assertEquals(listOf(28, 12), detailDto.toEntity().genreIds)
     }
 
     @Test
     fun `detail dto maps useful rating metadata`() {
-        val dto =
-            createFakeDto().copy(
-                voteCount = 8673,
-            )
+        val dto = createFakeDto().copy(voteCount = 8673, runtimeMinutes = 169)
 
         val result = dto.toDomain(dto.toEntity().toDomain())
 
         assertEquals(8673, result.voteCount)
+        assertEquals(169, result.runtimeMinutes)
     }
 
     @Test
@@ -176,10 +100,26 @@ class MovieMapperUnitTest {
         assertEquals("Director Name", result.director)
     }
 
-    @Test
-    fun `toDomain exposes a small poster variant`() {
-        val domain = createFakeEntity().copy(posterPath = "/pic.jpg").toDomain()
+    private fun createFakeEntity(isFavorite: Boolean = false) =
+        MovieEntity(
+            id = 1,
+            title = "Test Movie",
+            overview = "Description",
+            posterPath = "",
+            backdropPath = "",
+            voteAverage = 7.5,
+            releaseDate = "2024-01-01",
+            isFavorite = isFavorite,
+        )
 
-        assertEquals("https://image.tmdb.org/t/p/w342/pic.jpg", domain.posterPathSmall)
-    }
+    private fun createFakeDto(posterPath: String? = null) =
+        MovieDto(
+            id = 1,
+            title = "Test Movie",
+            description = "Description",
+            posterPath = posterPath,
+            backdropPath = "",
+            voteAverage = 7.5,
+            releaseDate = "2024-01-01",
+        )
 }

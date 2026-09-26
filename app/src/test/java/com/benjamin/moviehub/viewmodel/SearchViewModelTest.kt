@@ -38,7 +38,7 @@ class SearchViewModelTest {
     }
 
     @Test
-    fun `search query should be debounced`() =
+    fun `search query is debounced and blank queries never search`() =
         runTest {
             val job = launch { viewModel.searchResults.collect() }
 
@@ -52,6 +52,10 @@ class SearchViewModelTest {
             coVerify { repository.searchMovies("Ava") }
             coVerify(exactly = 0) { repository.searchMovies("A") }
             coVerify(exactly = 0) { repository.searchMovies("Av") }
+
+            viewModel.onSearchQueryChanged("   ")
+            advanceTimeBy(600)
+            coVerify(exactly = 0) { repository.searchMovies("") }
 
             job.cancel()
         }
@@ -67,16 +71,6 @@ class SearchViewModelTest {
             advanceTimeBy(200)
             runCurrent()
             assertEquals("Avatar", viewModel.activeSearchQuery.value)
-            job.cancel()
-        }
-
-    @Test
-    fun `blank query does not trigger a search`() =
-        runTest {
-            val job = launch { viewModel.searchResults.collect() }
-            viewModel.onSearchQueryChanged("   ")
-            advanceTimeBy(600)
-            coVerify(exactly = 0) { repository.searchMovies("") }
             job.cancel()
         }
 

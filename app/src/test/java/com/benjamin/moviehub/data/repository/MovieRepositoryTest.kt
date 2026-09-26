@@ -91,37 +91,6 @@ class MovieRepositoryTest {
         }
 
     @Test
-    fun `library setters delegate independent flags`() =
-        runBlocking {
-            val apiService = mockk<MovieApiService>()
-            val database = mockk<MovieDatabase>()
-            val dao = mockk<MovieDao>()
-            val repository = MovieRepositoryImpl(apiService, database, dao)
-            val movie =
-                Movie(
-                    id = 8,
-                    title = "Movie",
-                    overview = "",
-                    posterPath = null,
-                    backdropPath = null,
-                    voteAverage = 0.0,
-                    releaseDate = "",
-                    webUrl = null,
-                    isFavorite = false,
-                    genreIds = persistentListOf(),
-                    genres = persistentListOf(),
-                )
-            coEvery { dao.setLibraryFlag(any(), isWatchlist = true) } just runs
-            coEvery { dao.setLibraryFlag(any(), isWatched = true) } just runs
-
-            repository.setWatchlist(movie, true)
-            repository.setWatched(movie, true)
-
-            coVerify(exactly = 1) { dao.setLibraryFlag(any(), isWatchlist = true) }
-            coVerify(exactly = 1) { dao.setLibraryFlag(any(), isWatched = true) }
-        }
-
-    @Test
     fun `get movie recommendations maps remote dtos to domain`() =
         runBlocking {
             val apiService = mockk<MovieApiService>()

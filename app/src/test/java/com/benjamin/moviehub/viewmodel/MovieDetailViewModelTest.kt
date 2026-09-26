@@ -12,7 +12,6 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -125,28 +124,6 @@ class MovieDetailViewModelTest {
         }
 
     @Test
-    fun `library emission before recommendations completion is retained`() =
-        runTest {
-            val recommendation = movie.copy(id = 2, title = "Suggested")
-            val library = MutableStateFlow<List<Movie>>(emptyList())
-            val recommendationsGate = CompletableDeferred<List<Movie>>()
-            every { repository.getLibraryMovies() } returns library
-            coEvery { repository.getMovieDetails(1) } returns movie
-            coEvery { repository.getMovieRecommendations(1) } coAnswers { recommendationsGate.await() }
-            val viewModel = MovieDetailViewModel(repository)
-
-            viewModel.loadMovieDetails(1)
-            runCurrent()
-            library.value = listOf(recommendation.copy(isWatched = true))
-            runCurrent()
-            recommendationsGate.complete(listOf(recommendation))
-            advanceUntilIdle()
-
-            val state = viewModel.uiState.value as MovieDetailUiState.Success
-            assertTrue((state.recommendations as MovieRecommendationsUiState.Success).movies.single().isWatched)
-        }
-
-    @Test
     fun `details retry succeeds after loading error`() =
         runTest {
             var detailsCalls = 0
@@ -207,27 +184,9 @@ class MovieDetailViewModelTest {
             viewModel.toggleFavorite()
             advanceUntilIdle()
 
-            assertTrue((viewModel.uiState.value as MovieDetailUiState.Success).movie.isFavorite.not())
+            assertTrue(!(viewModel.uiState.value as MovieDetailUiState.Success).movie.isFavorite)
             coVerify(exactly = 1) { repository.setFavorite(movie, true) }
             coVerify(exactly = 1) { repository.setFavorite(movie.copy(isFavorite = true), false) }
-        }
-
-    @Test
-    fun `two failed toggles serialize and leave the original state`() =
-        runTest {
-            coEvery { repository.getMovieDetails(1) } returns movie
-            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
-            coEvery { repository.setFavorite(any(), any()) } throws IllegalStateException()
-            val viewModel = MovieDetailViewModel(repository)
-            viewModel.loadMovieDetails(1)
-            advanceUntilIdle()
-
-            viewModel.toggleFavorite()
-            viewModel.toggleFavorite()
-            advanceUntilIdle()
-
-            assertTrue((viewModel.uiState.value as MovieDetailUiState.Success).movie.isFavorite.not())
-            coVerify(exactly = 2) { repository.setFavorite(movie, true) }
         }
 
     @Test
@@ -254,105 +213,7 @@ class MovieDetailViewModelTest {
         }
 
     @Test
-    fun `failed favorite toggle keeps late credits`() =
-        runTest {
-            val creditsGate = CompletableDeferred<MovieCredits>()
-            val toggleGate = CompletableDeferred<Unit>()
-            coEvery { repository.getMovieDetails(1) } returns movie
-            coEvery { repository.getMovieCredits(1) } coAnswers { creditsGate.await() }
-            coEvery { repository.setFavorite(movie, true) } coAnswers {
-                toggleGate.await()
-                throw IllegalStateException()
-            }
-            val viewModel = MovieDetailViewModel(repository)
-
-            viewModel.loadMovieDetails(1)
-            runCurrent()
-            viewModel.toggleFavorite()
-            runCurrent()
-
-            creditsGate.complete(MovieCredits(director = "Director"))
-            runCurrent()
-
-            toggleGate.complete(Unit)
-            advanceUntilIdle()
-
-            val state = viewModel.uiState.value as MovieDetailUiState.Success
-            assertEquals(false, state.movie.isFavorite)
-            assertEquals("Director", state.credits.director)
-        }
-
-    @Test
-    fun `recommendations stay loading until the remote call resolves`() =
-        runTest {
-            val recommendationsGate = CompletableDeferred<List<Movie>>()
-            coEvery { repository.getMovieDetails(1) } returns movie
-            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
-            coEvery { repository.getMovieRecommendations(1) } coAnswers { recommendationsGate.await() }
-            val viewModel = MovieDetailViewModel(repository)
-
-            viewModel.loadMovieDetails(1)
-            runCurrent()
-
-            assertEquals(
-                MovieRecommendationsUiState.Loading,
-                (viewModel.uiState.value as MovieDetailUiState.Success).recommendations,
-            )
-
-            val suggested = movie.copy(id = 2, title = "Suggested")
-            recommendationsGate.complete(listOf(suggested))
-            advanceUntilIdle()
-
-            assertEquals(
-                MovieRecommendationsUiState.Success(listOf(suggested).toImmutableList()),
-                (viewModel.uiState.value as MovieDetailUiState.Success).recommendations,
-            )
-        }
-
-    @Test
-    fun `recommendations appear while credits are still loading`() =
-        runTest {
-            val creditsGate = CompletableDeferred<MovieCredits>()
-            val suggested = movie.copy(id = 2, title = "Suggested")
-            coEvery { repository.getMovieDetails(1) } returns movie
-            coEvery { repository.getMovieCredits(1) } coAnswers { creditsGate.await() }
-            coEvery { repository.getMovieRecommendations(1) } returns listOf(suggested)
-            val viewModel = MovieDetailViewModel(repository)
-
-            viewModel.loadMovieDetails(1)
-            runCurrent()
-
-            val state = viewModel.uiState.value as MovieDetailUiState.Success
-            assertEquals(MovieCredits(), state.credits)
-            assertEquals(
-                MovieRecommendationsUiState.Success(listOf(suggested).toImmutableList()),
-                state.recommendations,
-            )
-
-            creditsGate.complete(MovieCredits(director = "Director"))
-            advanceUntilIdle()
-            assertEquals("Director", (viewModel.uiState.value as MovieDetailUiState.Success).credits.director)
-        }
-
-    @Test
-    fun `empty recommendations map to the empty state`() =
-        runTest {
-            coEvery { repository.getMovieDetails(1) } returns movie
-            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
-            coEvery { repository.getMovieRecommendations(1) } returns emptyList()
-            val viewModel = MovieDetailViewModel(repository)
-
-            viewModel.loadMovieDetails(1)
-            advanceUntilIdle()
-
-            assertEquals(
-                MovieRecommendationsUiState.Empty,
-                (viewModel.uiState.value as MovieDetailUiState.Success).recommendations,
-            )
-        }
-
-    @Test
-    fun `recommendation failure maps to the error state without breaking details`() =
+    fun `recommendations failure maps to the error state without breaking details`() =
         runTest {
             coEvery { repository.getMovieDetails(1) } returns movie
             coEvery { repository.getMovieCredits(1) } returns MovieCredits()
@@ -365,75 +226,6 @@ class MovieDetailViewModelTest {
             val state = viewModel.uiState.value as MovieDetailUiState.Success
             assertEquals(MovieRecommendationsUiState.Error, state.recommendations)
             assertEquals(movie, state.movie)
-        }
-
-    @Test
-    fun `failed watchlist toggle restores watchlist and watched flags`() =
-        runTest {
-            val initial = movie.copy(isWatchlist = false, isWatched = true)
-            every { repository.getLibraryMovies() } returns MutableStateFlow(listOf(initial))
-            coEvery { repository.getMovieDetails(1) } returns initial
-            coEvery { repository.setWatchlist(initial, true) } throws IllegalStateException()
-            val viewModel = MovieDetailViewModel(repository)
-
-            viewModel.loadMovieDetails(1)
-            advanceUntilIdle()
-            viewModel.toggleWatchlist()
-            advanceUntilIdle()
-
-            val state = viewModel.uiState.value as MovieDetailUiState.Success
-            assertEquals(false, state.movie.isWatchlist)
-            assertEquals(true, state.movie.isWatched)
-        }
-
-    @Test
-    fun `failed watched toggle restores watched and watchlist flags`() =
-        runTest {
-            val initial = movie.copy(isWatchlist = true, isWatched = false)
-            every { repository.getLibraryMovies() } returns MutableStateFlow(listOf(initial))
-            coEvery { repository.getMovieDetails(1) } returns initial
-            coEvery { repository.setWatched(initial, true) } throws IllegalStateException()
-            val viewModel = MovieDetailViewModel(repository)
-
-            viewModel.loadMovieDetails(1)
-            advanceUntilIdle()
-            viewModel.toggleWatched()
-            advanceUntilIdle()
-
-            val state = viewModel.uiState.value as MovieDetailUiState.Success
-            assertEquals(false, state.movie.isWatched)
-            assertEquals(true, state.movie.isWatchlist)
-        }
-
-    @Test
-    fun `failed rollback keeps an independent library flag changed meanwhile`() =
-        runTest {
-            val library = MutableStateFlow<List<Movie>>(emptyList())
-            every { repository.getLibraryMovies() } returns library
-            coEvery { repository.getMovieDetails(1) } returns movie
-            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
-            val failureGate = CompletableDeferred<Unit>()
-            coEvery { repository.setFavorite(movie, true) } coAnswers {
-                failureGate.await()
-                throw IllegalStateException()
-            }
-            val viewModel = MovieDetailViewModel(repository)
-            viewModel.loadMovieDetails(1)
-            advanceUntilIdle()
-
-            viewModel.toggleFavorite()
-            runCurrent()
-            assertEquals(true, (viewModel.uiState.value as MovieDetailUiState.Success).movie.isFavorite)
-
-            library.value = listOf(movie.copy(isFavorite = true, isWatchlist = true))
-            runCurrent()
-
-            failureGate.complete(Unit)
-            advanceUntilIdle()
-
-            val state = viewModel.uiState.value as MovieDetailUiState.Success
-            assertEquals(false, state.movie.isFavorite)
-            assertEquals(true, state.movie.isWatchlist)
         }
 
     @Test

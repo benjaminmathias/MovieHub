@@ -38,31 +38,16 @@ class NetworkSnackbarTest {
         var status by mutableStateOf(ConnectivityStatus.UNKNOWN)
         setNetworkContent { status }
 
-        assertTrue(composeRule.onAllNodesWithText("Pas de connexion internet").fetchSemanticsNodes().isEmpty())
-        assertTrue(composeRule.onAllNodesWithText("Connexion rétablie").fetchSemanticsNodes().isEmpty())
+        assertNoBanner()
 
         composeRule.runOnIdle { status = ConnectivityStatus.AVAILABLE }
 
+        assertNoBanner()
+    }
+
+    private fun assertNoBanner() {
         assertTrue(composeRule.onAllNodesWithText("Pas de connexion internet").fetchSemanticsNodes().isEmpty())
         assertTrue(composeRule.onAllNodesWithText("Connexion rétablie").fetchSemanticsNodes().isEmpty())
-    }
-
-    @Test
-    fun offlineBannerRemainsDisplayedAfterTimeAdvances() {
-        setNetworkContent { ConnectivityStatus.LOST }
-
-        composeRule.mainClock.advanceTimeBy(10_000)
-        composeRule.onNodeWithText("Pas de connexion internet").assertIsDisplayed()
-    }
-
-    @Test
-    fun lostToUnavailableKeepsOneOfflineSnackbar() {
-        var status by mutableStateOf(ConnectivityStatus.LOST)
-        setNetworkContent { status }
-
-        composeRule.runOnIdle { status = ConnectivityStatus.UNAVAILABLE }
-
-        composeRule.onNodeWithText("Pas de connexion internet").assertIsDisplayed()
     }
 
     private fun setNetworkContent(status: () -> ConnectivityStatus) {

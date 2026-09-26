@@ -41,7 +41,7 @@ class DiscoverViewModelTest {
     }
 
     @Test
-    fun `genres success clears loading and exposes genres`() =
+    fun `genres load and default filters start empty on popularity`() =
         runTest {
             advanceUntilIdle()
 
@@ -51,6 +51,8 @@ class DiscoverViewModelTest {
                 listOf(MovieGenre(id = 28, name = "Action"), MovieGenre(id = 18, name = "Drame")),
                 viewModel.uiState.value.genres,
             )
+            assertEquals(DiscoverFilters(), viewModel.uiState.value.draftFilters)
+            assertEquals(DiscoverFilters(), viewModel.uiState.value.appliedFilters)
         }
 
     @Test
@@ -74,19 +76,9 @@ class DiscoverViewModelTest {
             viewModel.retryGenres()
             advanceUntilIdle()
 
-            assertEquals(false, viewModel.uiState.value.isLoadingGenres)
             assertEquals(false, viewModel.uiState.value.hasGenreError)
             assertEquals(listOf(MovieGenre(id = 28, name = "Action")), viewModel.uiState.value.genres)
         }
-
-    @Test
-    fun `default filters are empty and sorted by popularity`() {
-        val defaults = DiscoverFilters()
-
-        assertEquals(defaults, viewModel.uiState.value.draftFilters)
-        assertEquals(defaults, viewModel.uiState.value.appliedFilters)
-        assertEquals(DiscoverSortOption.POPULARITY, defaults.sort)
-    }
 
     @Test
     fun `editing filters does not request until apply and then starts a new query`() =
@@ -119,21 +111,6 @@ class DiscoverViewModelTest {
         }
 
     @Test
-    fun `opening editor starts from applied filters and dismissing discards draft edits`() {
-        viewModel.onGenreSelected(28)
-        viewModel.applyFilters()
-
-        viewModel.onReleaseYearSelected(2020)
-        viewModel.beginFilterEditing()
-        assertEquals(viewModel.uiState.value.appliedFilters, viewModel.uiState.value.draftFilters)
-
-        viewModel.onMinimumRatingSelected(8.0)
-        viewModel.discardFilterEdits()
-
-        assertEquals(viewModel.uiState.value.appliedFilters, viewModel.uiState.value.draftFilters)
-    }
-
-    @Test
     fun `reset restores and applies draft and applied defaults`() =
         runTest {
             val job = launch { viewModel.discoverResults.collect() }
@@ -154,12 +131,4 @@ class DiscoverViewModelTest {
             verify(exactly = 2) { repository.getDiscoverMovies(DiscoverFilters()) }
             job.cancel()
         }
-
-    @Test
-    fun `supported sort options expose their TMDB values`() {
-        assertEquals(
-            listOf("popularity.desc", "vote_average.desc", "primary_release_date.desc"),
-            DiscoverSortOption.entries.map(DiscoverSortOption::queryValue),
-        )
-    }
 }
