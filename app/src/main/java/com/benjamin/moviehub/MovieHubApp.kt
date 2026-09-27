@@ -1,30 +1,40 @@
 package com.benjamin.moviehub
 
 import android.app.Application
-import coil.ImageLoader
-import coil.ImageLoaderFactory
-import coil.disk.DiskCache
-import coil.memory.MemoryCache
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import coil3.disk.DiskCache
+import coil3.memory.MemoryCache
+import coil3.request.crossfade
 import dagger.hilt.android.HiltAndroidApp
+import okio.Path.Companion.toPath
 
 @HiltAndroidApp
 class MovieHubApp :
     Application(),
-    ImageLoaderFactory {
-    override fun newImageLoader(): ImageLoader =
-        ImageLoader
-            .Builder(this)
+    SingletonImageLoader.Factory {
+    override fun newImageLoader(context: PlatformContext): ImageLoader {
+        val diskCacheDirectory =
+            context.cacheDir
+                .resolve("image_cache")
+                .absolutePath
+                .toPath()
+
+        return ImageLoader
+            .Builder(context)
             .memoryCache {
                 MemoryCache
-                    .Builder(this)
-                    .maxSizePercent(0.25)
+                    .Builder()
+                    .maxSizePercent(context, 0.25)
                     .build()
             }.diskCache {
                 DiskCache
                     .Builder()
-                    .directory(cacheDir.resolve("image_cache"))
-                    .maxSizeBytes(100 * 1024 * 1024)
+                    .directory(diskCacheDirectory)
+                    .maxSizeBytes(100L * 1024 * 1024)
                     .build()
             }.crossfade(true)
             .build()
+    }
 }
