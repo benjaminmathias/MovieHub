@@ -13,7 +13,7 @@ plugins {
 android {
     namespace = "com.benjamin.moviehub"
     compileSdk {
-        version = release(36)
+        version = release(37)
     }
 
     packaging {
