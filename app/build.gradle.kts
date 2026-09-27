@@ -4,23 +4,17 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.jetbrains.kotlin.serialization)
     id("org.jlleitschuh.gradle.ktlint")
 }
 
 android {
     namespace = "com.benjamin.moviehub"
+
     compileSdk {
         version = release(37)
-    }
-
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-            pickFirsts.add("META-INF/gradle/incremental.annotation.processors")
-        }
     }
 
     defaultConfig {
@@ -54,17 +48,26 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-    }
-    hilt {
-        enableAggregatingTask = false
     }
 
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            pickFirsts.add("META-INF/gradle/incremental.annotation.processors")
+        }
+    }
+
+    hilt {
+        enableAggregatingTask = false
     }
 }
 
@@ -74,62 +77,62 @@ ktlint {
 }
 
 dependencies {
-    // Architecture & Lifecycle
+    // AndroidX — core & lifecycle
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.activity.compose)
 
-    // Compose
+    // Compose (versions managed by the BOM)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-
-    // Icons & Visuals
     implementation(libs.androidx.compose.material.icons.extended)
-    implementation(libs.coil.compose)
-    implementation(libs.coil.network.okhttp)
-    implementation(libs.compose.shimmer)
 
-    // Hilt
+    // Hilt / dependency injection
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
 
-    // Network & Data
+    // Networking
     implementation(libs.retrofit)
     implementation(libs.retrofit.gson)
     implementation(libs.okhttp)
 
-    // Datastore
+    // Images
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+    implementation(libs.compose.shimmer)
+
+    // Persistence
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.datastore.preferences)
 
-    // Room & Paging
-    implementation(libs.androidx.room.ktx)
-    implementation(libs.androidx.room.runtime)
-    ksp(libs.androidx.room.compiler)
+    // Paging
     implementation(libs.androidx.room.paging)
     implementation(libs.androidx.paging.runtime.ktx)
     implementation(libs.androidx.paging.compose)
 
     // Navigation 3
-    implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
-    implementation(libs.kotlinx.serialization.core)
 
-    // Immutable collections (Compose stability)
+    // KotlinX
+    implementation(libs.kotlinx.serialization.core)
     implementation(libs.kotlinx.collections.immutable)
 
-    // Unit Tests
+    // Unit tests
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
 
-    // Instrumented Tests
+    // Instrumented tests
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.test.runner)
     // Pins espresso-core transitively required by compose ui-test to 3.7.0:
