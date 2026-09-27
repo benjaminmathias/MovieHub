@@ -13,7 +13,7 @@ plugins {
 android {
     namespace = "com.benjamin.moviehub"
     compileSdk {
-        version = release(36)
+        version = release(37)
     }
 
     packaging {
@@ -90,6 +90,7 @@ dependencies {
     // Icons & Visuals
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
     implementation(libs.compose.shimmer)
 
     // Hilt
