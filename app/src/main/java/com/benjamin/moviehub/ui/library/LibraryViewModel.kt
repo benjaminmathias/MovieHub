@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.ui.library
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benjamin.moviehub.R
@@ -41,7 +42,7 @@ sealed class LibraryUiState {
     ) : LibraryUiState()
 
     data class Error(
-        val errorMessage: Int,
+        @param:StringRes val errorMessage: Int,
     ) : LibraryUiState()
 }
 
