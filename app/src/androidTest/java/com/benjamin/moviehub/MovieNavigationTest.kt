@@ -5,7 +5,6 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
@@ -48,7 +47,7 @@ class MovieNavigationTest {
 
     @Test
     fun discoverTab_keepsAppliedFiltersAfterSwitchingTabs() {
-        composeTestRule.onNodeWithText("Découvrir").performClick()
+        composeTestRule.onNodeWithTag("nav_tab_discover").performClick()
         composeTestRule.waitUntil(timeoutMillis = 8000) {
             composeTestRule.onAllNodesWithTag("discover_filter_button").fetchSemanticsNodes().isNotEmpty()
         }
@@ -65,8 +64,8 @@ class MovieNavigationTest {
         }
         composeTestRule.onNodeWithTag("discover_filter_count").assertIsDisplayed()
 
-        composeTestRule.onNodeWithText("Accueil").performClick()
-        composeTestRule.onNodeWithText("Découvrir").performClick()
+        composeTestRule.onNodeWithTag("nav_tab_home").performClick()
+        composeTestRule.onNodeWithTag("nav_tab_discover").performClick()
         composeTestRule.waitUntil(timeoutMillis = 8000) {
             composeTestRule.onAllNodesWithTag("discover_filter_count").fetchSemanticsNodes().isNotEmpty()
         }

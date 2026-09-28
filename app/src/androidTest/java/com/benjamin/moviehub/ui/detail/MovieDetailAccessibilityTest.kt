@@ -11,6 +11,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
+import com.benjamin.moviehub.R
+import com.benjamin.moviehub.TestStrings
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
@@ -19,6 +21,8 @@ import kotlinx.collections.immutable.toImmutableList
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import java.text.NumberFormat
+import java.util.Locale
 
 class MovieDetailAccessibilityTest {
     @get:Rule
@@ -28,7 +32,7 @@ class MovieDetailAccessibilityTest {
     fun favoriteActionUsesDynamicAccessibilityDescription() {
         setDetailScreen(movie(isFavorite = true))
 
-        composeRule.onNodeWithContentDescription("Retirer des favoris").assertHasClickAction()
+        composeRule.onNodeWithContentDescription(TestStrings.get(R.string.remove_favorite)).assertHasClickAction()
         composeRule.onNodeWithTag("detail_favorite").assertHeightIsAtLeast(48.dp)
     }
 
@@ -39,9 +43,11 @@ class MovieDetailAccessibilityTest {
             credits = MovieCredits(director = "Director Name"),
         )
 
-        composeRule.onNodeWithText("8.7 / 10").assertIsDisplayed()
-        composeRule.onNodeWithText("123 votes").assertIsDisplayed()
-        composeRule.onNodeWithText("Réalisé par Director Name").assertIsDisplayed()
+        composeRule.onNodeWithText(TestStrings.get(R.string.rating_out_of_ten, 8.7)).assertIsDisplayed()
+        composeRule
+            .onNodeWithText(TestStrings.get(R.string.vote_count, NumberFormat.getIntegerInstance(Locale.FRANCE).format(123)))
+            .assertIsDisplayed()
+        composeRule.onNodeWithText(TestStrings.get(R.string.director_format, "Director Name")).assertIsDisplayed()
         composeRule.onNodeWithText("Action • Drame").assertIsDisplayed()
     }
 
@@ -50,21 +56,26 @@ class MovieDetailAccessibilityTest {
         setDetailContent(movie(overview = "A long synopsis that needs to be truncated before it can be expanded. ".repeat(8)))
 
         composeRule
-            .onNodeWithText("Afficher plus")
+            .onNodeWithText(TestStrings.get(R.string.read_more))
             .performScrollTo()
             .assertIsDisplayed()
             .performClick()
-        composeRule.onNodeWithText("Afficher moins").assertIsDisplayed()
+        composeRule.onNodeWithText(TestStrings.get(R.string.show_less)).assertIsDisplayed()
     }
 
     @Test
     fun detailOmitsEmptyOptionalInformation() {
         setDetailContent(movie(voteAverage = 0.0, voteCount = 0))
 
-        assertTrue(composeRule.onAllNodesWithText("0.0 / 10").fetchSemanticsNodes().isEmpty())
-        assertTrue(composeRule.onAllNodesWithText("0 votes").fetchSemanticsNodes().isEmpty())
-        composeRule.onNodeWithText("Non noté").assertIsDisplayed()
-        assertTrue(composeRule.onAllNodesWithText("Distribution").fetchSemanticsNodes().isEmpty())
+        assertTrue(composeRule.onAllNodesWithText(TestStrings.get(R.string.rating_out_of_ten, 0.0)).fetchSemanticsNodes().isEmpty())
+        assertTrue(
+            composeRule
+                .onAllNodesWithText(TestStrings.get(R.string.vote_count, NumberFormat.getIntegerInstance(Locale.FRANCE).format(0)))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
+        composeRule.onNodeWithText(TestStrings.get(R.string.rating_not_available)).assertIsDisplayed()
+        assertTrue(composeRule.onAllNodesWithText(TestStrings.get(R.string.cast_principal)).fetchSemanticsNodes().isEmpty())
     }
 
     @Test
@@ -73,9 +84,12 @@ class MovieDetailAccessibilityTest {
 
         composeRule.onNodeWithTag("detail_favorite").assertHasClickAction().assertHeightIsAtLeast(48.dp)
         composeRule.onNodeWithTag("detail_watchlist").assertHasClickAction()
-        composeRule.onNodeWithContentDescription("Retirer de la liste À voir").assertHasClickAction().assertHeightIsAtLeast(48.dp)
+        composeRule
+            .onNodeWithContentDescription(TestStrings.get(R.string.remove_watchlist_accessibility))
+            .assertHasClickAction()
+            .assertHeightIsAtLeast(48.dp)
         composeRule.onNodeWithTag("detail_watched").assertHasClickAction()
-        composeRule.onNodeWithContentDescription("Marquer comme vu").assertHasClickAction()
+        composeRule.onNodeWithContentDescription(TestStrings.get(R.string.mark_watched_accessibility)).assertHasClickAction()
     }
 
     private fun setDetailScreen(

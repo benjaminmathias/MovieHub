@@ -45,9 +45,9 @@ class MovieHomeSectionsTest {
                 .fetchSemanticsNodes()
                 .isNotEmpty()
         }
-        composeTestRule.onNodeWithText("Populaires").assertIsDisplayed()
+        composeTestRule.onNodeWithText(TestStrings.get(R.string.category_popular)).assertIsDisplayed()
 
-        composeTestRule.onNodeWithTag("home_sections").performScrollToNode(hasText("Prochainement"))
+        composeTestRule.onNodeWithTag("home_sections").performScrollToNode(hasText(TestStrings.get(R.string.category_upcoming)))
 
         // Scrolling a row into view triggers its lazy category load.
         composeTestRule.waitUntil(timeoutMillis = 20_000) {

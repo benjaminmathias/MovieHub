@@ -44,6 +44,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -237,6 +238,7 @@ private fun TopLevelNavigationBar(
                 onClick = { onSelect(destination) },
                 icon = { TopLevelIcon(destination, selected == destination) },
                 label = { Text(stringResource(destination.labelRes)) },
+                modifier = Modifier.testTag("nav_tab_${destination.name.lowercase()}"),
                 colors =
                     NavigationBarItemDefaults.colors(
                         selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -262,6 +264,7 @@ private fun TopLevelNavigationRail(
                 onClick = { onSelect(destination) },
                 icon = { TopLevelIcon(destination, selected == destination) },
                 label = { Text(stringResource(destination.labelRes)) },
+                modifier = Modifier.testTag("nav_tab_${destination.name.lowercase()}"),
                 colors =
                     NavigationRailItemDefaults.colors(
                         selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,

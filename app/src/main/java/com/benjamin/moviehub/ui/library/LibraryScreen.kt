@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
@@ -75,6 +76,7 @@ fun LibraryScreen(
                         selectedContentColor = MaterialTheme.colorScheme.primary,
                         unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         text = { Text(stringResource(tab.labelRes), style = MaterialTheme.typography.labelLarge) },
+                        modifier = Modifier.testTag("library_tab_${tab.name.lowercase()}"),
                     )
                 }
             }

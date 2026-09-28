@@ -21,6 +21,8 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import com.benjamin.moviehub.R
+import com.benjamin.moviehub.TestStrings
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
 import com.benjamin.moviehub.domain.model.Movie
@@ -136,8 +138,8 @@ class DiscoverScreenTest {
             results = Pager(PagingConfig(pageSize = 1)) { ErrorPagingSource() }.flow,
         )
 
-        composeRule.onNodeWithText("Impossible de charger les films.").assertIsDisplayed()
-        composeRule.onNodeWithText("Réessayer").assertIsDisplayed().performClick()
+        composeRule.onNodeWithText(TestStrings.get(R.string.error_loading_movies)).assertIsDisplayed()
+        composeRule.onNodeWithText(TestStrings.get(R.string.retry)).assertIsDisplayed().performClick()
     }
 
     @Test

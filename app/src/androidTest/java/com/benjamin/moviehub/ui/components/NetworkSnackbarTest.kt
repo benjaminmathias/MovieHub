@@ -10,6 +10,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import com.benjamin.moviehub.R
+import com.benjamin.moviehub.TestStrings
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.domain.connectivity.ConnectivityStatus
 import com.benjamin.moviehub.domain.connectivity.isOffline
@@ -26,11 +28,11 @@ class NetworkSnackbarTest {
         var status by mutableStateOf(ConnectivityStatus.LOST)
         setNetworkContent { status }
 
-        composeRule.onNodeWithText("Pas de connexion internet").assertIsDisplayed()
+        composeRule.onNodeWithText(TestStrings.get(R.string.no_internet_connection)).assertIsDisplayed()
 
         composeRule.runOnIdle { status = ConnectivityStatus.AVAILABLE }
 
-        composeRule.onNodeWithText("Connexion rétablie").assertIsDisplayed()
+        composeRule.onNodeWithText(TestStrings.get(R.string.connection_restored)).assertIsDisplayed()
     }
 
     @Test
@@ -46,8 +48,18 @@ class NetworkSnackbarTest {
     }
 
     private fun assertNoBanner() {
-        assertTrue(composeRule.onAllNodesWithText("Pas de connexion internet").fetchSemanticsNodes().isEmpty())
-        assertTrue(composeRule.onAllNodesWithText("Connexion rétablie").fetchSemanticsNodes().isEmpty())
+        assertTrue(
+            composeRule
+                .onAllNodesWithText(TestStrings.get(R.string.no_internet_connection))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
+        assertTrue(
+            composeRule
+                .onAllNodesWithText(TestStrings.get(R.string.connection_restored))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
     }
 
     private fun setNetworkContent(status: () -> ConnectivityStatus) {

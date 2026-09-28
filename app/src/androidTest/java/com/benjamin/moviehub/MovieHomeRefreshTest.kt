@@ -55,8 +55,8 @@ class MovieHomeRefreshTest {
         val requestsAfterRefresh = categoryPageOneRequestCounts()
 
         // Leave the popular row, then bring it back: recomposition must not refresh it again.
-        composeTestRule.onNodeWithTag("home_sections").performScrollToNode(hasText("Prochainement"))
-        composeTestRule.onNodeWithTag("home_sections").performScrollToNode(hasText("Populaires"))
+        composeTestRule.onNodeWithTag("home_sections").performScrollToNode(hasText(TestStrings.get(R.string.category_upcoming)))
+        composeTestRule.onNodeWithTag("home_sections").performScrollToNode(hasText(TestStrings.get(R.string.category_popular)))
         composeTestRule.waitUntil(timeoutMillis = 10_000) {
             composeTestRule
                 .onAllNodesWithText("Film Populaire 1")

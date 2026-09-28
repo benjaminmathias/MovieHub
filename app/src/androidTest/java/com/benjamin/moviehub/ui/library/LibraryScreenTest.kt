@@ -5,9 +5,11 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.benjamin.moviehub.R
+import com.benjamin.moviehub.TestStrings
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.domain.model.Movie
 import kotlinx.collections.immutable.persistentListOf
@@ -34,15 +36,15 @@ class LibraryScreenTest {
                 )
             }
         }
-        composeRule.onNodeWithText("À voir").assertIsDisplayed()
-        composeRule.onNodeWithText("Favoris").assertIsDisplayed()
-        composeRule.onNodeWithText("Vu").assertIsDisplayed()
+        composeRule.onNodeWithTag("library_tab_watchlist").assertIsDisplayed()
+        composeRule.onNodeWithTag("library_tab_favorites").assertIsDisplayed()
+        composeRule.onNodeWithTag("library_tab_watched").assertIsDisplayed()
         composeRule.onNodeWithText("À regarder").assertIsDisplayed()
-        composeRule.onNodeWithText("Favoris").performClick()
+        composeRule.onNodeWithTag("library_tab_favorites").performClick()
         composeRule.onNodeWithText("Favori").assertIsDisplayed()
         assertTrue(composeRule.onAllNodesWithText("À regarder").fetchSemanticsNodes().isEmpty())
-        composeRule.onNodeWithText("Vu").performClick()
-        composeRule.onNodeWithText("Aucun film vu.").assertIsDisplayed()
+        composeRule.onNodeWithTag("library_tab_watched").performClick()
+        composeRule.onNodeWithText(TestStrings.get(LibraryTab.WATCHED.emptyMessageRes)).assertIsDisplayed()
     }
 
     @Test
@@ -60,7 +62,7 @@ class LibraryScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("Réessayer").assertIsDisplayed().performClick()
+        composeRule.onNodeWithText(TestStrings.get(R.string.retry)).assertIsDisplayed().performClick()
         assertTrue(retried)
     }
 
@@ -83,7 +85,7 @@ class LibraryScreenTest {
                 .onNode(SemanticsMatcher.keyIsDefined(SemanticsActions.CustomActions))
                 .fetchSemanticsNode()
                 .config[SemanticsActions.CustomActions]
-        assertTrue(actions.any { it.label == "Retirer de la liste À voir" })
+        assertTrue(actions.any { it.label == TestStrings.get(R.string.remove_watchlist_accessibility) })
     }
 
     private fun movie(
