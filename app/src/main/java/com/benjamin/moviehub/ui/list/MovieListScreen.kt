@@ -21,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.benjamin.moviehub.R
@@ -30,6 +29,7 @@ import com.benjamin.moviehub.domain.model.MovieCategory
 import com.benjamin.moviehub.ui.components.HeroMovieBanner
 import com.benjamin.moviehub.ui.components.HeroMovieShimmer
 import com.benjamin.moviehub.ui.components.isInitialLoading
+import com.benjamin.moviehub.ui.components.isRefreshing
 import kotlinx.coroutines.flow.Flow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,7 +96,7 @@ private fun HomeContent(
 
     PullToRefreshBox(
         state = refreshState,
-        isRefreshing = homeMovies.values.any { it.loadState.refresh is LoadState.Loading },
+        isRefreshing = homeMovies.values.any { it.isRefreshing },
         onRefresh = { homeMovies.values.forEach { it.refresh() } },
         modifier = modifier,
     ) {

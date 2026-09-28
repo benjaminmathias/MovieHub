@@ -17,6 +17,12 @@ val LazyPagingItems<*>.isInitialLoading: Boolean
         itemCount == 0 &&
             (loadState.refresh is LoadState.Loading || loadState.mediator?.refresh is LoadState.Loading)
 
+/** A refresh is running, whether driven by the PagingSource or the RemoteMediator. */
+val LazyPagingItems<*>.isRefreshing: Boolean
+    get() =
+        loadState.refresh is LoadState.Loading ||
+            loadState.mediator?.refresh is LoadState.Loading
+
 /** First page failed and nothing is displayed yet. */
 val LazyPagingItems<*>.isInitialError: Boolean
     get() =
