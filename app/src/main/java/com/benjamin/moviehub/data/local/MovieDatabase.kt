@@ -13,7 +13,7 @@ import androidx.room.TypeConverters
         GenreEntity::class,
     ],
     version = 7,
-    exportSchema = false,
+    exportSchema = true,
 )
 @TypeConverters(Converters::class)
 abstract class MovieDatabase : RoomDatabase() {

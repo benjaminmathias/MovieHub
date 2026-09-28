@@ -76,6 +76,10 @@ ktlint {
     outputToConsole.set(true)
 }
 
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     // AndroidX — core & lifecycle
     implementation(libs.androidx.core.ktx)
