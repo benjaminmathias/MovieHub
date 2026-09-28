@@ -18,7 +18,7 @@ import io.mockk.slot
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.io.IOException
@@ -26,7 +26,7 @@ import java.io.IOException
 class MovieRepositoryTest {
     @Test
     fun `get movie details falls back to local movie when api fails`() =
-        runBlocking {
+        runTest {
             val apiService = mockk<MovieApiService>()
             val database = mockk<MovieDatabase>()
             val dao = mockk<MovieDao>()
@@ -56,7 +56,7 @@ class MovieRepositoryTest {
 
     @Test
     fun `set favorite inserts missing movie with relative image paths`() =
-        runBlocking {
+        runTest {
             val apiService = mockk<MovieApiService>()
             val database = mockk<MovieDatabase>()
             val dao = mockk<MovieDao>()
@@ -92,7 +92,7 @@ class MovieRepositoryTest {
 
     @Test
     fun `get movie recommendations maps remote dtos to domain`() =
-        runBlocking {
+        runTest {
             val apiService = mockk<MovieApiService>()
             val database = mockk<MovieDatabase>()
             val dao = mockk<MovieDao>()
@@ -143,7 +143,7 @@ class MovieRepositoryTest {
 
     @Test
     fun `get hero movie maps the first cached category movie`() =
-        runBlocking {
+        runTest {
             val apiService = mockk<MovieApiService>()
             val database = mockk<MovieDatabase>()
             val dao = mockk<MovieDao>()
