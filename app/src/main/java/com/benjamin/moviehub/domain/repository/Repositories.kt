@@ -10,7 +10,14 @@ import com.benjamin.moviehub.domain.model.MovieCredits
 import com.benjamin.moviehub.domain.model.MovieGenre
 import kotlinx.coroutines.flow.Flow
 
-/** Repository contract for movie data. */
+/**
+ * Repository contract for movie data.
+ *
+ * Paged feeds are exposed as [androidx.paging.PagingData], which deliberately ties this
+ * domain contract to AndroidX Paging. Accepted tradeoff for this app: paging is the
+ * repository boundary itself, and a domain wrapper would add indirection without a
+ * second consumer. Revisit if the domain ever needs to be framework-free.
+ */
 interface MovieRepository {
     /** Get a paged feed for a home [category]. */
     fun getCategoryMovies(category: MovieCategory): Flow<PagingData<Movie>>
