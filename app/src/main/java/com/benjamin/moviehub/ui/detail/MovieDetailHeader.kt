@@ -131,7 +131,11 @@ private fun MovieDetailSummary(
         movie.runtimeMinutes?.takeIf { it > 0 }?.let { minutes ->
             stringResource(R.string.runtime_format, minutes / 60, minutes % 60)
         }
-    val metadata = listOfNotNull(year, runtime)
+    val metadata =
+        remember(year, runtime) {
+            listOfNotNull(year, runtime).joinToString(" • ")
+        }
+    val genresText = remember(movie.genres) { movie.genres.joinToString(" • ") }
 
     Row(
         modifier =
@@ -156,11 +160,11 @@ private fun MovieDetailSummary(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-                if (metadata.isNotEmpty() || director != null || movie.genres.isNotEmpty()) {
+                if (metadata.isNotEmpty() || director != null || genresText.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         if (metadata.isNotEmpty()) {
                             Text(
-                                text = metadata.joinToString(" • "),
+                                text = metadata,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -174,9 +178,9 @@ private fun MovieDetailSummary(
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
-                        if (movie.genres.isNotEmpty()) {
+                        if (genresText.isNotEmpty()) {
                             Text(
-                                text = movie.genres.joinToString(" • "),
+                                text = genresText,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 2,

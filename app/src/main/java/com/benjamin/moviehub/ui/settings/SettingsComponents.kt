@@ -26,6 +26,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.core.util.AppTheme
 
+private val themeOptions = listOf(AppTheme.SYSTEM, AppTheme.LIGHT, AppTheme.DARK)
+
 @Composable
 internal fun SettingsSection(
     title: String,
@@ -50,7 +52,7 @@ internal fun ThemeSelector(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.selectableGroup()) {
-        listOf(AppTheme.SYSTEM, AppTheme.LIGHT, AppTheme.DARK).forEachIndexed { index, theme ->
+        themeOptions.forEachIndexed { index, theme ->
             if (index > 0) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }

@@ -87,11 +87,13 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
     val discoverBackStack = rememberNavBackStack(Route.Discover)
     val libraryBackStack = rememberNavBackStack(Route.Library)
     val backStacks =
-        mapOf(
-            TopLevelDestination.HOME to homeBackStack,
-            TopLevelDestination.DISCOVER to discoverBackStack,
-            TopLevelDestination.LIBRARY to libraryBackStack,
-        )
+        remember(homeBackStack, discoverBackStack, libraryBackStack) {
+            mapOf(
+                TopLevelDestination.HOME to homeBackStack,
+                TopLevelDestination.DISCOVER to discoverBackStack,
+                TopLevelDestination.LIBRARY to libraryBackStack,
+            )
+        }
 
     var selected by rememberSaveable { mutableStateOf(TopLevelDestination.HOME) }
     val backStack = backStacks.getValue(selected)

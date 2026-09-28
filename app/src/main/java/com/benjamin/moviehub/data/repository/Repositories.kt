@@ -184,7 +184,7 @@ class UserPreferencesRepositoryImpl
                     if (exception is IOException) emit(emptyPreferences()) else throw exception
                 }.map { preferences ->
                     val themeName = preferences[themeKey] ?: AppTheme.SYSTEM.name
-                    runCatching { AppTheme.valueOf(themeName) }.getOrDefault(AppTheme.SYSTEM)
+                    AppTheme.entries.firstOrNull { it.name == themeName } ?: AppTheme.SYSTEM
                 }
 
         override suspend fun setTheme(theme: AppTheme) {
