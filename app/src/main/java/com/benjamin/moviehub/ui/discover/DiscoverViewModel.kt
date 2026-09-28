@@ -51,8 +51,10 @@ class DiscoverViewModel
                 .map { it.appliedFilters }
                 .distinctUntilChanged()
                 .flatMapLatest { filters ->
+                    // The inner cachedIn keeps each filter change's PagingData alive for its
+                    // inner scope; an outer cachedIn would only add a redundant layer.
                     repository.getDiscoverMovies(filters).cachedIn(viewModelScope)
-                }.cachedIn(viewModelScope)
+                }
 
         init {
             loadGenres()
