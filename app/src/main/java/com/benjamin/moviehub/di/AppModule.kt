@@ -3,6 +3,7 @@ package com.benjamin.moviehub.di
 import android.content.Context
 import androidx.room.Room
 import com.benjamin.moviehub.BuildConfig
+import com.benjamin.moviehub.data.cache.ImageCacheManager
 import com.benjamin.moviehub.data.connectivity.NetworkConnectivityObserver
 import com.benjamin.moviehub.data.local.MIGRATION_1_2
 import com.benjamin.moviehub.data.local.MIGRATION_2_3
@@ -16,6 +17,7 @@ import com.benjamin.moviehub.data.remote.MovieApiService
 import com.benjamin.moviehub.data.repository.MovieRepositoryImpl
 import com.benjamin.moviehub.data.repository.UserPreferencesRepositoryImpl
 import com.benjamin.moviehub.domain.connectivity.ConnectivityObserver
+import com.benjamin.moviehub.domain.repository.ImageCacheCleaner
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import com.benjamin.moviehub.domain.repository.UserPreferencesRepository
 import dagger.Binds
@@ -40,6 +42,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindUserPreferencesRepository(impl: UserPreferencesRepositoryImpl): UserPreferencesRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindImageCacheCleaner(impl: ImageCacheManager): ImageCacheCleaner
 }
 
 @Module

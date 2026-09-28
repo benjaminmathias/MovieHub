@@ -3,6 +3,7 @@ package com.benjamin.moviehub.data.cache
 import android.content.Context
 import coil3.annotation.ExperimentalCoilApi
 import coil3.imageLoader
+import com.benjamin.moviehub.domain.repository.ImageCacheCleaner
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -12,11 +13,12 @@ class ImageCacheManager
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
-    ) {
+    ) : ImageCacheCleaner {
         @OptIn(ExperimentalCoilApi::class)
-        suspend fun clear() =
+        override suspend fun clear() {
             withContext(Dispatchers.IO) {
                 context.imageLoader.memoryCache?.clear()
                 context.imageLoader.diskCache?.clear()
             }
+        }
     }

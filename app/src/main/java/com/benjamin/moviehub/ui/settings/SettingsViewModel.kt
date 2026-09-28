@@ -3,7 +3,7 @@ package com.benjamin.moviehub.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benjamin.moviehub.core.util.AppTheme
-import com.benjamin.moviehub.data.cache.ImageCacheManager
+import com.benjamin.moviehub.domain.repository.ImageCacheCleaner
 import com.benjamin.moviehub.domain.repository.UserPreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -22,7 +22,7 @@ class SettingsViewModel
     @Inject
     constructor(
         private val userPreferenceRepository: UserPreferencesRepository,
-        private val imageCacheManager: ImageCacheManager,
+        private val imageCacheCleaner: ImageCacheCleaner,
     ) : ViewModel() {
         private val _isClearing = MutableStateFlow(false)
         val isClearing: StateFlow<Boolean> = _isClearing.asStateFlow()
@@ -57,7 +57,7 @@ class SettingsViewModel
             viewModelScope.launch {
                 _isClearing.value = true
                 try {
-                    imageCacheManager.clear()
+                    imageCacheCleaner.clear()
                     _imageCacheMessages.tryEmit(true)
                 } catch (e: CancellationException) {
                     throw e

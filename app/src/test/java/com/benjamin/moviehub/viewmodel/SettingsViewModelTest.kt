@@ -2,7 +2,7 @@ package com.benjamin.moviehub.viewmodel
 
 import app.cash.turbine.test
 import com.benjamin.moviehub.core.util.AppTheme
-import com.benjamin.moviehub.data.cache.ImageCacheManager
+import com.benjamin.moviehub.domain.repository.ImageCacheCleaner
 import com.benjamin.moviehub.domain.repository.UserPreferencesRepository
 import com.benjamin.moviehub.ui.settings.SettingsViewModel
 import com.benjamin.moviehub.util.MainDispatcherRule
@@ -26,7 +26,7 @@ class SettingsViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val preferences: UserPreferencesRepository = mockk()
-    private val imageCacheManager: ImageCacheManager = mockk()
+    private val imageCacheCleaner: ImageCacheCleaner = mockk()
 
     @Before
     fun setUp() {
@@ -37,10 +37,10 @@ class SettingsViewModelTest {
     fun `clearing image cache reports success then failure`() =
         runTest {
             var fail = false
-            coEvery { imageCacheManager.clear() } coAnswers {
+            coEvery { imageCacheCleaner.clear() } coAnswers {
                 if (fail) throw IllegalStateException("cache failure")
             }
-            val viewModel = SettingsViewModel(preferences, imageCacheManager)
+            val viewModel = SettingsViewModel(preferences, imageCacheCleaner)
 
             viewModel.imageCacheMessages.test {
                 viewModel.clearImageCache()
@@ -60,7 +60,7 @@ class SettingsViewModelTest {
     fun `theme changes are persisted`() =
         runTest {
             coEvery { preferences.setTheme(AppTheme.DARK) } just runs
-            val viewModel = SettingsViewModel(preferences, imageCacheManager)
+            val viewModel = SettingsViewModel(preferences, imageCacheCleaner)
 
             viewModel.updateTheme(AppTheme.DARK)
 
