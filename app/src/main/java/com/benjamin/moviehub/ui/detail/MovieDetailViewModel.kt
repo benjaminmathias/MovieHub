@@ -68,7 +68,7 @@ class MovieDetailViewModel
                             launch {
                                 val loadedRecommendations = recommendations.await()
                                 updateSuccess(movieId) {
-                                    it.copy(recommendations = loadedRecommendations.withLocalFlags(libraryById.value))
+                                    it.copy(recommendations = loadedRecommendations.withLibraryState(libraryById.value))
                                 }
                             }
                         }
@@ -138,7 +138,7 @@ class MovieDetailViewModel
                     repository.getLibraryMovies().collectLatest { localMovies ->
                         val localById = localMovies.associateBy(Movie::id)
                         libraryById.value = localById
-                        updateSuccess(movieId) { it.withLocalFlags(localById) }
+                        updateSuccess(movieId) { it.withLibraryState(localById) }
                     }
                 }
         }
@@ -167,19 +167,26 @@ class MovieDetailViewModel
         }
     }
 
-private fun MovieRecommendationsUiState.withLocalFlags(localById: Map<Int, Movie>): MovieRecommendationsUiState =
+/**
+ * Reconciles the detail screen with the library, which is the source of truth here:
+ * a movie absent from [localById] loses its flags.
+ *
+ * This deliberately differs from [com.benjamin.moviehub.data.mapper.withLocalFlags],
+ * which keeps the remote flags for a not-yet-cached movie in network feeds.
+ */
+private fun MovieRecommendationsUiState.withLibraryState(localById: Map<Int, Movie>): MovieRecommendationsUiState =
     (this as? MovieRecommendationsUiState.Success)
         ?.let { success ->
-            MovieRecommendationsUiState.Success(success.movies.map { it.withFlags(localById[it.id]) }.toImmutableList())
+            MovieRecommendationsUiState.Success(success.movies.map { it.withLibraryState(localById[it.id]) }.toImmutableList())
         } ?: this
 
-private fun MovieDetailUiState.Success.withLocalFlags(localById: Map<Int, Movie>): MovieDetailUiState.Success =
+private fun MovieDetailUiState.Success.withLibraryState(localById: Map<Int, Movie>): MovieDetailUiState.Success =
     copy(
-        movie = movie.withFlags(localById[movie.id]),
-        recommendations = recommendations.withLocalFlags(localById),
+        movie = movie.withLibraryState(localById[movie.id]),
+        recommendations = recommendations.withLibraryState(localById),
     )
 
-private fun Movie.withFlags(local: Movie?): Movie =
+private fun Movie.withLibraryState(local: Movie?): Movie =
     copy(
         isFavorite = local?.isFavorite ?: false,
         isWatchlist = local?.isWatchlist ?: false,

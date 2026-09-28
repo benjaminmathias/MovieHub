@@ -170,7 +170,8 @@ fun Movie.toEntity(
 
 /**
  * Overlays the locally persisted favorite/watchlist/watched flags onto a remote
- * movie. A missing local row leaves the remote flags untouched.
+ * movie. A missing local row leaves the remote flags untouched, unlike the detail
+ * screen's library reconciliation which treats the library as the source of truth.
  */
 fun Movie.withLocalFlags(local: MovieEntity?): Movie =
     local?.let {
