@@ -25,6 +25,9 @@ internal const val PAGE_SIZE = 20
 internal const val PREFETCH_DISTANCE = 5
 internal const val INITIAL_LOAD_SIZE = 20
 
+/** Classic SQLite bind-variable ceiling is 999, so long `IN (...)` lists are batched under it. */
+internal const val SQL_VARIABLE_BATCH_SIZE = 900
+
 internal val moviePagingConfig =
     PagingConfig(
         pageSize = PAGE_SIZE,
@@ -162,7 +165,10 @@ internal class SearchMovieRemoteMediator(
         val previousResultIds = movieDao.getSearchResultMovieIds(queryKey)
         movieDao.clearSearchResults(queryKey)
         movieDao.clearRemoteKeysByType(remoteKeyType)
-        movieDao.deleteSearchOrphans(previousResultIds, fetched.map { it.id })
+        val preserveMovieIds = fetched.map { it.id }
+        previousResultIds
+            .chunked(SQL_VARIABLE_BATCH_SIZE)
+            .forEach { batch -> movieDao.deleteSearchOrphans(batch, preserveMovieIds) }
     }
 
     override suspend fun persistAssociations(

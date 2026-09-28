@@ -141,6 +141,28 @@ class MovieRoomPagingTest {
         }
 
     @Test
+    fun refreshingSearch_withMoreThanSqliteVariables_deletesEveryOrphan() =
+        runBlocking {
+            val dao = database.movieDao()
+            val orphanCount = 1_200
+            val orphans = (1..orphanCount).map { index -> movieEntity(id = 10_000 + index) }
+            dao.upsertMoviesRaw(orphans)
+            dao.insertSearchResults(
+                orphans.mapIndexed { index, entity ->
+                    MovieSearchResultEntity(queryKey = "big", movieId = entity.id, pageOrder = index)
+                },
+            )
+
+            val api = FakeMovieApiService(searchPages = mapOf("big" to mapOf(1 to listOf(movieDto(500_000)))))
+            SearchMovieRemoteMediator(api, database, "big").load(LoadType.REFRESH, emptyPagingState())
+
+            assertEquals(listOf(500_000), dao.getSearchResultMovieIds("big"))
+            assertEquals(null, dao.getMovieById(10_001))
+            assertEquals(null, dao.getMovieById(10_000 + orphanCount))
+            assertEquals(500_000, dao.getMovieById(500_000)?.id)
+        }
+
+    @Test
     fun categoryRefresh_clearsOnlyItsKeysAndPreservesFavorite() =
         runBlocking {
             val dao = database.movieDao()
