@@ -56,8 +56,8 @@ fun MovieDetailContent(
     onOpenTmdb: (() -> Unit)? = null,
     onRecommendationClick: (Int) -> Unit = {},
 ) {
-    // Insets edge-to-edge : le bottom système passe en contentPadding, pas en Modifier,
-    // pour que le contenu scrolle derrière les barres sans être rogné.
+    // Edge-to-edge insets: the system bottom inset goes into contentPadding, not the
+    // Modifier, so content scrolls behind the bars instead of being clipped.
     val navigationInsets = WindowInsets.navigationBars.asPaddingValues()
     val layoutDirection = LocalLayoutDirection.current
     LazyColumn(
@@ -86,8 +86,8 @@ fun MovieDetailContent(
                 DetailSection(
                     title = stringResource(R.string.synopsis),
                 ) {
-                    // Colonne dédiée : sans elle, les deux enfants se superposeraient
-                    // dans le Box de DetailSection (le bouton tombait dans le texte).
+                    // Dedicated Column: without it the two children would overlap inside
+                    // DetailSection's Box (the button used to land on the text).
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         var expanded by rememberSaveable(movie.id, movie.overview) {
                             mutableStateOf(false)

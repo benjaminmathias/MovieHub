@@ -32,10 +32,10 @@ data class MovieDto(
     @SerializedName("vote_average") val voteAverage: Double,
     @SerializedName("release_date") val releaseDate: String? = "",
     @SerializedName("runtime") val runtimeMinutes: Int? = null,
-    // Format utilisé par la Liste (/popular)
+    // Shape used by list endpoints (/popular)
     @SerializedName("genre_ids")
     val genreIds: List<Int>? = null,
-    // Format utilisé par le Détail (/movie/{id})
+    // Shape used by the detail endpoint (/movie/{id})
     @SerializedName("genres")
     val genres: List<GenreDto>? = null,
     @SerializedName("vote_count") val voteCount: Int? = null,

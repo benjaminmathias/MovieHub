@@ -3,13 +3,13 @@ package com.benjamin.moviehub.data.remote
 import java.io.IOException
 
 /**
- * Fake déterministe de [MovieApiService], partagé entre les tests instrumentés
- * (UI et médiateurs de pagination). Aucun appel réseau réel n'est effectué.
+ * Deterministic fake of [MovieApiService] shared by the instrumented tests
+ * (UI and paging mediators). No real network call is made.
  *
- * Les données sont configurables au constructeur ; les valeurs par défaut
- * suffisent aux tests de navigation et de recherche sans configuration.
+ * Data is configurable through the constructor; the defaults cover navigation
+ * and search tests without configuration.
  *
- * [failRequests] simule une panne réseau pour vérifier que le cache Room reste utilisable.
+ * [failRequests] simulates a network outage to verify the Room cache stays usable.
  */
 class FakeMovieApiService(
     private val popularPages: Map<Int, List<MovieDto>> = defaultPopularPages,

@@ -89,6 +89,7 @@ object RemoteModule {
                         .url
                         .newBuilder()
                         .addQueryParameter("api_key", BuildConfig.TMDB_API_KEY)
+                        // French-only app by product decision: the API language matches the UI copy.
                         .addQueryParameter("language", "fr-FR")
                         .build()
                 chain.proceed(
