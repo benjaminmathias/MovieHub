@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.data.mapper
 
+import com.benjamin.moviehub.core.util.TMDB_IMAGE_BASE_URL
 import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.remote.ActorDto
 import com.benjamin.moviehub.data.remote.GenreDto
@@ -9,8 +10,6 @@ import com.benjamin.moviehub.domain.model.Actor
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
 import kotlinx.collections.immutable.toImmutableList
-
-private const val TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/"
 
 private val tmdbGenreNames =
     mapOf(
@@ -141,7 +140,6 @@ fun MovieEntity.toDomain(genreNames: Map<Int, String> = emptyMap()): Movie {
         genreIds = genreIds.toImmutableList(),
         genres = genreIds.mapNotNull { resolvedGenres[it] }.toImmutableList(),
         runtimeMinutes = runtimeMinutes,
-        posterPathSmall = toTmdbImageUrl(posterPath, "w342"),
     )
 }
 

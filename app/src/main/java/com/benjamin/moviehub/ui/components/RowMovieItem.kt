@@ -31,6 +31,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.core.theme.POSTER_ASPECT_RATIO
+import com.benjamin.moviehub.core.util.tmdbImageAt
 import com.benjamin.moviehub.domain.model.Movie
 
 @Composable
@@ -64,10 +65,7 @@ fun RowMovieItem(
                         .aspectRatio(POSTER_ASPECT_RATIO),
             ) {
                 MoviePosterArtwork(
-                    model =
-                        movie.posterPathSmall
-                            ?.takeIf(String::isNotBlank)
-                            ?: movie.posterPath,
+                    model = movie.posterPath.tmdbImageAt("w342"),
                     modifier = Modifier.matchParentSize(),
                 )
 

@@ -43,7 +43,6 @@ class MovieMapperUnitTest {
 
         assertEquals(1, domain.id)
         assertEquals("https://image.tmdb.org/t/p/w500/pic.jpg", domain.posterPath)
-        assertEquals("https://image.tmdb.org/t/p/w342/pic.jpg", domain.posterPathSmall)
         assertEquals("https://www.themoviedb.org/movie/1", domain.webUrl)
         assertEquals(listOf("Drame"), domain.genres)
         assertEquals(false, domain.isFavorite)

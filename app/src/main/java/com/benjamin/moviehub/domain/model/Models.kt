@@ -19,8 +19,6 @@ data class Movie(
     val isWatched: Boolean = false,
     val runtimeMinutes: Int? = null,
     val voteCount: Int? = null,
-    /** Small poster variant used by the compact home rows. */
-    val posterPathSmall: String? = null,
 )
 
 data class Actor(
