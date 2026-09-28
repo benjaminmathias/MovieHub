@@ -18,6 +18,7 @@
         </intent>
     </queries>
 
+    <!-- Backup stays enabled on purpose: library flags and the theme are restored after reinstall. -->
     <application
         android:name=".MovieHubApp"
         android:allowBackup="true"
