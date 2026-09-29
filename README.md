@@ -69,6 +69,15 @@ MovieHub uses a pragmatic layered architecture with ViewModels and unidirectiona
 - **Keep Library ownership local.** Personal movie states are updated independently of TMDB and merged into remote content across screens.
 - **Keep the layering proportional to the app.** ViewModels depend on repository contracts directly; an additional use-case layer is not added where it would only forward calls.
 
+## AI-assisted development
+
+MovieHub is also a learning project for AI-assisted Android development, primarily with Codex.
+
+- I define feature scope, UI expectations, and architectural constraints, then use AI agents to assist with implementation, refactoring, and code review.
+- I question implementation choices, request explanations and simpler alternatives, and assess the resulting behavior through app checks and follow-up reviews.
+- Validation combines Gradle checks, automated tests, and emulator checks, including checks delegated to agents.
+- The project helps me strengthen both my Android skills and my ability to supervise AI-generated changes.
+
 ## Tech stack
 
 | Area | Technologies |
