@@ -19,8 +19,8 @@ fun MovieResponse.isEndOfPagination(
         ?: (movies.isEmpty() || movies.size < pageSize)
 
 data class GenreDto(
-    val id: Int,
-    val name: String? = null,
+    @SerializedName("id") val id: Int,
+    @SerializedName("name") val name: String? = null,
 )
 
 data class MovieDto(
@@ -52,7 +52,7 @@ data class CrewMemberDto(
 )
 
 data class ActorDto(
-    val id: Int,
+    @SerializedName("id") val id: Int,
     @SerializedName("name") val name: String? = null,
     @SerializedName("character") val character: String? = null,
     @SerializedName("profile_path") val profilePath: String?,

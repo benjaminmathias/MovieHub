@@ -11,13 +11,17 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -108,6 +112,51 @@ class DiscoverViewModelTest {
             assertEquals(filters, viewModel.uiState.value.appliedFilters)
             verify { repository.getDiscoverMovies(filters) }
             job.cancel()
+        }
+
+    @Test
+    fun `applying new filters cancels the previous discover flow`() =
+        runTest {
+            val initialFilters = DiscoverFilters()
+            val appliedFilters = DiscoverFilters(genreId = 28)
+            val initialFlowCancelled = CompletableDeferred<Unit>()
+
+            every { repository.getDiscoverMovies(initialFilters) } returns
+                flow {
+                    try {
+                        emit(PagingData.empty())
+                        awaitCancellation()
+                    } finally {
+                        initialFlowCancelled.complete(Unit)
+                    }
+                }
+            every { repository.getDiscoverMovies(appliedFilters) } returns flowOf(PagingData.empty())
+
+            val job = launch { viewModel.discoverResults.collect() }
+            advanceUntilIdle()
+
+            viewModel.onGenreSelected(appliedFilters.genreId)
+            viewModel.applyFilters()
+            advanceUntilIdle()
+
+            assertTrue(initialFlowCancelled.isCompleted)
+            verify(exactly = 1) { repository.getDiscoverMovies(initialFilters) }
+            verify(exactly = 1) { repository.getDiscoverMovies(appliedFilters) }
+            job.cancel()
+        }
+
+    @Test
+    fun `recollecting discover results for the same filters reuses the cached pipeline`() =
+        runTest {
+            val firstJob = launch { viewModel.discoverResults.collect() }
+            advanceUntilIdle()
+            firstJob.cancel()
+
+            val secondJob = launch { viewModel.discoverResults.collect() }
+            advanceUntilIdle()
+
+            verify(exactly = 1) { repository.getDiscoverMovies(DiscoverFilters()) }
+            secondJob.cancel()
         }
 
     @Test
