@@ -5,7 +5,7 @@
 MovieHub combines [TMDB](https://www.themoviedb.org/) content with Room-backed Home and Search feeds, flexible movie discovery, and a local Library for favorites, watchlist, and watched movies. The project keeps its product scope focused while exploring pragmatic Android architecture, Paging 3, persistence, accessible Compose UI, and automated testing.
 
 [![Android CI](https://github.com/benjaminmathias/MovieHub/actions/workflows/android.yml/badge.svg)](https://github.com/benjaminmathias/MovieHub/actions/workflows/android.yml)
-![Kotlin](https://img.shields.io/badge/Kotlin-2.2.10-7F52FF?logo=kotlin&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.3.21-7F52FF?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
 ![Android](https://img.shields.io/badge/Android-API%2024%2B-3DDC84?logo=android&logoColor=white)
 
