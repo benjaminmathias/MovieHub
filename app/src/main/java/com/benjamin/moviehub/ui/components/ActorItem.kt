@@ -36,18 +36,18 @@ fun ActorItem(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.width(88.dp).heightIn(min = 140.dp),
+        modifier = modifier.width(112.dp).heightIn(min = 148.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
-            modifier = Modifier.size(72.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
+            modifier = Modifier.size(80.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = Icons.Outlined.Person,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(36.dp),
+                modifier = Modifier.size(40.dp),
             )
             AsyncImage(
                 model = actor.profileUrl.takeIf(String::isNotBlank),
@@ -64,6 +64,7 @@ fun ActorItem(
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+            minLines = 2,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
@@ -75,7 +76,7 @@ fun ActorItem(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-            minLines = 1,
+            minLines = 2,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,

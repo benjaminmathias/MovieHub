@@ -92,18 +92,28 @@ class MovieDetailViewModel
                     val state = _uiState.value as? MovieDetailUiState.Success ?: return@withLock
                     val previous = state.movie
                     val value = !flag.isSet(previous)
-                    _uiState.value = state.copy(movie = flag.apply(previous, value))
+                    _uiState.value = state.copy(movie = flag.apply(previous, value), isLibraryActionPending = true)
 
                     try {
                         repository.setLibraryFlag(previous, flag, value)
+                        setLibraryActionPending(previous.id, false)
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
                         _libraryActionErrors.tryEmit(Unit)
                         rollbackLibrary(previous.id, previous, flag, value)
+                        setLibraryActionPending(previous.id, false)
                     }
                 }
             }
+        }
+
+        /** Keeps the library actions locked while a local write is in flight. */
+        private fun setLibraryActionPending(
+            movieId: Int,
+            pending: Boolean,
+        ) {
+            updateSuccess(movieId) { it.copy(isLibraryActionPending = pending) }
         }
 
         private suspend fun loadCredits(movieId: Int): MovieCredits =
@@ -200,6 +210,7 @@ sealed class MovieDetailUiState {
         val movie: Movie,
         val credits: MovieCredits,
         val recommendations: MovieRecommendationsUiState = MovieRecommendationsUiState.Loading,
+        val isLibraryActionPending: Boolean = false,
     ) : MovieDetailUiState()
 
     data class Error(

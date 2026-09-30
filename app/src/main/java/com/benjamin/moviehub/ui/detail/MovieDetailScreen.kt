@@ -8,19 +8,25 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -53,10 +60,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.net.toUri
 import com.benjamin.moviehub.R
+import com.benjamin.moviehub.core.theme.ContentHorizontalPadding
+import com.benjamin.moviehub.core.theme.POSTER_ASPECT_RATIO
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.EmptyStateView
+import com.valentinilk.shimmer.shimmer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+
+private val SkeletonPosterWidth = 112.dp
+private val SkeletonChipHeight = 48.dp
+private val SkeletonSectionSpacing = 20.dp
 
 @Composable
 fun MovieDetailScreen(
@@ -76,7 +90,7 @@ fun MovieDetailScreen(
     val density = LocalDensity.current
     // 0f (on the hero) -> 1f (content scrolled): avoids an opaque flash after a 1px scroll.
     val toolbarProgress =
-        remember(density) {
+        remember(listState, density) {
             derivedStateOf {
                 if (listState.firstVisibleItemIndex > 0) {
                     1f
@@ -86,7 +100,7 @@ fun MovieDetailScreen(
                 }
             }
         }
-    val toolbarVisible by remember { derivedStateOf { toolbarProgress.value > 0.7f } }
+    val toolbarVisible by remember(toolbarProgress) { derivedStateOf { toolbarProgress.value > 0.7f } }
     val detailTitle = (uiState as? MovieDetailUiState.Success)?.movie?.title.orEmpty()
 
     LaunchedEffect(libraryActionErrors, libraryErrorMessage) {
@@ -108,20 +122,7 @@ fun MovieDetailScreen(
         )
 
         when (uiState) {
-            MovieDetailUiState.Loading -> {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                    Text(
-                        text = stringResource(R.string.loading_movie_details),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
+            MovieDetailUiState.Loading -> MovieDetailSkeleton(modifier = Modifier.fillMaxSize())
 
             is MovieDetailUiState.Success -> {
                 MovieDetailContent(
@@ -129,6 +130,7 @@ fun MovieDetailScreen(
                     credits = uiState.credits,
                     recommendations = uiState.recommendations,
                     listState = listState,
+                    isLibraryActionPending = uiState.isLibraryActionPending,
                     onToggleFavorite = onToggleFavorite,
                     onToggleWatchlist = onToggleWatchlist,
                     onToggleWatched = onToggleWatched,
@@ -251,6 +253,72 @@ private fun DetailControlButton(
             icon()
         }
     }
+}
+
+/** Structured placeholder mirroring the loaded layout while the first payload arrives. */
+@Composable
+private fun MovieDetailSkeleton(modifier: Modifier = Modifier) {
+    val loadingDescription = stringResource(R.string.loading_movie_details)
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .testTag("detail_skeleton")
+                .semantics { contentDescription = loadingDescription },
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        SkeletonBlock(modifier = Modifier.fillMaxWidth().height(DetailHeroHeight))
+        Column(
+            modifier =
+                Modifier
+                    .widthIn(max = DetailContentMaxWidth)
+                    .fillMaxWidth()
+                    .padding(horizontal = ContentHorizontalPadding, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(SkeletonSectionSpacing),
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                SkeletonBlock(
+                    modifier = Modifier.width(SkeletonPosterWidth).aspectRatio(POSTER_ASPECT_RATIO),
+                    shape = MaterialTheme.shapes.medium,
+                )
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SkeletonBlock(modifier = Modifier.fillMaxWidth(0.9f).height(22.dp))
+                    SkeletonBlock(modifier = Modifier.fillMaxWidth(0.45f))
+                    SkeletonBlock(modifier = Modifier.fillMaxWidth(0.65f))
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                repeat(3) {
+                    SkeletonBlock(
+                        modifier = Modifier.weight(1f).height(SkeletonChipHeight),
+                        shape = MaterialTheme.shapes.small,
+                    )
+                }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SkeletonBlock(modifier = Modifier.width(120.dp).height(20.dp))
+                SkeletonBlock(modifier = Modifier.fillMaxWidth())
+                SkeletonBlock(modifier = Modifier.fillMaxWidth())
+                SkeletonBlock(modifier = Modifier.fillMaxWidth(0.6f))
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SkeletonBlock(modifier = Modifier.width(140.dp).height(20.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(count = 4) {
+                        SkeletonBlock(modifier = Modifier.size(80.dp), shape = CircleShape)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SkeletonBlock(
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(4.dp),
+) {
+    Box(modifier = modifier.heightIn(min = 14.dp).background(MaterialTheme.colorScheme.surfaceVariant, shape).shimmer())
 }
 
 private fun isValidHttpUrl(url: String): Boolean {

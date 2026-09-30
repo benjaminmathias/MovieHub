@@ -2,6 +2,7 @@ package com.benjamin.moviehub.ui.detail
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
@@ -22,16 +24,20 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.theme.MovieHubTheme
@@ -43,6 +49,12 @@ import com.benjamin.moviehub.ui.components.MovieCardShimmer
 import com.benjamin.moviehub.ui.components.PosterMovieItem
 import com.benjamin.moviehub.ui.components.previewMovie
 
+private val SectionTopSpacing = 24.dp
+private val SectionTitleSpacing = 8.dp
+private val SectionRowItemSpacing = 12.dp
+private val RecommendationCardWidth = 140.dp
+private const val COLLAPSED_SYNOPSIS_LINES = 4
+
 @Composable
 fun MovieDetailContent(
     movie: Movie,
@@ -50,6 +62,7 @@ fun MovieDetailContent(
     modifier: Modifier = Modifier,
     recommendations: MovieRecommendationsUiState = MovieRecommendationsUiState.Empty,
     listState: LazyListState = rememberLazyListState(),
+    isLibraryActionPending: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
     onToggleWatchlist: (() -> Unit)? = null,
     onToggleWatched: (() -> Unit)? = null,
@@ -74,6 +87,7 @@ fun MovieDetailContent(
             MovieDetailHeader(
                 movie = movie,
                 director = credits.director?.takeIf(String::isNotBlank),
+                isLibraryActionPending = isLibraryActionPending,
                 onToggleFavorite = onToggleFavorite,
                 onToggleWatchlist = onToggleWatchlist,
                 onToggleWatched = onToggleWatched,
@@ -86,33 +100,7 @@ fun MovieDetailContent(
                 DetailSection(
                     title = stringResource(R.string.synopsis),
                 ) {
-                    // Dedicated Column: without it the two children would overlap inside
-                    // DetailSection's Box (the button used to land on the text).
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        var expanded by rememberSaveable(movie.id, movie.overview) {
-                            mutableStateOf(false)
-                        }
-                        Text(
-                            text = movie.overview,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = if (expanded) Int.MAX_VALUE else 4,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        TextButton(
-                            onClick = { expanded = !expanded },
-                            contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
-                        ) {
-                            Text(
-                                text =
-                                    stringResource(
-                                        if (expanded) R.string.show_less else R.string.read_more,
-                                    ),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    }
+                    SynopsisText(movieId = movie.id, overview = movie.overview)
                 }
             }
         }
@@ -121,11 +109,10 @@ fun MovieDetailContent(
             item(key = "cast") {
                 DetailSection(
                     title = stringResource(R.string.cast_principal),
-                    topPadding = 0.dp,
                     fullBleed = true,
                 ) {
                     LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(SectionRowItemSpacing),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
                     ) {
                         items(credits.actors, key = Actor::id) { actor ->
@@ -141,11 +128,11 @@ fun MovieDetailContent(
                 item(key = "recommendations") {
                     RecommendationsSection {
                         LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(SectionRowItemSpacing),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
                         ) {
                             items(3) {
-                                MovieCardShimmer(modifier = Modifier.width(140.dp))
+                                MovieCardShimmer(modifier = Modifier.width(RecommendationCardWidth))
                             }
                         }
                     }
@@ -156,14 +143,14 @@ fun MovieDetailContent(
                 item(key = "recommendations") {
                     RecommendationsSection {
                         LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(SectionRowItemSpacing),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
                         ) {
                             items(recommendations.movies, key = Movie::id) { recommended ->
                                 PosterMovieItem(
                                     movie = recommended,
                                     onMovieClick = onRecommendationClick,
-                                    modifier = Modifier.width(140.dp),
+                                    modifier = Modifier.width(RecommendationCardWidth),
                                 )
                             }
                         }
@@ -176,11 +163,63 @@ fun MovieDetailContent(
     }
 }
 
+/**
+ * Synopsis with a collapsed state. The expand toggle is only offered when the text
+ * actually exceeds the collapsed line count at the current width, font scale and style.
+ */
+@Composable
+private fun SynopsisText(
+    movieId: Int,
+    overview: String,
+) {
+    val textStyle = MaterialTheme.typography.bodyLarge
+    val textMeasurer = rememberTextMeasurer()
+    var expanded by rememberSaveable(movieId, overview) { mutableStateOf(false) }
+    BoxWithConstraints {
+        val availableWidth = constraints.maxWidth
+        // Measured from the layout constraints instead of the text layout callback so the
+        // toggle visibility never feeds back into the measurement.
+        val hasOverflow =
+            remember(overview, textStyle, availableWidth, textMeasurer) {
+                textMeasurer
+                    .measure(
+                        text = overview,
+                        style = textStyle,
+                        constraints = Constraints(maxWidth = availableWidth),
+                    ).lineCount > COLLAPSED_SYNOPSIS_LINES
+            }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = overview,
+                style = textStyle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = if (expanded) Int.MAX_VALUE else COLLAPSED_SYNOPSIS_LINES,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (expanded || hasOverflow) {
+                TextButton(
+                    onClick = { expanded = !expanded },
+                    contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
+                ) {
+                    Text(
+                        text =
+                            stringResource(
+                                if (expanded) R.string.show_less else R.string.read_more,
+                            ),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun RecommendationsSection(content: @Composable () -> Unit) {
     DetailSection(
         title = stringResource(R.string.you_might_also_like),
-        topPadding = 0.dp,
         fullBleed = true,
         content = content,
     )
@@ -189,28 +228,33 @@ private fun RecommendationsSection(content: @Composable () -> Unit) {
 @Composable
 private fun DetailSection(
     title: String,
-    topPadding: Dp = 12.dp,
     fullBleed: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(top = topPadding, bottom = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+    Box(
+        modifier = Modifier.fillMaxWidth().padding(top = SectionTopSpacing),
+        contentAlignment = Alignment.TopCenter,
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
-            modifier =
-                Modifier
-                    .padding(horizontal = 16.dp)
-                    .semantics { heading() },
-        )
-        if (fullBleed) {
-            content()
-        } else {
-            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Column(
+            modifier = Modifier.widthIn(max = DetailContentMaxWidth).fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(SectionTitleSpacing),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier =
+                    Modifier
+                        .padding(horizontal = 16.dp)
+                        .semantics { heading() },
+            )
+            if (fullBleed) {
                 content()
+            } else {
+                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    content()
+                }
             }
         }
     }

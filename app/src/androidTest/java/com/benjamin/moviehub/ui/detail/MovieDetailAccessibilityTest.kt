@@ -1,8 +1,12 @@
 package com.benjamin.moviehub.ui.detail
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -10,6 +14,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.TestStrings
@@ -61,6 +68,37 @@ class MovieDetailAccessibilityTest {
             .assertIsDisplayed()
             .performClick()
         composeRule.onNodeWithText(TestStrings.get(R.string.show_less)).assertIsDisplayed()
+        composeRule.onNodeWithText(TestStrings.get(R.string.show_less)).performClick()
+        composeRule.onNodeWithText(TestStrings.get(R.string.read_more)).assertIsDisplayed()
+    }
+
+    @Test
+    fun shortSynopsisDoesNotOfferExpansion() {
+        setDetailContent(movie(overview = "Un synopsis court."))
+
+        composeRule.onNodeWithText("Un synopsis court.").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(TestStrings.get(R.string.read_more)).assertDoesNotExist()
+    }
+
+    @Test
+    fun longTitleRemainsCompleteWithLargeText() {
+        val title = "Un très long titre de film qui doit rester entièrement lisible sur plusieurs lignes"
+        composeRule.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 1.3f)) {
+                MovieHubTheme {
+                    MovieDetailContent(
+                        movie = movie(voteCount = 1234567).copy(title = title),
+                        credits = MovieCredits(director = "Un réalisateur au nom particulièrement long"),
+                    )
+                }
+            }
+        }
+
+        val layouts = mutableListOf<TextLayoutResult>()
+        composeRule.onNodeWithText(title).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        assertTrue(layouts.isNotEmpty())
+        assertTrue(layouts.all { !it.hasVisualOverflow })
     }
 
     @Test
@@ -92,16 +130,50 @@ class MovieDetailAccessibilityTest {
         composeRule.onNodeWithContentDescription(TestStrings.get(R.string.mark_watched_accessibility)).assertHasClickAction()
     }
 
+    @Test
+    fun pendingLibraryActionsAreDisabled() {
+        setDetailScreen(movie(), isLibraryActionPending = true)
+
+        listOf("detail_favorite", "detail_watchlist", "detail_watched").forEach { tag ->
+            composeRule.onNodeWithTag(tag).assertIsNotEnabled().assertHeightIsAtLeast(48.dp)
+        }
+    }
+
+    @Test
+    fun loadingStateShowsStructuredSkeleton() {
+        composeRule.setContent {
+            MovieHubTheme {
+                MovieDetailScreen(
+                    uiState = MovieDetailUiState.Loading,
+                    onBackClick = {},
+                    onToggleFavorite = {},
+                    onToggleWatchlist = {},
+                    onToggleWatched = {},
+                    onRetry = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("detail_skeleton").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(TestStrings.get(R.string.loading_movie_details)).assertIsDisplayed()
+    }
+
     private fun setDetailScreen(
         movie: Movie,
         onToggleFavorite: () -> Unit = {},
         onToggleWatchlist: () -> Unit = {},
         onToggleWatched: () -> Unit = {},
+        isLibraryActionPending: Boolean = false,
     ) {
         composeRule.setContent {
             MovieHubTheme {
                 MovieDetailScreen(
-                    uiState = MovieDetailUiState.Success(movie, MovieCredits()),
+                    uiState =
+                        MovieDetailUiState.Success(
+                            movie = movie,
+                            credits = MovieCredits(),
+                            isLibraryActionPending = isLibraryActionPending,
+                        ),
                     onBackClick = {},
                     onToggleFavorite = onToggleFavorite,
                     onToggleWatchlist = onToggleWatchlist,

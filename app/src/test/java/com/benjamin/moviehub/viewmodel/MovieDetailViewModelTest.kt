@@ -22,6 +22,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -163,11 +164,39 @@ class MovieDetailViewModelTest {
 
             viewModel.toggleFavorite()
             runCurrent()
-            assertEquals(true, (viewModel.uiState.value as MovieDetailUiState.Success).movie.isFavorite)
+            val pendingState = viewModel.uiState.value as MovieDetailUiState.Success
+            assertTrue(pendingState.movie.isFavorite)
+            assertTrue(pendingState.isLibraryActionPending)
             failureGate.complete(Unit)
             advanceUntilIdle()
-            assertEquals(false, (viewModel.uiState.value as MovieDetailUiState.Success).movie.isFavorite)
+            val restoredState = viewModel.uiState.value as MovieDetailUiState.Success
+            assertFalse(restoredState.movie.isFavorite)
+            assertFalse(restoredState.isLibraryActionPending)
             coVerify(exactly = 1) { repository.setFavorite(movie, true) }
+        }
+
+    @Test
+    fun `successful library action clears pending state`() =
+        runTest {
+            coEvery { repository.getMovieDetails(1) } returns movie
+            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
+            val successGate = CompletableDeferred<Unit>()
+            coEvery { repository.setFavorite(movie, true) } coAnswers { successGate.await() }
+            val viewModel = MovieDetailViewModel(repository)
+
+            viewModel.loadMovieDetails(1)
+            advanceUntilIdle()
+
+            viewModel.toggleFavorite()
+            runCurrent()
+            assertTrue((viewModel.uiState.value as MovieDetailUiState.Success).isLibraryActionPending)
+
+            successGate.complete(Unit)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as MovieDetailUiState.Success
+            assertTrue(state.movie.isFavorite)
+            assertFalse(state.isLibraryActionPending)
         }
 
     @Test
