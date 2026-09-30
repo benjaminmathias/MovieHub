@@ -49,7 +49,6 @@ import com.benjamin.moviehub.ui.components.MovieCardShimmer
 import com.benjamin.moviehub.ui.components.PosterMovieItem
 import com.benjamin.moviehub.ui.components.previewMovie
 
-private val SectionTopSpacing = 24.dp
 private val SectionTitleSpacing = 8.dp
 private val SectionRowItemSpacing = 12.dp
 private val RecommendationCardWidth = 140.dp
@@ -111,10 +110,7 @@ fun MovieDetailContent(
                     title = stringResource(R.string.cast_principal),
                     fullBleed = true,
                 ) {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(SectionRowItemSpacing),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                    ) {
+                    LazyRow {
                         items(credits.actors, key = Actor::id) { actor ->
                             ActorItem(actor = actor)
                         }
@@ -232,7 +228,7 @@ private fun DetailSection(
     content: @Composable () -> Unit,
 ) {
     Box(
-        modifier = Modifier.fillMaxWidth().padding(top = SectionTopSpacing),
+        modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.TopCenter,
     ) {
         Column(
