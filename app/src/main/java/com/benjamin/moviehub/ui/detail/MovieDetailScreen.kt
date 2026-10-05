@@ -56,14 +56,19 @@ import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.PreviewFontScale
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.net.toUri
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.theme.ContentHorizontalPadding
+import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.core.theme.POSTER_ASPECT_RATIO
 import com.benjamin.moviehub.domain.model.Movie
+import com.benjamin.moviehub.domain.model.MovieCredits
 import com.benjamin.moviehub.ui.components.EmptyStateView
+import com.benjamin.moviehub.ui.components.previewMovie
 import com.valentinilk.shimmer.shimmer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -351,4 +356,24 @@ internal fun shareMovie(
             type = "text/plain"
         }
     context.startActivity(Intent.createChooser(sendIntent, context.getString(R.string.share_chooser)))
+}
+
+@PreviewLightDark
+@PreviewFontScale
+@Composable
+private fun MovieDetailScreenPreview() {
+    MovieHubTheme {
+        MovieDetailScreen(
+            uiState =
+                MovieDetailUiState.Success(
+                    movie = previewMovie().copy(runtimeMinutes = 124, voteCount = 1200),
+                    credits = MovieCredits(director = "James Cameron"),
+                ),
+            onBackClick = {},
+            onToggleFavorite = {},
+            onToggleWatchlist = {},
+            onToggleWatched = {},
+            onRetry = {},
+        )
+    }
 }
