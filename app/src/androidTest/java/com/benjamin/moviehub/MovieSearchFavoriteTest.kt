@@ -10,11 +10,14 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import com.benjamin.moviehub.data.local.MovieDao
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
+import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import javax.inject.Inject
 
 @HiltAndroidTest
 class MovieSearchFavoriteTest {
@@ -23,6 +26,9 @@ class MovieSearchFavoriteTest {
 
     @get:Rule(order = 1)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
+
+    @Inject
+    lateinit var movieDao: MovieDao
 
     @Before
     fun setup() {
@@ -33,7 +39,7 @@ class MovieSearchFavoriteTest {
     fun searchInterstellar_selectMovie_andAddToFavorites() {
         // Search now lives on its own screen, opened from the home top bar.
         composeTestRule
-            .onNodeWithContentDescription("Rechercher un film")
+            .onNodeWithContentDescription(TestStrings.get(R.string.search_label))
             .performClick()
 
         composeTestRule.waitUntil(timeoutMillis = 30_000) {
@@ -44,60 +50,35 @@ class MovieSearchFavoriteTest {
             .onNode(hasSetTextAction())
             .performTextInput("Interstellar")
 
-        composeTestRule.waitForIdle()
+        composeTestRule.waitUntil(timeoutMillis = 30_000) {
+            composeTestRule.onAllNodesWithTag("movie_item").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule.onAllNodesWithTag("movie_item").onFirst().performClick()
 
         composeTestRule.waitUntil(timeoutMillis = 30_000) {
             composeTestRule
-                .onAllNodesWithTag("movie_item")
+                .onAllNodesWithContentDescription(TestStrings.get(R.string.favorite))
                 .fetchSemanticsNodes()
                 .isNotEmpty()
         }
-
-        composeTestRule
-            .onAllNodesWithTag("movie_item")
-            .onFirst()
-            .performClick()
-
-        composeTestRule.waitUntil(timeoutMillis = 30_000) {
-            composeTestRule
-                .onAllNodesWithContentDescription("Ajouter aux favoris")
-                .fetchSemanticsNodes()
-                .isNotEmpty() ||
-                composeTestRule
-                    .onAllNodesWithContentDescription("Retirer des favoris")
-                    .fetchSemanticsNodes()
-                    .isNotEmpty()
-        }
-
         composeTestRule.onNodeWithTag("detail_screen").assertIsDisplayed()
 
-        // Make the test idempotent when the emulator already contains Interstellar.
-        if (
-            composeTestRule
-                .onAllNodesWithContentDescription("Retirer des favoris")
-                .fetchSemanticsNodes()
-                .isNotEmpty()
-        ) {
-            composeTestRule
-                .onNodeWithContentDescription("Retirer des favoris")
-                .performClick()
-            composeTestRule.waitUntil(timeoutMillis = 15_000) {
-                composeTestRule
-                    .onAllNodesWithContentDescription("Ajouter aux favoris")
-                    .fetchSemanticsNodes()
-                    .isNotEmpty()
-            }
+        composeTestRule
+            .onNodeWithContentDescription(TestStrings.get(R.string.favorite))
+            .performClick()
+
+        // The favorite must reach Room, not just the optimistic button state.
+        composeTestRule.waitUntil(timeoutMillis = 15_000) {
+            runBlocking { movieDao.getMovieById(INTERSTELLAR_ID)?.isFavorite == true }
         }
 
         composeTestRule
-            .onNodeWithContentDescription("Ajouter aux favoris")
-            .performClick()
+            .onNodeWithContentDescription(TestStrings.get(R.string.remove_favorite))
+            .assertIsDisplayed()
+    }
 
-        composeTestRule.waitUntil(timeoutMillis = 15_000) {
-            composeTestRule
-                .onAllNodesWithContentDescription("Retirer des favoris")
-                .fetchSemanticsNodes()
-                .isNotEmpty()
-        }
+    private companion object {
+        private const val INTERSTELLAR_ID = 157336
     }
 }

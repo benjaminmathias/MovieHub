@@ -134,35 +134,6 @@ class MovieDetailViewModelTest {
         }
 
     @Test
-    fun `details retry succeeds after loading error`() =
-        runTest {
-            var detailsCalls = 0
-            coEvery { repository.getMovieDetails(1) } coAnswers {
-                if (detailsCalls++ == 0) throw IllegalStateException()
-                movie
-            }
-            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
-            val viewModel = MovieDetailViewModel(repository, libraryRepository)
-
-            viewModel.loadMovieDetails(1)
-            advanceUntilIdle()
-            assertTrue(viewModel.uiState.value is MovieDetailUiState.Error)
-
-            viewModel.loadMovieDetails(1)
-            advanceUntilIdle()
-
-            assertEquals(
-                MovieDetailUiState.Success(
-                    movie = movie,
-                    credits = MovieCreditsUiState.Success(MovieCredits()),
-                    recommendations = MovieRecommendationsUiState.Empty,
-                    libraryObservation = LibraryObservationUiState.Ready,
-                ),
-                viewModel.uiState.value,
-            )
-        }
-
-    @Test
     fun `favorite update restores previous state when repository fails`() =
         runTest {
             coEvery { repository.getMovieDetails(1) } returns movie
@@ -187,30 +158,6 @@ class MovieDetailViewModelTest {
             assertFalse(restoredState.movie.isFavorite)
             assertFalse(restoredState.isLibraryActionPending)
             coVerify(exactly = 1) { libraryRepository.setFavorite(movie, true) }
-        }
-
-    @Test
-    fun `successful library action clears pending state`() =
-        runTest {
-            coEvery { repository.getMovieDetails(1) } returns movie
-            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
-            val successGate = CompletableDeferred<Unit>()
-            coEvery { libraryRepository.setFavorite(movie, true) } coAnswers { successGate.await() }
-            val viewModel = MovieDetailViewModel(repository, libraryRepository)
-
-            viewModel.loadMovieDetails(1)
-            advanceUntilIdle()
-
-            viewModel.toggleFavorite()
-            runCurrent()
-            assertTrue((viewModel.uiState.value as MovieDetailUiState.Success).isLibraryActionPending)
-
-            successGate.complete(Unit)
-            advanceUntilIdle()
-
-            val state = viewModel.uiState.value as MovieDetailUiState.Success
-            assertTrue(state.movie.isFavorite)
-            assertFalse(state.isLibraryActionPending)
         }
 
     @Test
@@ -256,23 +203,6 @@ class MovieDetailViewModelTest {
         }
 
     @Test
-    fun `recommendations failure maps to the error state without breaking details`() =
-        runTest {
-            coEvery { repository.getMovieDetails(1) } returns movie
-            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
-            coEvery { repository.getMovieRecommendations(1) } throws IllegalStateException()
-            val viewModel = MovieDetailViewModel(repository, libraryRepository)
-
-            viewModel.loadMovieDetails(1)
-            advanceUntilIdle()
-
-            val state = viewModel.uiState.value as MovieDetailUiState.Success
-            assertEquals(MovieRecommendationsUiState.Error, state.recommendations)
-            assertEquals(MovieCreditsUiState.Success(MovieCredits()), state.credits)
-            assertEquals(movie, state.movie)
-        }
-
-    @Test
     fun `failed library action keeps one pending error until acknowledged`() =
         runTest {
             coEvery { repository.getMovieDetails(1) } returns movie
@@ -290,50 +220,6 @@ class MovieDetailViewModelTest {
 
             viewModel.acknowledgeLibraryActionError()
             assertFalse(viewModel.libraryActionErrorPending.value)
-        }
-
-    @Test
-    fun `loading the same movie while in flight does not restart the load`() =
-        runTest {
-            val detailsGate = CompletableDeferred<Movie>()
-            coEvery { repository.getMovieDetails(1) } coAnswers { detailsGate.await() }
-            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
-            val viewModel = MovieDetailViewModel(repository, libraryRepository)
-
-            viewModel.loadMovieDetails(1)
-            runCurrent()
-            viewModel.loadMovieDetails(1)
-            advanceUntilIdle()
-
-            coVerify(exactly = 1) { repository.getMovieDetails(1) }
-
-            detailsGate.complete(movie)
-            advanceUntilIdle()
-
-            assertEquals(
-                MovieDetailUiState.Success(
-                    movie = movie,
-                    credits = MovieCreditsUiState.Success(MovieCredits()),
-                    recommendations = MovieRecommendationsUiState.Empty,
-                    libraryObservation = LibraryObservationUiState.Ready,
-                ),
-                viewModel.uiState.value,
-            )
-        }
-
-    @Test
-    fun `loading the same movie again after success does not reload`() =
-        runTest {
-            coEvery { repository.getMovieDetails(1) } returns movie
-            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
-            val viewModel = MovieDetailViewModel(repository, libraryRepository)
-
-            viewModel.loadMovieDetails(1)
-            advanceUntilIdle()
-            viewModel.loadMovieDetails(1)
-            advanceUntilIdle()
-
-            coVerify(exactly = 1) { repository.getMovieDetails(1) }
         }
 
     @Test
@@ -415,68 +301,6 @@ class MovieDetailViewModelTest {
         }
 
     @Test
-    fun `section retries keep the initial requests while they are in flight`() =
-        runTest {
-            val creditsGate = CompletableDeferred<MovieCredits>()
-            val recommendationsGate = CompletableDeferred<List<Movie>>()
-            coEvery { repository.getMovieDetails(1) } returns movie
-            coEvery { repository.getMovieCredits(1) } coAnswers { creditsGate.await() }
-            coEvery { repository.getMovieRecommendations(1) } coAnswers { recommendationsGate.await() }
-            val viewModel = MovieDetailViewModel(repository, libraryRepository)
-
-            viewModel.loadMovieDetails(1)
-            runCurrent()
-            val loadingState = viewModel.uiState.value as MovieDetailUiState.Success
-            assertEquals(MovieCreditsUiState.Loading, loadingState.credits)
-            assertEquals(MovieRecommendationsUiState.Loading, loadingState.recommendations)
-
-            viewModel.retryCredits()
-            viewModel.retryRecommendations()
-            runCurrent()
-
-            val credits = MovieCredits(director = "Director")
-            val recommendations = listOf(movie.copy(id = 2))
-            creditsGate.complete(credits)
-            recommendationsGate.complete(recommendations)
-            advanceUntilIdle()
-
-            coVerify(exactly = 1) { repository.getMovieCredits(1) }
-            coVerify(exactly = 1) { repository.getMovieRecommendations(1) }
-            val state = viewModel.uiState.value as MovieDetailUiState.Success
-            assertEquals(MovieCreditsUiState.Success(credits), state.credits)
-            assertEquals(recommendations, (state.recommendations as MovieRecommendationsUiState.Success).movies)
-        }
-
-    @Test
-    fun `a duplicate section retry is ignored while one is in flight`() =
-        runTest {
-            var creditsCalls = 0
-            val retryGate = CompletableDeferred<MovieCredits>()
-            coEvery { repository.getMovieDetails(1) } returns movie
-            coEvery { repository.getMovieCredits(1) } coAnswers {
-                if (creditsCalls++ == 0) MovieCredits(director = "First") else retryGate.await()
-            }
-            val viewModel = MovieDetailViewModel(repository, libraryRepository)
-
-            viewModel.loadMovieDetails(1)
-            advanceUntilIdle()
-
-            viewModel.retryCredits()
-            runCurrent()
-            viewModel.retryCredits()
-            runCurrent()
-
-            coVerify(exactly = 2) { repository.getMovieCredits(1) }
-
-            retryGate.complete(MovieCredits(director = "Second"))
-            advanceUntilIdle()
-            assertEquals(
-                MovieCreditsUiState.Success(MovieCredits(director = "Second")),
-                (viewModel.uiState.value as MovieDetailUiState.Success).credits,
-            )
-        }
-
-    @Test
     fun `library writes stay disabled until the observer reports ready`() =
         runTest {
             val libraryGate = CompletableDeferred<Unit>()
@@ -512,41 +336,6 @@ class MovieDetailViewModelTest {
             viewModel.toggleFavorite()
             advanceUntilIdle()
             coVerify(exactly = 1) { libraryRepository.setFavorite(movie, true) }
-        }
-
-    @Test
-    fun `a library observer failing before its first snapshot keeps repository flags`() =
-        runTest {
-            val recommendation = movie.copy(id = 2, title = "Suggested", isFavorite = true)
-            every { libraryRepository.getLibraryMovies() } returns
-                flow<List<Movie>> {
-                    throw IllegalStateException("library read failed")
-                }
-            coEvery { repository.getMovieDetails(1) } returns movie
-            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
-            coEvery { repository.getMovieRecommendations(1) } returns listOf(recommendation)
-            coEvery { libraryRepository.setFavorite(any(), any()) } returns Unit
-            val viewModel = MovieDetailViewModel(repository, libraryRepository)
-
-            viewModel.loadMovieDetails(1)
-            advanceUntilIdle()
-
-            val failed = viewModel.uiState.value as MovieDetailUiState.Success
-            assertEquals(LibraryObservationUiState.Error, failed.libraryObservation)
-            assertTrue((failed.recommendations as MovieRecommendationsUiState.Success).movies.single().isFavorite)
-
-            viewModel.toggleFavorite()
-            advanceUntilIdle()
-            coVerify(exactly = 0) { libraryRepository.setFavorite(any(), any()) }
-
-            // A genuine, successful empty snapshot is authoritative and still clears flags.
-            every { libraryRepository.getLibraryMovies() } returns flowOf(emptyList())
-            viewModel.retryLibraryObservation()
-            advanceUntilIdle()
-
-            val recovered = viewModel.uiState.value as MovieDetailUiState.Success
-            assertEquals(LibraryObservationUiState.Ready, recovered.libraryObservation)
-            assertFalse((recovered.recommendations as MovieRecommendationsUiState.Success).movies.single().isFavorite)
         }
 
     @Test

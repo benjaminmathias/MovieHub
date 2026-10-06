@@ -92,20 +92,22 @@ MovieHub is also a learning project for AI-assisted Android development, primari
 | Pagination | Paging 3, RemoteMediator |
 | Dependency injection | Hilt |
 | Images | Coil |
-| Testing | JUnit 4, MockK, Turbine, Compose UI tests, Android instrumentation |
+| Testing | JUnit 4, MockK, Compose UI tests, Android instrumentation |
 | Quality | ktlint, Android Lint, GitHub Actions |
 
 ## Testing & quality
 
-The local and instrumented test suites cover:
+The portfolio-sized regression suite contains 65 JVM tests and 31 instrumented tests. It focuses on:
 
 - DTO/domain/entity mapping, repositories, ViewModels, debounce, and error handling;
 - Paging sources, remote mediators, cached refresh behavior, and duplicate-page results;
 - Room paging behavior, local-flag preservation, and database migrations through schema version 7;
-- Compose UI, navigation, accessibility semantics, and Library interactions;
+- selected Compose interactions: navigation, filters, Library swipes, favorite accessibility descriptions, refresh/retry, and a message surviving Activity recreation;
 - optimistic Library updates, rapid state changes, failure rollback, and cross-screen reconciliation.
 
 Instrumented integration paths use an in-process Room database and a deterministic fake TMDB service where network behavior is involved. Critical user flows have also been checked manually on an Android emulator, including offline behavior, pagination, Library state changes, and phone/tablet layouts.
+
+Secondary presentation variants are left to manual review. Run the relevant instrumented classes locally when changing Android interactions, persistence, or pagination; the suite does not aim for exhaustive UI coverage.
 
 ## Continuous integration
 
@@ -149,4 +151,10 @@ Run the instrumented suite with a connected device or emulator:
 
 ```bash
 ./gradlew connectedDebugAndroidTest
+```
+
+For a focused local check, select the affected class, for example:
+
+```bash
+./gradlew :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.benjamin.moviehub.data.local.MovieDatabaseMigrationTest"
 ```

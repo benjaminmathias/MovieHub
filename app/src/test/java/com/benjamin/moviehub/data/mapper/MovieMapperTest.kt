@@ -1,8 +1,6 @@
-package com.benjamin.moviehub
+package com.benjamin.moviehub.data.mapper
 
 import com.benjamin.moviehub.data.local.MovieEntity
-import com.benjamin.moviehub.data.mapper.toDomain
-import com.benjamin.moviehub.data.mapper.toEntity
 import com.benjamin.moviehub.data.remote.ActorDto
 import com.benjamin.moviehub.data.remote.CrewMemberDto
 import com.benjamin.moviehub.data.remote.GenreDto
@@ -11,7 +9,7 @@ import com.benjamin.moviehub.data.remote.MovieDto
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class MovieMapperUnitTest {
+class MovieMapperTest {
     @Test
     fun `actor dto maps fields and profile url`() {
         val actor = ActorDto(7, "Name", "Role", "/profile.jpg").toDomain()
@@ -36,23 +34,19 @@ class MovieMapperUnitTest {
     }
 
     @Test
-    fun `standalone dto maps to a complete Movie domain model`() {
-        val dto = createFakeDto(posterPath = "/pic.jpg").copy(genreIds = listOf(18))
-
-        val domain = dto.toDomain()
-
-        assertEquals(1, domain.id)
-        assertEquals("https://image.tmdb.org/t/p/w500/pic.jpg", domain.posterPath)
-        assertEquals("https://www.themoviedb.org/movie/1", domain.webUrl)
-        assertEquals(listOf("Drame"), domain.genres)
-        assertEquals(false, domain.isFavorite)
-    }
-
-    @Test
     fun `toDomain from Entity should keep all status flags intact`() {
-        val domain = createFakeEntity(isFavorite = true).toDomain()
+        val domain =
+            createFakeEntity(
+                isFavorite = true,
+                isWatchlist = true,
+                isWatched = true,
+                runtimeMinutes = 137,
+            ).toDomain()
 
         assertEquals(true, domain.isFavorite)
+        assertEquals(true, domain.isWatchlist)
+        assertEquals(true, domain.isWatched)
+        assertEquals(137, domain.runtimeMinutes)
         assertEquals("https://www.themoviedb.org/movie/1", domain.webUrl)
     }
 
@@ -99,17 +93,24 @@ class MovieMapperUnitTest {
         assertEquals("Director Name", result.director)
     }
 
-    private fun createFakeEntity(isFavorite: Boolean = false) =
-        MovieEntity(
-            id = 1,
-            title = "Test Movie",
-            overview = "Description",
-            posterPath = "",
-            backdropPath = "",
-            voteAverage = 7.5,
-            releaseDate = "2024-01-01",
-            isFavorite = isFavorite,
-        )
+    private fun createFakeEntity(
+        isFavorite: Boolean = false,
+        isWatchlist: Boolean = false,
+        isWatched: Boolean = false,
+        runtimeMinutes: Int? = null,
+    ) = MovieEntity(
+        id = 1,
+        title = "Test Movie",
+        overview = "Description",
+        posterPath = "",
+        backdropPath = "",
+        voteAverage = 7.5,
+        releaseDate = "2024-01-01",
+        isFavorite = isFavorite,
+        isWatchlist = isWatchlist,
+        isWatched = isWatched,
+        runtimeMinutes = runtimeMinutes,
+    )
 
     private fun createFakeDto(posterPath: String? = null) =
         MovieDto(

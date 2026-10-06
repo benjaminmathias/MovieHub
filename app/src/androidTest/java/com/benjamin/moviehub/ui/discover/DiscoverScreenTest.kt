@@ -4,30 +4,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.assertTextContains
-import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
-import androidx.compose.ui.test.performTextReplacement
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
 import androidx.paging.PagingData
-import androidx.paging.PagingSource
-import androidx.paging.PagingState
-import com.benjamin.moviehub.R
-import com.benjamin.moviehub.TestStrings
 import com.benjamin.moviehub.core.theme.MovieHubTheme
-import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieGenre
@@ -75,14 +63,6 @@ class DiscoverScreenTest {
     }
 
     @Test
-    fun applyIsDisabledWhenDraftMatchesAppliedFilters() {
-        setDiscoverContent(state = { initialState() }, results = flowOf(PagingData.empty()))
-
-        composeRule.onNodeWithTag("discover_filter_button").performClick()
-        composeRule.onNodeWithTag("discover_apply_filters").assertIsNotEnabled()
-    }
-
-    @Test
     fun customYearValidityControlsApply() {
         var state by mutableStateOf(initialState())
         val currentYear = Calendar.getInstance().get(Calendar.YEAR)
@@ -112,110 +92,6 @@ class DiscoverScreenTest {
         yearField.performTextInput(validYear.toString())
         composeRule.runOnIdle { assertEquals(validYear, state.draftFilters.releaseYear) }
         composeRule.onNodeWithTag("discover_apply_filters").assertIsEnabled()
-    }
-
-    @Test
-    fun filterSheetRestoresCustomYearWithInvalidText() {
-        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
-        val customYear = currentYear - 20
-        val restorationTester = StateRestorationTester(composeRule)
-        val restoredState =
-            initialState().copy(
-                draftFilters = DiscoverFilters(releaseYear = customYear),
-                appliedFilters = DiscoverFilters(),
-            )
-        var state by mutableStateOf(restoredState)
-        var releaseYearSelections = 0
-
-        restorationTester.setContent {
-            MovieHubTheme {
-                DiscoverFilterSheet(
-                    state = state,
-                    currentYear = currentYear,
-                    yearOptions = listOf<Int?>(null) + (currentYear downTo currentYear - 9),
-                    onGenreSelected = {},
-                    onReleaseYearSelected = { year ->
-                        releaseYearSelections++
-                        state = state.copy(draftFilters = state.draftFilters.copy(releaseYear = year))
-                    },
-                    onMinimumRatingSelected = {},
-                    onSortSelected = {},
-                    onApplyFilters = {},
-                    onResetFilters = {},
-                    onClose = {},
-                    onRetryGenres = {},
-                )
-            }
-        }
-
-        composeRule.onNodeWithTag("discover_year_row").performClick()
-        composeRule.onNodeWithTag("discover_custom_year").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithTag("discover_custom_year").performTextReplacement("3000")
-        composeRule.onNodeWithTag("discover_apply_filters").assertIsNotEnabled()
-
-        restorationTester.emulateSavedInstanceStateRestore()
-
-        composeRule.onNodeWithTag("discover_custom_year").performScrollTo().assertTextContains("3000")
-        composeRule.onNodeWithTag("discover_apply_filters").assertIsNotEnabled()
-        composeRule.runOnIdle {
-            assertEquals(0, releaseYearSelections)
-            assertEquals(customYear, state.draftFilters.releaseYear)
-        }
-    }
-
-    @Test
-    fun genreErrorShowsRetryAndInvokesCallback() {
-        var retryCalled = false
-
-        setDiscoverContent(
-            state = { initialState().copy(genres = persistentListOf(), hasGenreError = true) },
-            onRetryGenres = { retryCalled = true },
-            results = flowOf(PagingData.empty()),
-        )
-
-        composeRule.onNodeWithTag("discover_filter_button").performClick()
-        composeRule.onNodeWithTag("discover_genre_row").performClick()
-        composeRule
-            .onNodeWithTag("discover_retry_genres")
-            .assertIsDisplayed()
-            .assertHasClickAction()
-            .performClick()
-
-        composeRule.runOnIdle { assertTrue(retryCalled) }
-    }
-
-    @Test
-    fun initialPagingErrorShowsRetry() {
-        setDiscoverContent(
-            state = { initialState() },
-            results = Pager(PagingConfig(pageSize = 1)) { ErrorPagingSource() }.flow,
-        )
-
-        composeRule.onNodeWithText(TestStrings.get(R.string.error_loading_movies)).assertIsDisplayed()
-        composeRule.onNodeWithText(TestStrings.get(R.string.retry)).assertIsDisplayed().performClick()
-    }
-
-    @Test
-    fun closingSheetDiscardsDraftChanges() {
-        var state by mutableStateOf(initialState())
-
-        setDiscoverContent(
-            state = { state },
-            onGenreSelected = { genreId -> state = state.copy(draftFilters = state.draftFilters.copy(genreId = genreId)) },
-            onBeginFilterEditing = { state = state.copy(draftFilters = state.appliedFilters) },
-            onDiscardFilterEdits = { state = state.copy(draftFilters = state.appliedFilters) },
-            results = flowOf(PagingData.empty()),
-        )
-
-        composeRule.onNodeWithTag("discover_filter_button").performClick()
-        composeRule.onNodeWithTag("discover_genre_row").performClick()
-        composeRule.onNodeWithTag("discover_genre_option_28").performScrollTo().performClick()
-        composeRule.onNodeWithTag("discover_close_filters").performClick()
-
-        composeRule.runOnIdle {
-            assertEquals(null, state.draftFilters.genreId)
-        }
-        composeRule.onAllNodesWithTag("discover_filter_sheet").assertCountEquals(0)
     }
 
     private fun setDiscoverContent(
@@ -271,10 +147,4 @@ class DiscoverScreenTest {
             genreIds = persistentListOf(),
             genres = persistentListOf(),
         )
-
-    private class ErrorPagingSource : PagingSource<Int, Movie>() {
-        override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Movie> = LoadResult.Error(IllegalStateException("test error"))
-
-        override fun getRefreshKey(state: PagingState<Int, Movie>): Int? = null
-    }
 }

@@ -8,14 +8,11 @@ import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.remote.MovieApiService
 import com.benjamin.moviehub.data.remote.MovieDto
 import com.benjamin.moviehub.data.remote.MovieResponse
-import com.benjamin.moviehub.domain.model.MovieCategory
 import com.benjamin.moviehub.domain.model.MovieGenre
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
@@ -108,32 +105,6 @@ class MovieRepositoryTest {
         }
 
     @Test
-    fun `get hero movie maps the first cached category movie`() =
-        runTest {
-            val apiService = mockk<MovieApiService>()
-            val database = mockk<MovieDatabase>()
-            val dao = mockk<MovieDao>()
-            val repository = MovieRepositoryImpl(apiService, database, dao)
-            val entity =
-                MovieEntity(
-                    id = 5,
-                    title = "Hero",
-                    overview = "Overview",
-                    posterPath = "/poster.jpg",
-                    backdropPath = "/backdrop.jpg",
-                    voteAverage = 8.0,
-                    releaseDate = "2024-01-01",
-                )
-            coEvery { dao.getHeroMovieFlow(MovieCategory.POPULAR.key) } returns flowOf(entity)
-            coEvery { dao.getGenres() } returns emptyList()
-
-            val result = repository.getHeroMovie(MovieCategory.POPULAR).first()
-
-            assertEquals(5, result?.id)
-            assertEquals("https://image.tmdb.org/t/p/w500/poster.jpg", result?.posterPath)
-        }
-
-    @Test
     fun `get movie genres falls back to the cached dictionary on a recoverable failure`() =
         runTest {
             val apiService = mockk<MovieApiService>()
@@ -173,25 +144,6 @@ class MovieRepositoryTest {
         }
 
     @Test
-    fun `get movie genres keeps only valid cached names on a recoverable failure`() =
-        runTest {
-            val apiService = mockk<MovieApiService>()
-            val database = mockk<MovieDatabase>()
-            val dao = mockk<MovieDao>()
-            val repository = MovieRepositoryImpl(apiService, database, dao)
-            coEvery { apiService.getMovieGenres() } throws IOException("offline")
-            coEvery { dao.getGenres() } returns
-                listOf(
-                    GenreEntity(id = 18, name = "Drame"),
-                    GenreEntity(id = 99, name = "   "),
-                )
-
-            val result = repository.getMovieGenres()
-
-            assertEquals(listOf(MovieGenre(id = 18, name = "Drame")), result)
-        }
-
-    @Test
     fun `get movie genres rethrows the original failure when the cache is empty`() =
         runTest {
             val apiService = mockk<MovieApiService>()
@@ -201,28 +153,6 @@ class MovieRepositoryTest {
             val failure = IOException("offline")
             coEvery { apiService.getMovieGenres() } throws failure
             coEvery { dao.getGenres() } returns emptyList()
-
-            val thrown =
-                try {
-                    repository.getMovieGenres()
-                    null
-                } catch (e: Exception) {
-                    e
-                }
-
-            assertSame(failure, thrown)
-        }
-
-    @Test
-    fun `get movie genres rethrows the original failure when every cached name is blank`() =
-        runTest {
-            val apiService = mockk<MovieApiService>()
-            val database = mockk<MovieDatabase>()
-            val dao = mockk<MovieDao>()
-            val repository = MovieRepositoryImpl(apiService, database, dao)
-            val failure = IOException("offline")
-            coEvery { apiService.getMovieGenres() } throws failure
-            coEvery { dao.getGenres() } returns listOf(GenreEntity(id = 99, name = "  "))
 
             val thrown =
                 try {

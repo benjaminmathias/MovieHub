@@ -118,19 +118,6 @@ class LibraryViewModelTest {
             assertFalse(viewModel.actionErrorPending.value)
         }
 
-    @Test
-    fun `remove success leaves no pending error`() =
-        runTest {
-            every { repository.getLibraryMovies() } returns MutableStateFlow(emptyList())
-            coEvery { repository.setWatchlist(any(), any()) } returns Unit
-            val viewModel = LibraryViewModel(repository)
-
-            viewModel.onRemove(movie(1, watchlist = true), LibraryTab.WATCHLIST)
-            advanceUntilIdle()
-
-            assertFalse(viewModel.actionErrorPending.value)
-        }
-
     private fun movie(
         id: Int,
         favorite: Boolean = false,

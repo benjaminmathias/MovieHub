@@ -11,12 +11,10 @@ import com.benjamin.moviehub.movieEntity
 import com.benjamin.moviehub.newMovieDiffer
 import com.benjamin.moviehub.ui.discover.DiscoverViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -24,7 +22,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.concurrent.atomic.AtomicInteger
 
 @RunWith(AndroidJUnit4::class)
 class DiscoverFavoritePagingTest {
@@ -49,19 +46,12 @@ class DiscoverFavoritePagingTest {
 
             val api = FakeMovieApiService()
             val differ = newMovieDiffer()
-            val emissions = AtomicInteger()
             val viewModel = DiscoverViewModel(MovieRepositoryImpl(api, database, dao), SavedStateHandle())
             val job =
                 launch(Dispatchers.Main) {
-                    viewModel.discoverResults.collectLatest {
-                        emissions.incrementAndGet()
-                        differ.submitData(it)
-                    }
+                    viewModel.discoverResults.collectLatest { differ.submitData(it) }
                 }
 
-            withTimeout(1_000) {
-                while (emissions.get() == 0) delay(20)
-            }
             var items = differ.awaitItems { snapshot -> snapshot.any { it.id == 2 } }
             assertTrue(items.single { it.id == 2 }.isFavorite)
             assertFalse(items.single { it.id == 1 }.isFavorite)

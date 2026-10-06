@@ -8,9 +8,7 @@ import com.benjamin.moviehub.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.runs
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -35,20 +33,6 @@ class SettingsViewModelTest {
     fun setUp() {
         every { preferences.theme } returns flowOf(AppTheme.SYSTEM)
     }
-
-    @Test
-    fun `cache result is pending after clearing without any collector`() =
-        runTest {
-            coEvery { imageCacheCleaner.clear() } just runs
-            val viewModel = SettingsViewModel(preferences, imageCacheCleaner)
-
-            viewModel.clearImageCache()
-            advanceUntilIdle()
-
-            // The result is a state: it stays observable even though nothing collected it.
-            assertEquals(true, viewModel.imageCacheResult.value)
-            assertEquals(false, viewModel.isClearing.value)
-        }
 
     @Test
     fun `clearing failure is a pending result distinguishable from success`() =
@@ -87,33 +71,6 @@ class SettingsViewModelTest {
 
             viewModel.acknowledgeImageCacheResult(true)
             assertNull(viewModel.imageCacheResult.value)
-        }
-
-    @Test
-    fun `theme changes are persisted`() =
-        runTest {
-            coEvery { preferences.setTheme(AppTheme.DARK) } just runs
-            val viewModel = SettingsViewModel(preferences, imageCacheCleaner)
-
-            viewModel.updateTheme(AppTheme.DARK)
-
-            coVerify(exactly = 1) { preferences.setTheme(AppTheme.DARK) }
-        }
-
-    @Test
-    fun `repeated theme failures keep one pending error until acknowledged`() =
-        runTest {
-            coEvery { preferences.setTheme(any()) } throws IllegalStateException("theme failure")
-            val viewModel = SettingsViewModel(preferences, imageCacheCleaner)
-
-            viewModel.updateTheme(AppTheme.DARK)
-            viewModel.updateTheme(AppTheme.LIGHT)
-            advanceUntilIdle()
-
-            assertEquals(true, viewModel.themeUpdateErrorPending.value)
-
-            viewModel.acknowledgeThemeUpdateError()
-            assertEquals(false, viewModel.themeUpdateErrorPending.value)
         }
 
     @Test

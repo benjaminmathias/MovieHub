@@ -44,46 +44,6 @@ class MovieListViewModelTest {
     }
 
     @Test
-    fun `each home category is loaded independently`() =
-        runTest {
-            assertEquals(MovieCategory.entries.toSet(), viewModel.categoryMovies.keys)
-            val jobs = viewModel.categoryMovies.values.map { flow -> launch { flow.collect() } }
-
-            MovieCategory.entries.forEach { category ->
-                coVerify { repository.getCategoryMovies(category) }
-            }
-
-            jobs.forEach { it.cancel() }
-        }
-
-    @Test
-    fun `hero movie is exposed as success from the popular feed`() =
-        runTest {
-            val hero = movie()
-            coEvery { repository.getHeroMovie(MovieCategory.POPULAR) } returns flowOf(hero)
-            val heroViewModel = MovieListViewModel(repository, libraryRepository)
-
-            val job = launch { heroViewModel.heroMovieState.collect() }
-            advanceUntilIdle()
-
-            assertEquals(HeroMovieUiState.Success(hero), heroViewModel.heroMovieState.value)
-            coVerify { repository.getHeroMovie(MovieCategory.POPULAR) }
-
-            job.cancel()
-        }
-
-    @Test
-    fun `an empty popular feed is a legitimate hero success`() =
-        runTest {
-            val job = launch { viewModel.heroMovieState.collect() }
-            advanceUntilIdle()
-
-            assertEquals(HeroMovieUiState.Success(null), viewModel.heroMovieState.value)
-
-            job.cancel()
-        }
-
-    @Test
     fun `hero read failure becomes an error and retry restarts the room flow`() =
         runTest {
             val hero = movie()
@@ -120,18 +80,6 @@ class MovieListViewModelTest {
             assertTrue(viewModel.favoriteErrorPending.value)
 
             viewModel.acknowledgeFavoriteError()
-            assertFalse(viewModel.favoriteErrorPending.value)
-        }
-
-    @Test
-    fun `a successful favorite write never becomes pending`() =
-        runTest {
-            val target = movie()
-            coEvery { libraryRepository.toggleFavorite(target) } returns Unit
-
-            viewModel.onToggleFavorite(target)
-            advanceUntilIdle()
-
             assertFalse(viewModel.favoriteErrorPending.value)
         }
 

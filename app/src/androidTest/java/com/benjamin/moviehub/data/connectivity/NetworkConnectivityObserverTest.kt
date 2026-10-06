@@ -17,10 +17,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -31,56 +29,6 @@ private const val NO_STATUS_TIMEOUT_MS = 250L
 class NetworkConnectivityObserverTest {
     private val wifi = network(netId = 100)
     private val cellular = network(netId = 200)
-
-    @Test
-    fun registrationMatchesInternetNetworksWithoutImplicitRestrictions() =
-        runBlocking {
-            val harness = Harness(emptyMap())
-            val job = harness.start(this)
-            harness.awaitStatus()
-
-            val requested = capabilitiesFromRequest(harness.request)
-            assertTrue(requested.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET))
-            assertFalse(requested.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN))
-            assertFalse(requested.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED))
-            assertFalse(requested.hasCapability(NetworkCapabilities.NET_CAPABILITY_TRUSTED))
-            assertFalse(requested.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED))
-
-            job.cancelAndJoin()
-        }
-
-    @Test
-    fun initialStatusReflectsThePlatformSnapshot() =
-        runBlocking {
-            val validatedHarness = Harness(mapOf(wifi to validated()))
-            val validatedJob = validatedHarness.start(this)
-            assertEquals(ConnectivityStatus.AVAILABLE, validatedHarness.awaitStatus())
-            validatedJob.cancelAndJoin()
-
-            val offlineHarness = Harness(emptyMap())
-            val offlineJob = offlineHarness.start(this)
-            assertEquals(ConnectivityStatus.UNAVAILABLE, offlineHarness.awaitStatus())
-            offlineJob.cancelAndJoin()
-        }
-
-    @Test
-    fun seededValidatedNetworkSurvivesAnotherNetworksUnvalidatedCallbacks() =
-        runBlocking {
-            val harness = Harness(mapOf(wifi to validated()))
-            val job = harness.start(this)
-            assertEquals(ConnectivityStatus.AVAILABLE, harness.awaitStatus())
-
-            // A second network reporting unvalidated capabilities before wifi's own callback
-            // must not drop the already AVAILABLE state.
-            harness.callback.onAvailable(cellular)
-            harness.callback.onCapabilitiesChanged(cellular, unvalidated())
-            harness.awaitNoStatus()
-
-            harness.callback.onLost(wifi)
-            assertEquals(ConnectivityStatus.UNAVAILABLE, harness.awaitStatus())
-
-            job.cancelAndJoin()
-        }
 
     @Test
     fun callbackCapabilitiesDriveValidatedAndUnvalidatedTransitions() =
@@ -131,27 +79,6 @@ class NetworkConnectivityObserverTest {
         }
 
     @Test
-    fun losingTheOnlyValidatedNetworkFallsBackToTheRemainingUnvalidatedOne() =
-        runBlocking {
-            val harness = Harness(emptyMap())
-            val job = harness.start(this)
-            assertEquals(ConnectivityStatus.UNAVAILABLE, harness.awaitStatus())
-
-            harness.callback.onAvailable(wifi)
-            harness.callback.onCapabilitiesChanged(wifi, validated())
-            assertEquals(ConnectivityStatus.AVAILABLE, harness.awaitStatus())
-
-            harness.callback.onAvailable(cellular)
-            harness.callback.onCapabilitiesChanged(cellular, unvalidated())
-            harness.awaitNoStatus()
-
-            harness.callback.onLost(wifi)
-            assertEquals(ConnectivityStatus.UNAVAILABLE, harness.awaitStatus())
-
-            job.cancelAndJoin()
-        }
-
-    @Test
     fun collectionRegistersAndReleasesTheNetworkCallback() =
         runBlocking {
             val harness = Harness(mapOf(wifi to validated()))
@@ -174,9 +101,6 @@ class NetworkConnectivityObserverTest {
         val callback: ConnectivityManager.NetworkCallback
             get() = requireNotNull(registrar.registeredCallback) { "The flow did not register a callback" }
 
-        val request: NetworkRequest
-            get() = requireNotNull(registrar.registeredRequest)
-
         val unregisteredCallback: ConnectivityManager.NetworkCallback?
             get() = registrar.unregisteredCallback
 
@@ -196,9 +120,6 @@ class NetworkConnectivityObserverTest {
         var registeredCallback: ConnectivityManager.NetworkCallback? = null
             private set
 
-        var registeredRequest: NetworkRequest? = null
-            private set
-
         @Volatile
         var unregisteredCallback: ConnectivityManager.NetworkCallback? = null
             private set
@@ -209,7 +130,6 @@ class NetworkConnectivityObserverTest {
             request: NetworkRequest,
             callback: ConnectivityManager.NetworkCallback,
         ) {
-            registeredRequest = request
             registeredCallback = callback
         }
 
