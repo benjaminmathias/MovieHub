@@ -1,5 +1,8 @@
 package com.benjamin.moviehub.ui.library
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
@@ -17,6 +20,7 @@ import com.benjamin.moviehub.domain.model.Movie
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -67,6 +71,66 @@ class LibraryScreenTest {
 
         composeRule.onNodeWithText(TestStrings.get(R.string.retry)).assertIsDisplayed().performClick()
         assertTrue(retried)
+    }
+
+    @Test
+    fun pendingActionErrorShowsMessageAndAcknowledgesAfterDisplay() {
+        var acknowledged = false
+        composeRule.setContent {
+            MovieHubTheme {
+                LibraryScreen(
+                    state = LibraryUiState.Success(emptyList<Movie>().toImmutableList()),
+                    onRemove = { _, _ -> },
+                    onMovieClick = {},
+                    onSettingsClick = {},
+                    actionErrorPending = true,
+                    onActionErrorAcknowledged = { acknowledged = true },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText(TestStrings.get(R.string.error_updating_library)).assertIsDisplayed()
+        composeRule.waitUntil(timeoutMillis = 10_000) { acknowledged }
+    }
+
+    @Test
+    fun leavingLibraryBeforeTheMessageFinishesKeepsTheErrorPending() {
+        var pending by mutableStateOf(true)
+        var showLibrary by mutableStateOf(true)
+        var acknowledged = false
+        val message = TestStrings.get(R.string.error_updating_library)
+
+        composeRule.setContent {
+            MovieHubTheme {
+                if (showLibrary) {
+                    LibraryScreen(
+                        state = LibraryUiState.Success(emptyList<Movie>().toImmutableList()),
+                        onRemove = { _, _ -> },
+                        onMovieClick = {},
+                        onSettingsClick = {},
+                        actionErrorPending = pending,
+                        onActionErrorAcknowledged = {
+                            acknowledged = true
+                            pending = false
+                        },
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithText(message).assertIsDisplayed()
+
+        // Leaving the library mid-display cancels the effect, so the error is not acknowledged.
+        composeRule.runOnIdle { showLibrary = false }
+        composeRule.waitForIdle()
+        assertFalse(acknowledged)
+        assertTrue(pending)
+
+        // Returning shows the still-pending message again.
+        composeRule.runOnIdle { showLibrary = true }
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(message).fetchSemanticsNodes().isNotEmpty()
+        }
     }
 
     @Test

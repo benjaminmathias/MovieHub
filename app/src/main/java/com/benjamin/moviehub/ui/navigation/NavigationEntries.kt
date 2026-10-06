@@ -9,6 +9,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.benjamin.moviehub.R
+import com.benjamin.moviehub.ui.components.PendingSnackbarEffect
 import com.benjamin.moviehub.ui.detail.MovieDetailScreen
 import com.benjamin.moviehub.ui.detail.MovieDetailViewModel
 import com.benjamin.moviehub.ui.discover.DiscoverScreen
@@ -34,7 +35,7 @@ internal fun MovieListEntry(
     val favoriteErrorPending by viewModel.favoriteErrorPending.collectAsStateWithLifecycle()
     val favoriteErrorMessage = stringResource(R.string.error_updating_favorite)
 
-    FavoriteErrorEffect(
+    PendingSnackbarEffect(
         pending = favoriteErrorPending,
         snackbarHostState = snackbarHostState,
         message = favoriteErrorMessage,
@@ -50,26 +51,6 @@ internal fun MovieListEntry(
         onSearchClick = onOpenSearch,
         onSettingsClick = onOpenSettings,
     )
-}
-
-/**
- * Shows the generic favorite-error message while [pending] is true and acknowledges it only once the
- * snackbar has finished displaying. When the caller leaves composition while the message is visible,
- * the pending flag survives and the message is shown again on return; repeated failures share one message.
- */
-@Composable
-internal fun FavoriteErrorEffect(
-    pending: Boolean,
-    snackbarHostState: SnackbarHostState,
-    message: String,
-    onAcknowledged: () -> Unit,
-) {
-    LaunchedEffect(pending, message) {
-        if (pending) {
-            snackbarHostState.showSnackbar(message)
-            onAcknowledged()
-        }
-    }
 }
 
 @Composable
@@ -120,6 +101,7 @@ internal fun MovieDetailEntry(
 ) {
     val viewModel: MovieDetailViewModel = hiltViewModel()
     val detailsUiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val libraryActionErrorPending by viewModel.libraryActionErrorPending.collectAsStateWithLifecycle()
 
     LaunchedEffect(movieId) {
         viewModel.loadMovieDetails(movieId)
@@ -135,7 +117,8 @@ internal fun MovieDetailEntry(
         onRetryCredits = viewModel::retryCredits,
         onRetryRecommendations = viewModel::retryRecommendations,
         onRetryLibraryObservation = viewModel::retryLibraryObservation,
-        libraryActionErrors = viewModel.libraryActionErrors,
+        libraryActionErrorPending = libraryActionErrorPending,
+        onLibraryActionErrorAcknowledged = viewModel::acknowledgeLibraryActionError,
         onRecommendationClick = onOpenRecommendation,
     )
 }
@@ -147,6 +130,7 @@ internal fun LibraryEntry(
 ) {
     val viewModel: LibraryViewModel = hiltViewModel()
     val libraryUiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val actionErrorPending by viewModel.actionErrorPending.collectAsStateWithLifecycle()
 
     LibraryScreen(
         state = libraryUiState,
@@ -154,7 +138,8 @@ internal fun LibraryEntry(
         onMovieClick = onOpenDetails,
         onRemove = viewModel::onRemove,
         onRetry = viewModel::onRetry,
-        actionErrors = viewModel.actionErrors,
+        actionErrorPending = actionErrorPending,
+        onActionErrorAcknowledged = viewModel::acknowledgeActionError,
     )
 }
 
@@ -163,23 +148,27 @@ internal fun SettingsEntry(onBack: () -> Unit) {
     val viewModel: SettingsViewModel = hiltViewModel()
     val currentTheme by viewModel.currentTheme.collectAsStateWithLifecycle()
     val isClearing by viewModel.isClearing.collectAsStateWithLifecycle()
+    val imageCacheResult by viewModel.imageCacheResult.collectAsStateWithLifecycle()
+    val themeUpdateErrorPending by viewModel.themeUpdateErrorPending.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val imageCacheClearedMessage = stringResource(R.string.image_cache_cleared)
     val imageCacheClearFailedMessage = stringResource(R.string.image_cache_clear_failed)
     val themeUpdateFailedMessage = stringResource(R.string.theme_update_failed)
 
-    LaunchedEffect(viewModel.imageCacheMessages, imageCacheClearedMessage, imageCacheClearFailedMessage) {
-        viewModel.imageCacheMessages.collect { cleared ->
-            snackbarHostState.showSnackbar(
-                if (cleared) imageCacheClearedMessage else imageCacheClearFailedMessage,
-            )
-        }
+    imageCacheResult?.let { result ->
+        PendingSnackbarEffect(
+            pending = true,
+            snackbarHostState = snackbarHostState,
+            message = if (result) imageCacheClearedMessage else imageCacheClearFailedMessage,
+            onAcknowledged = { viewModel.acknowledgeImageCacheResult(result) },
+        )
     }
-    LaunchedEffect(viewModel.themeUpdateErrors, themeUpdateFailedMessage) {
-        viewModel.themeUpdateErrors.collect {
-            snackbarHostState.showSnackbar(themeUpdateFailedMessage)
-        }
-    }
+    PendingSnackbarEffect(
+        pending = themeUpdateErrorPending,
+        snackbarHostState = snackbarHostState,
+        message = themeUpdateFailedMessage,
+        onAcknowledged = viewModel::acknowledgeThemeUpdateError,
+    )
 
     SettingsScreen(
         currentTheme = currentTheme,

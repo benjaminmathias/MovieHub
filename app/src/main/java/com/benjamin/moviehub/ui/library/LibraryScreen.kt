@@ -21,7 +21,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,8 +34,7 @@ import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.CompactMovieShimmerList
 import com.benjamin.moviehub.ui.components.EmptyStateView
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
+import com.benjamin.moviehub.ui.components.PendingSnackbarEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,11 +44,17 @@ fun LibraryScreen(
     onMovieClick: (Int) -> Unit,
     onSettingsClick: () -> Unit,
     onRetry: () -> Unit = {},
-    actionErrors: Flow<Unit> = emptyFlow(),
+    actionErrorPending: Boolean = false,
+    onActionErrorAcknowledged: () -> Unit = {},
 ) {
     val snackbar = remember { SnackbarHostState() }
     val actionErrorMessage = stringResource(R.string.error_updating_library)
-    LaunchedEffect(actionErrors, actionErrorMessage) { actionErrors.collect { snackbar.showSnackbar(actionErrorMessage) } }
+    PendingSnackbarEffect(
+        pending = actionErrorPending,
+        snackbarHostState = snackbar,
+        message = actionErrorMessage,
+        onAcknowledged = onActionErrorAcknowledged,
+    )
 
     var selected by rememberSaveable { mutableStateOf(LibraryTab.WATCHLIST) }
 

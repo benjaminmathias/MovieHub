@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithText
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.TestStrings
 import com.benjamin.moviehub.core.theme.MovieHubTheme
+import com.benjamin.moviehub.ui.components.PendingSnackbarEffect
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -33,7 +34,7 @@ class HomeFavoriteErrorTest {
             MovieHubTheme {
                 val snackbarHostState = remember { SnackbarHostState() }
                 if (showHome) {
-                    FavoriteErrorEffect(
+                    PendingSnackbarEffect(
                         pending = pending,
                         snackbarHostState = snackbarHostState,
                         message = message,
@@ -70,7 +71,7 @@ class HomeFavoriteErrorTest {
         composeRule.setContent {
             MovieHubTheme {
                 val snackbarHostState = remember { SnackbarHostState() }
-                FavoriteErrorEffect(
+                PendingSnackbarEffect(
                     pending = pending,
                     snackbarHostState = snackbarHostState,
                     message = message,

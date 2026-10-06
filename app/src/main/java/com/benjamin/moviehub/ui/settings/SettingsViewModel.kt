@@ -7,11 +7,9 @@ import com.benjamin.moviehub.domain.repository.ImageCacheCleaner
 import com.benjamin.moviehub.domain.repository.UserPreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -27,11 +25,14 @@ class SettingsViewModel
         private val _isClearing = MutableStateFlow(false)
         val isClearing: StateFlow<Boolean> = _isClearing.asStateFlow()
 
-        // One-shot UI messages: true = cache cleared, false = clearing failed.
-        private val _imageCacheMessages = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
-        val imageCacheMessages = _imageCacheMessages.asSharedFlow()
-        private val _themeUpdateErrors = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-        val themeUpdateErrors = _themeUpdateErrors.asSharedFlow()
+        // Pending image-cache result awaiting display: null = nothing to show, true = cleared,
+        // false = clearing failed. A state value survives a collector gap, unlike a one-shot event.
+        private val _imageCacheResult = MutableStateFlow<Boolean?>(null)
+        val imageCacheResult: StateFlow<Boolean?> = _imageCacheResult.asStateFlow()
+
+        /** A theme write failed and its message has not been shown yet. */
+        private val _themeUpdateErrorPending = MutableStateFlow(false)
+        val themeUpdateErrorPending: StateFlow<Boolean> = _themeUpdateErrorPending.asStateFlow()
 
         val currentTheme: StateFlow<AppTheme> =
             userPreferenceRepository.theme
@@ -48,7 +49,7 @@ class SettingsViewModel
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    _themeUpdateErrors.tryEmit(Unit)
+                    _themeUpdateErrorPending.value = true
                 }
             }
         }
@@ -61,14 +62,24 @@ class SettingsViewModel
             viewModelScope.launch {
                 try {
                     imageCacheCleaner.clear()
-                    _imageCacheMessages.tryEmit(true)
+                    _imageCacheResult.value = true
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
-                    _imageCacheMessages.tryEmit(false)
+                    _imageCacheResult.value = false
                 } finally {
                     _isClearing.value = false
                 }
             }
+        }
+
+        /** Clears the pending image-cache result only when it still matches [result]. */
+        fun acknowledgeImageCacheResult(result: Boolean) {
+            if (_imageCacheResult.value == result) _imageCacheResult.value = null
+        }
+
+        /** Clears the pending theme update error once its message has finished being displayed. */
+        fun acknowledgeThemeUpdateError() {
+            _themeUpdateErrorPending.value = false
         }
     }

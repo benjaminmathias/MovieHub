@@ -16,12 +16,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -36,8 +33,10 @@ class MovieDetailViewModel
     ) : ViewModel() {
         private val _uiState = MutableStateFlow<MovieDetailUiState>(MovieDetailUiState.Loading)
         val uiState: StateFlow<MovieDetailUiState> = _uiState.asStateFlow()
-        private val _libraryActionErrors = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-        val libraryActionErrors = _libraryActionErrors.asSharedFlow()
+
+        /** A library write failed and its message has not been shown yet. */
+        private val _libraryActionErrorPending = MutableStateFlow(false)
+        val libraryActionErrorPending: StateFlow<Boolean> = _libraryActionErrorPending.asStateFlow()
         private var loadJob: Job? = null
         private var loadingMovieId: Int? = null
         private var libraryJob: Job? = null
@@ -47,7 +46,7 @@ class MovieDetailViewModel
 
         // Null until a library snapshot has been observed: an unknown library must not be
         // treated as an empty (authoritative) one, or a failed read would clear live flags.
-        private val libraryById = MutableStateFlow<Map<Int, Movie>?>(null)
+        private var libraryById: Map<Int, Movie>? = null
 
         fun loadMovieDetails(movieId: Int) {
             val current = _uiState.value
@@ -57,7 +56,7 @@ class MovieDetailViewModel
             if (loadingMovieId == movieId && loadJob?.isActive == true) return
 
             cancelSectionWork()
-            libraryById.value = null
+            libraryById = null
             loadingMovieId = movieId
             loadJob =
                 viewModelScope.launch {
@@ -85,7 +84,7 @@ class MovieDetailViewModel
                             launch {
                                 val loadedRecommendations = recommendations.await()
                                 updateSuccess(movieId) {
-                                    it.copy(recommendations = loadedRecommendations.withLibraryState(libraryById.value))
+                                    it.copy(recommendations = loadedRecommendations.withLibraryState(libraryById))
                                 }
                             }
                         }
@@ -123,7 +122,7 @@ class MovieDetailViewModel
                     updateSuccess(movieId) { it.copy(recommendations = MovieRecommendationsUiState.Loading) }
                     val loadedRecommendations = loadRecommendations(movieId)
                     updateSuccess(movieId) {
-                        it.copy(recommendations = loadedRecommendations.withLibraryState(libraryById.value))
+                        it.copy(recommendations = loadedRecommendations.withLibraryState(libraryById))
                     }
                 }
         }
@@ -144,6 +143,11 @@ class MovieDetailViewModel
 
         fun toggleWatched() = toggleLibraryFlag(LibraryFlag.WATCHED)
 
+        /** Clears the pending library error once its message has finished being displayed. */
+        fun acknowledgeLibraryActionError() {
+            _libraryActionErrorPending.value = false
+        }
+
         private fun toggleLibraryFlag(flag: LibraryFlag) {
             viewModelScope.launch {
                 libraryMutex.withLock {
@@ -160,7 +164,7 @@ class MovieDetailViewModel
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
-                        _libraryActionErrors.tryEmit(Unit)
+                        _libraryActionErrorPending.value = true
                         rollbackLibrary(previous.id, previous, flag, value)
                         setLibraryActionPending(previous.id, false)
                     }
@@ -210,9 +214,9 @@ class MovieDetailViewModel
             libraryJob =
                 viewModelScope.launch {
                     try {
-                        libraryRepository.getLibraryMovies().collectLatest { localMovies ->
+                        libraryRepository.getLibraryMovies().collect { localMovies ->
                             val localById = localMovies.associateBy(Movie::id)
-                            libraryById.value = localById
+                            libraryById = localById
                             updateSuccess(movieId) {
                                 it.withLibraryState(localById).copy(libraryObservation = LibraryObservationUiState.Ready)
                             }

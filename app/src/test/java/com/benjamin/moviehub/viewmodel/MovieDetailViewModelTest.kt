@@ -19,10 +19,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -275,22 +273,23 @@ class MovieDetailViewModelTest {
         }
 
     @Test
-    fun `failed library action emits a library error`() =
+    fun `failed library action keeps one pending error until acknowledged`() =
         runTest {
             coEvery { repository.getMovieDetails(1) } returns movie
             coEvery { repository.getMovieCredits(1) } returns MovieCredits()
             coEvery { libraryRepository.setWatched(movie, true) } throws IllegalStateException()
             val viewModel = MovieDetailViewModel(repository, libraryRepository)
-            val errors = mutableListOf<Unit>()
-            val job = launch { viewModel.libraryActionErrors.collect { errors += it } }
 
             viewModel.loadMovieDetails(1)
             advanceUntilIdle()
             viewModel.toggleWatched()
             advanceUntilIdle()
 
-            assertEquals(1, errors.size)
-            job.cancel()
+            // The error is a state: it survives until the UI acknowledges it.
+            assertTrue(viewModel.libraryActionErrorPending.value)
+
+            viewModel.acknowledgeLibraryActionError()
+            assertFalse(viewModel.libraryActionErrorPending.value)
         }
 
     @Test

@@ -35,7 +35,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -68,10 +67,9 @@ import com.benjamin.moviehub.core.theme.POSTER_ASPECT_RATIO
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
 import com.benjamin.moviehub.ui.components.EmptyStateView
+import com.benjamin.moviehub.ui.components.PendingSnackbarEffect
 import com.benjamin.moviehub.ui.components.previewMovie
 import com.valentinilk.shimmer.shimmer
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 
 private val SkeletonPosterWidth = 112.dp
 private val SkeletonChipHeight = 48.dp
@@ -88,7 +86,8 @@ fun MovieDetailScreen(
     onRetryCredits: () -> Unit = {},
     onRetryRecommendations: () -> Unit = {},
     onRetryLibraryObservation: () -> Unit = {},
-    libraryActionErrors: Flow<Unit> = emptyFlow(),
+    libraryActionErrorPending: Boolean = false,
+    onLibraryActionErrorAcknowledged: () -> Unit = {},
     onRecommendationClick: (Int) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -111,9 +110,12 @@ fun MovieDetailScreen(
     val toolbarVisible by remember(toolbarProgress) { derivedStateOf { toolbarProgress.value > 0.7f } }
     val detailTitle = (uiState as? MovieDetailUiState.Success)?.movie?.title.orEmpty()
 
-    LaunchedEffect(libraryActionErrors, libraryErrorMessage) {
-        libraryActionErrors.collect { snackbarHostState.showSnackbar(libraryErrorMessage) }
-    }
+    PendingSnackbarEffect(
+        pending = libraryActionErrorPending,
+        snackbarHostState = snackbarHostState,
+        message = libraryErrorMessage,
+        onAcknowledged = onLibraryActionErrorAcknowledged,
+    )
 
     Box(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).testTag("detail_screen"),

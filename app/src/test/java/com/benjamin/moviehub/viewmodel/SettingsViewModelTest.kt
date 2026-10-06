@@ -1,6 +1,5 @@
 package com.benjamin.moviehub.viewmodel
 
-import app.cash.turbine.test
 import com.benjamin.moviehub.core.util.AppTheme
 import com.benjamin.moviehub.domain.repository.ImageCacheCleaner
 import com.benjamin.moviehub.domain.repository.UserPreferencesRepository
@@ -19,6 +18,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -37,26 +37,56 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `clearing image cache reports success then failure`() =
+    fun `cache result is pending after clearing without any collector`() =
         runTest {
-            var fail = false
+            coEvery { imageCacheCleaner.clear() } just runs
+            val viewModel = SettingsViewModel(preferences, imageCacheCleaner)
+
+            viewModel.clearImageCache()
+            advanceUntilIdle()
+
+            // The result is a state: it stays observable even though nothing collected it.
+            assertEquals(true, viewModel.imageCacheResult.value)
+            assertEquals(false, viewModel.isClearing.value)
+        }
+
+    @Test
+    fun `clearing failure is a pending result distinguishable from success`() =
+        runTest {
+            coEvery { imageCacheCleaner.clear() } throws IllegalStateException("cache failure")
+            val viewModel = SettingsViewModel(preferences, imageCacheCleaner)
+
+            viewModel.clearImageCache()
+            advanceUntilIdle()
+
+            assertEquals(false, viewModel.imageCacheResult.value)
+            assertEquals(false, viewModel.isClearing.value)
+        }
+
+    @Test
+    fun `acknowledging a stale cache result keeps the newer different result`() =
+        runTest {
+            var fail = true
             coEvery { imageCacheCleaner.clear() } coAnswers {
                 if (fail) throw IllegalStateException("cache failure")
             }
             val viewModel = SettingsViewModel(preferences, imageCacheCleaner)
 
-            viewModel.imageCacheMessages.test {
-                viewModel.clearImageCache()
-                assertEquals(true, awaitItem())
-            }
-            assertEquals(false, viewModel.isClearing.value)
+            viewModel.clearImageCache()
+            advanceUntilIdle()
+            assertEquals(false, viewModel.imageCacheResult.value)
 
-            fail = true
-            viewModel.imageCacheMessages.test {
-                viewModel.clearImageCache()
-                assertEquals(false, awaitItem())
-            }
-            assertEquals(false, viewModel.isClearing.value)
+            fail = false
+            viewModel.clearImageCache()
+            advanceUntilIdle()
+            assertEquals(true, viewModel.imageCacheResult.value)
+
+            // A late acknowledgement of the older failure must not clear the newer success.
+            viewModel.acknowledgeImageCacheResult(false)
+            assertEquals(true, viewModel.imageCacheResult.value)
+
+            viewModel.acknowledgeImageCacheResult(true)
+            assertNull(viewModel.imageCacheResult.value)
         }
 
     @Test
@@ -68,6 +98,22 @@ class SettingsViewModelTest {
             viewModel.updateTheme(AppTheme.DARK)
 
             coVerify(exactly = 1) { preferences.setTheme(AppTheme.DARK) }
+        }
+
+    @Test
+    fun `repeated theme failures keep one pending error until acknowledged`() =
+        runTest {
+            coEvery { preferences.setTheme(any()) } throws IllegalStateException("theme failure")
+            val viewModel = SettingsViewModel(preferences, imageCacheCleaner)
+
+            viewModel.updateTheme(AppTheme.DARK)
+            viewModel.updateTheme(AppTheme.LIGHT)
+            advanceUntilIdle()
+
+            assertEquals(true, viewModel.themeUpdateErrorPending.value)
+
+            viewModel.acknowledgeThemeUpdateError()
+            assertEquals(false, viewModel.themeUpdateErrorPending.value)
         }
 
     @Test

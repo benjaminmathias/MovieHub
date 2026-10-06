@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -94,6 +95,40 @@ class LibraryViewModelTest {
             assertEquals(listOf(1), (viewModel.uiState.value as LibraryUiState.Success).movies.map { it.id })
 
             job.cancel()
+        }
+
+    @Test
+    fun `remove failure keeps one pending error until acknowledged`() =
+        runTest {
+            every { repository.getLibraryMovies() } returns MutableStateFlow(emptyList())
+            coEvery { repository.setWatchlist(any(), any()) } throws IllegalStateException("offline")
+            val viewModel = LibraryViewModel(repository)
+            val target = movie(1, watchlist = true)
+
+            viewModel.onRemove(target, LibraryTab.WATCHLIST)
+            advanceUntilIdle()
+            assertTrue(viewModel.actionErrorPending.value)
+
+            // A repeated failure keeps the single pending message.
+            viewModel.onRemove(target, LibraryTab.WATCHLIST)
+            advanceUntilIdle()
+            assertTrue(viewModel.actionErrorPending.value)
+
+            viewModel.acknowledgeActionError()
+            assertFalse(viewModel.actionErrorPending.value)
+        }
+
+    @Test
+    fun `remove success leaves no pending error`() =
+        runTest {
+            every { repository.getLibraryMovies() } returns MutableStateFlow(emptyList())
+            coEvery { repository.setWatchlist(any(), any()) } returns Unit
+            val viewModel = LibraryViewModel(repository)
+
+            viewModel.onRemove(movie(1, watchlist = true), LibraryTab.WATCHLIST)
+            advanceUntilIdle()
+
+            assertFalse(viewModel.actionErrorPending.value)
         }
 
     private fun movie(

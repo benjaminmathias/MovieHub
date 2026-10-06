@@ -14,11 +14,10 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -53,8 +52,10 @@ class LibraryViewModel
         private val repository: LibraryRepository,
     ) : ViewModel() {
         private val retryTrigger = MutableStateFlow(0)
-        private val _actionErrors = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-        val actionErrors = _actionErrors.asSharedFlow()
+
+        /** An action failed and its message has not been shown yet. */
+        private val _actionErrorPending = MutableStateFlow(false)
+        val actionErrorPending: StateFlow<Boolean> = _actionErrorPending.asStateFlow()
 
         @OptIn(ExperimentalCoroutinesApi::class)
         val uiState: StateFlow<LibraryUiState> =
@@ -84,8 +85,13 @@ class LibraryViewModel
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
-                    _actionErrors.tryEmit(Unit)
+                    _actionErrorPending.value = true
                 }
             }
+        }
+
+        /** Clears the pending action error once its message has finished being displayed. */
+        fun acknowledgeActionError() {
+            _actionErrorPending.value = false
         }
     }
