@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.LibraryFlag
 import com.benjamin.moviehub.domain.model.Movie
-import com.benjamin.moviehub.domain.model.MovieCredits
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import com.benjamin.moviehub.domain.repository.setLibraryFlag
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -38,16 +37,26 @@ class MovieDetailViewModel
         private val _libraryActionErrors = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
         val libraryActionErrors = _libraryActionErrors.asSharedFlow()
         private var loadJob: Job? = null
+        private var loadingMovieId: Int? = null
         private var libraryJob: Job? = null
+        private var creditsRetryJob: Job? = null
+        private var recommendationsRetryJob: Job? = null
         private val libraryMutex = Mutex()
-        private val libraryById = MutableStateFlow<Map<Int, Movie>>(emptyMap())
+
+        // Null until a library snapshot has been observed: an unknown library must not be
+        // treated as an empty (authoritative) one, or a failed read would clear live flags.
+        private val libraryById = MutableStateFlow<Map<Int, Movie>?>(null)
 
         fun loadMovieDetails(movieId: Int) {
             val current = _uiState.value
             if (current is MovieDetailUiState.Success && current.movie.id == movieId) return
+            // A load for the same movie is already scheduled or running: keep it instead of
+            // restarting the work, including before the launched coroutine body has started.
+            if (loadingMovieId == movieId && loadJob?.isActive == true) return
 
-            loadJob?.cancel()
-            libraryJob?.cancel()
+            cancelSectionWork()
+            libraryById.value = null
+            loadingMovieId = movieId
             loadJob =
                 viewModelScope.launch {
                     _uiState.value = MovieDetailUiState.Loading
@@ -58,7 +67,13 @@ class MovieDetailViewModel
                             // A main failure throws out of the scope and cancels both async children.
                             val movie = repository.getMovieDetails(movieId)
 
-                            _uiState.value = MovieDetailUiState.Success(movie, MovieCredits())
+                            _uiState.value =
+                                MovieDetailUiState.Success(
+                                    movie = movie,
+                                    credits = MovieCreditsUiState.Loading,
+                                    recommendations = MovieRecommendationsUiState.Loading,
+                                    libraryObservation = LibraryObservationUiState.Loading,
+                                )
                             startObservingLibrary(movieId)
 
                             launch {
@@ -80,6 +95,45 @@ class MovieDetailViewModel
                 }
         }
 
+        /**
+         * Reloads only the credits section, keeping the main film and the recommendations
+         * untouched. An in-flight retry is left as is.
+         */
+        fun retryCredits() {
+            val movieId = currentMovieId() ?: return
+            if (creditsRetryJob?.isActive == true) return
+            creditsRetryJob =
+                viewModelScope.launch {
+                    updateSuccess(movieId) { it.copy(credits = MovieCreditsUiState.Loading) }
+                    val loadedCredits = loadCredits(movieId)
+                    updateSuccess(movieId) { it.copy(credits = loadedCredits) }
+                }
+        }
+
+        /** Reloads only the recommendations section. An in-flight retry is left as is. */
+        fun retryRecommendations() {
+            val movieId = currentMovieId() ?: return
+            if (recommendationsRetryJob?.isActive == true) return
+            recommendationsRetryJob =
+                viewModelScope.launch {
+                    updateSuccess(movieId) { it.copy(recommendations = MovieRecommendationsUiState.Loading) }
+                    val loadedRecommendations = loadRecommendations(movieId)
+                    updateSuccess(movieId) {
+                        it.copy(recommendations = loadedRecommendations.withLibraryState(libraryById.value))
+                    }
+                }
+        }
+
+        /**
+         * Restarts only the library observer. Library writes stay disabled until the restarted
+         * observer produces a valid snapshot.
+         */
+        fun retryLibraryObservation() {
+            val movieId = currentMovieId() ?: return
+            updateSuccess(movieId) { it.copy(libraryObservation = LibraryObservationUiState.Loading) }
+            startObservingLibrary(movieId)
+        }
+
         fun toggleFavorite() = toggleLibraryFlag(LibraryFlag.FAVORITE)
 
         fun toggleWatchlist() = toggleLibraryFlag(LibraryFlag.WATCHLIST)
@@ -90,6 +144,8 @@ class MovieDetailViewModel
             viewModelScope.launch {
                 libraryMutex.withLock {
                     val state = _uiState.value as? MovieDetailUiState.Success ?: return@withLock
+                    // The persisted flags are only safe to toggle once the observer loaded them.
+                    if (state.libraryObservation != LibraryObservationUiState.Ready) return@withLock
                     val previous = state.movie
                     val value = !flag.isSet(previous)
                     _uiState.value = state.copy(movie = flag.apply(previous, value), isLibraryActionPending = true)
@@ -116,13 +172,13 @@ class MovieDetailViewModel
             updateSuccess(movieId) { it.copy(isLibraryActionPending = pending) }
         }
 
-        private suspend fun loadCredits(movieId: Int): MovieCredits =
+        private suspend fun loadCredits(movieId: Int): MovieCreditsUiState =
             try {
-                repository.getMovieCredits(movieId)
+                MovieCreditsUiState.Success(repository.getMovieCredits(movieId))
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                MovieCredits()
+                MovieCreditsUiState.Error
             }
 
         private suspend fun loadRecommendations(movieId: Int): MovieRecommendationsUiState =
@@ -141,16 +197,41 @@ class MovieDetailViewModel
         /**
          * Observes the library in [viewModelScope] so the observer outlives the load job:
          * library changes made on other screens keep reconciling this one.
+         *
+         * A failed snapshot keeps the last known flags and reports the sync error instead of
+         * applying the empty map, so a transient read failure never clears the UI.
          */
         private fun startObservingLibrary(movieId: Int) {
+            libraryJob?.cancel()
             libraryJob =
                 viewModelScope.launch {
-                    repository.getLibraryMovies().collectLatest { localMovies ->
-                        val localById = localMovies.associateBy(Movie::id)
-                        libraryById.value = localById
-                        updateSuccess(movieId) { it.withLibraryState(localById) }
+                    try {
+                        repository.getLibraryMovies().collectLatest { localMovies ->
+                            val localById = localMovies.associateBy(Movie::id)
+                            libraryById.value = localById
+                            updateSuccess(movieId) {
+                                it.withLibraryState(localById).copy(libraryObservation = LibraryObservationUiState.Ready)
+                            }
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (_: Exception) {
+                        updateSuccess(movieId) { it.copy(libraryObservation = LibraryObservationUiState.Error) }
                     }
                 }
+        }
+
+        private fun currentMovieId(): Int? {
+            val state = _uiState.value as? MovieDetailUiState.Success ?: return null
+            return state.movie.id
+        }
+
+        /** Cancels the load, the library observer and any in-flight section retry. */
+        private fun cancelSectionWork() {
+            loadJob?.cancel()
+            libraryJob?.cancel()
+            creditsRetryJob?.cancel()
+            recommendationsRetryJob?.cancel()
         }
 
         private fun updateSuccess(
@@ -181,14 +262,21 @@ class MovieDetailViewModel
  * Reconciles the detail screen with the library, which is the source of truth here:
  * a movie absent from [localById] loses its flags.
  *
+ * [localById] is null while no valid snapshot has been observed yet, in which case the
+ * repository flags are kept instead of being cleared from an unknown library.
+ *
  * This deliberately differs from [com.benjamin.moviehub.data.mapper.withLocalFlags],
  * which keeps the remote flags for a not-yet-cached movie in network feeds.
  */
-private fun MovieRecommendationsUiState.withLibraryState(localById: Map<Int, Movie>): MovieRecommendationsUiState =
-    (this as? MovieRecommendationsUiState.Success)
-        ?.let { success ->
-            MovieRecommendationsUiState.Success(success.movies.map { it.withLibraryState(localById[it.id]) }.toImmutableList())
-        } ?: this
+private fun MovieRecommendationsUiState.withLibraryState(localById: Map<Int, Movie>?): MovieRecommendationsUiState =
+    if (localById == null) {
+        this
+    } else {
+        (this as? MovieRecommendationsUiState.Success)
+            ?.let { success ->
+                MovieRecommendationsUiState.Success(success.movies.map { it.withLibraryState(localById[it.id]) }.toImmutableList())
+            } ?: this
+    }
 
 private fun MovieDetailUiState.Success.withLibraryState(localById: Map<Int, Movie>): MovieDetailUiState.Success =
     copy(
@@ -208,9 +296,10 @@ sealed class MovieDetailUiState {
 
     data class Success(
         val movie: Movie,
-        val credits: MovieCredits,
+        val credits: MovieCreditsUiState,
         val recommendations: MovieRecommendationsUiState = MovieRecommendationsUiState.Loading,
         val isLibraryActionPending: Boolean = false,
+        val libraryObservation: LibraryObservationUiState = LibraryObservationUiState.Loading,
     ) : MovieDetailUiState()
 
     data class Error(

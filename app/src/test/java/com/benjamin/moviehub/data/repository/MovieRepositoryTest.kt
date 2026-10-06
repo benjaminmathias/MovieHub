@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.data.repository
 
+import com.benjamin.moviehub.data.local.GenreEntity
 import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.local.MovieDatabase
 import com.benjamin.moviehub.data.local.MovieEntity
@@ -9,6 +10,7 @@ import com.benjamin.moviehub.data.remote.MovieDto
 import com.benjamin.moviehub.data.remote.MovieResponse
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCategory
+import com.benjamin.moviehub.domain.model.MovieGenre
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.just
@@ -16,11 +18,16 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Test
+import retrofit2.HttpException
+import retrofit2.Response
 import java.io.IOException
 
 class MovieRepositoryTest {
@@ -165,5 +172,151 @@ class MovieRepositoryTest {
 
             assertEquals(5, result?.id)
             assertEquals("https://image.tmdb.org/t/p/w500/poster.jpg", result?.posterPath)
+        }
+
+    @Test
+    fun `get movie genres falls back to the cached dictionary on a recoverable failure`() =
+        runTest {
+            val apiService = mockk<MovieApiService>()
+            val database = mockk<MovieDatabase>()
+            val dao = mockk<MovieDao>()
+            val repository = MovieRepositoryImpl(apiService, database, dao)
+            coEvery { apiService.getMovieGenres() } throws IOException("offline")
+            coEvery { dao.getGenres() } returns
+                listOf(
+                    GenreEntity(id = 18, name = "Drame"),
+                    GenreEntity(id = 28, name = "Action"),
+                )
+
+            val result = repository.getMovieGenres()
+
+            assertEquals(
+                listOf(MovieGenre(id = 18, name = "Drame"), MovieGenre(id = 28, name = "Action")),
+                result,
+            )
+            coVerify(exactly = 0) { dao.upsertGenres(any()) }
+        }
+
+    @Test
+    fun `get movie genres falls back to the cache on a 5xx failure`() =
+        runTest {
+            val apiService = mockk<MovieApiService>()
+            val database = mockk<MovieDatabase>()
+            val dao = mockk<MovieDao>()
+            val repository = MovieRepositoryImpl(apiService, database, dao)
+            coEvery { apiService.getMovieGenres() } throws
+                HttpException(Response.error<Any>(503, "".toResponseBody()))
+            coEvery { dao.getGenres() } returns listOf(GenreEntity(id = 28, name = "Action"))
+
+            val result = repository.getMovieGenres()
+
+            assertEquals(listOf(MovieGenre(id = 28, name = "Action")), result)
+        }
+
+    @Test
+    fun `get movie genres keeps only valid cached names on a recoverable failure`() =
+        runTest {
+            val apiService = mockk<MovieApiService>()
+            val database = mockk<MovieDatabase>()
+            val dao = mockk<MovieDao>()
+            val repository = MovieRepositoryImpl(apiService, database, dao)
+            coEvery { apiService.getMovieGenres() } throws IOException("offline")
+            coEvery { dao.getGenres() } returns
+                listOf(
+                    GenreEntity(id = 18, name = "Drame"),
+                    GenreEntity(id = 99, name = "   "),
+                )
+
+            val result = repository.getMovieGenres()
+
+            assertEquals(listOf(MovieGenre(id = 18, name = "Drame")), result)
+        }
+
+    @Test
+    fun `get movie genres rethrows the original failure when the cache is empty`() =
+        runTest {
+            val apiService = mockk<MovieApiService>()
+            val database = mockk<MovieDatabase>()
+            val dao = mockk<MovieDao>()
+            val repository = MovieRepositoryImpl(apiService, database, dao)
+            val failure = IOException("offline")
+            coEvery { apiService.getMovieGenres() } throws failure
+            coEvery { dao.getGenres() } returns emptyList()
+
+            val thrown =
+                try {
+                    repository.getMovieGenres()
+                    null
+                } catch (e: Exception) {
+                    e
+                }
+
+            assertSame(failure, thrown)
+        }
+
+    @Test
+    fun `get movie genres rethrows the original failure when every cached name is blank`() =
+        runTest {
+            val apiService = mockk<MovieApiService>()
+            val database = mockk<MovieDatabase>()
+            val dao = mockk<MovieDao>()
+            val repository = MovieRepositoryImpl(apiService, database, dao)
+            val failure = IOException("offline")
+            coEvery { apiService.getMovieGenres() } throws failure
+            coEvery { dao.getGenres() } returns listOf(GenreEntity(id = 99, name = "  "))
+
+            val thrown =
+                try {
+                    repository.getMovieGenres()
+                    null
+                } catch (e: Exception) {
+                    e
+                }
+
+            assertSame(failure, thrown)
+        }
+
+    @Test
+    fun `get movie genres propagates a non recoverable failure without reading the cache`() =
+        runTest {
+            val apiService = mockk<MovieApiService>()
+            val database = mockk<MovieDatabase>()
+            val dao = mockk<MovieDao>()
+            val repository = MovieRepositoryImpl(apiService, database, dao)
+            val failure = HttpException(Response.error<Any>(404, "".toResponseBody()))
+            coEvery { apiService.getMovieGenres() } throws failure
+
+            val thrown =
+                try {
+                    repository.getMovieGenres()
+                    null
+                } catch (e: Exception) {
+                    e
+                }
+
+            assertSame(failure, thrown)
+            coVerify(exactly = 0) { dao.getGenres() }
+        }
+
+    @Test
+    fun `get movie genres propagates cancellation without reading the cache`() =
+        runTest {
+            val apiService = mockk<MovieApiService>()
+            val database = mockk<MovieDatabase>()
+            val dao = mockk<MovieDao>()
+            val repository = MovieRepositoryImpl(apiService, database, dao)
+            val failure = CancellationException("cancelled")
+            coEvery { apiService.getMovieGenres() } throws failure
+
+            val thrown =
+                try {
+                    repository.getMovieGenres()
+                    null
+                } catch (e: Exception) {
+                    e
+                }
+
+            assertSame(failure, thrown)
+            coVerify(exactly = 0) { dao.getGenres() }
         }
 }

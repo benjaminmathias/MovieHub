@@ -10,6 +10,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -70,5 +71,61 @@ class MovieNavigationTest {
             composeTestRule.onAllNodesWithTag("discover_filter_count").fetchSemanticsNodes().isNotEmpty()
         }
         composeTestRule.onNodeWithTag("discover_filter_count").assertIsDisplayed()
+    }
+
+    @Test
+    fun backFromDiscoverRoot_returnsToHomeTab() {
+        composeTestRule.onNodeWithTag("nav_tab_discover").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 8000) {
+            composeTestRule.onAllNodesWithTag("discover_filter_button").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        pressBack()
+
+        composeTestRule.waitUntil(timeoutMillis = 8000) {
+            composeTestRule.onAllNodesWithTag("home_sections").fetchSemanticsNodes().isNotEmpty()
+        }
+        assertTrue(composeTestRule.onAllNodesWithTag("discover_filter_button").fetchSemanticsNodes().isEmpty())
+    }
+
+    @Test
+    fun backFromLibraryRoot_returnsToHomeTab() {
+        composeTestRule.onNodeWithTag("nav_tab_library").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 8000) {
+            composeTestRule.onAllNodesWithTag("library_tab_watchlist").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        pressBack()
+
+        composeTestRule.waitUntil(timeoutMillis = 8000) {
+            composeTestRule.onAllNodesWithTag("home_sections").fetchSemanticsNodes().isNotEmpty()
+        }
+        assertTrue(composeTestRule.onAllNodesWithTag("library_tab_watchlist").fetchSemanticsNodes().isEmpty())
+    }
+
+    @Test
+    fun backFromDetail_returnsToOriginatingTab() {
+        composeTestRule.onNodeWithTag("nav_tab_discover").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 8000) {
+            composeTestRule.onAllNodesWithTag("movie_item").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule.onAllNodesWithTag("movie_item").onFirst().performClick()
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithTag("detail_screen").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        pressBack()
+
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithTag("discover_filter_button").fetchSemanticsNodes().isNotEmpty()
+        }
+        assertTrue(composeTestRule.onAllNodesWithTag("detail_screen").fetchSemanticsNodes().isEmpty())
+    }
+
+    private fun pressBack() {
+        composeTestRule.runOnUiThread {
+            composeTestRule.activity.onBackPressedDispatcher.onBackPressed()
+        }
     }
 }

@@ -1,7 +1,9 @@
 package com.benjamin.moviehub.ui.components
 
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,11 +30,62 @@ class NetworkSnackbarTest {
         var status by mutableStateOf(ConnectivityStatus.LOST)
         setNetworkContent { status }
 
-        composeRule.onNodeWithText(TestStrings.get(R.string.no_internet_connection)).assertIsDisplayed()
+        awaitBanner(R.string.no_internet_connection)
 
         composeRule.runOnIdle { status = ConnectivityStatus.AVAILABLE }
 
-        composeRule.onNodeWithText(TestStrings.get(R.string.connection_restored)).assertIsDisplayed()
+        awaitBanner(R.string.connection_restored)
+    }
+
+    @Test
+    fun offlineToUnknownThenAvailableRestoresOnlyOnAvailable() {
+        var status by mutableStateOf(ConnectivityStatus.LOST)
+        setNetworkContent { status }
+
+        awaitBanner(R.string.no_internet_connection)
+
+        // A degraded UNKNOWN must not announce a restoration...
+        composeRule.runOnIdle { status = ConnectivityStatus.UNKNOWN }
+        assertBannerAbsent(R.string.connection_restored)
+
+        // ... but the outage is still remembered until a usable connection is back.
+        composeRule.runOnIdle { status = ConnectivityStatus.AVAILABLE }
+        awaitBanner(R.string.connection_restored)
+    }
+
+    @Test
+    fun aSecondOfflineStatusDoesNotReannounceTheBanner() {
+        var status by mutableStateOf(ConnectivityStatus.LOST)
+        setNetworkContent { status }
+
+        composeRule.onNodeWithText(TestStrings.get(R.string.no_internet_connection)).assertIsDisplayed()
+
+        // LOST <-> UNAVAILABLE are both offline; moving between them keeps the same banner.
+        composeRule.runOnIdle { status = ConnectivityStatus.UNAVAILABLE }
+
+        composeRule.onNodeWithText(TestStrings.get(R.string.no_internet_connection)).assertIsDisplayed()
+    }
+
+    @Test
+    fun offlineTransitionDoesNotDismissAnInFlightMessage() {
+        var status by mutableStateOf(ConnectivityStatus.AVAILABLE)
+        composeRule.setContent {
+            MovieHubTheme {
+                val snackbarHostState = remember { SnackbarHostState() }
+                LaunchedEffect(Unit) {
+                    snackbarHostState.showSnackbar("favorite-error", duration = SnackbarDuration.Indefinite)
+                }
+                NetworkStatusEffect(status, snackbarHostState)
+                SnackbarHost(snackbarHostState)
+            }
+        }
+
+        composeRule.onNodeWithText("favorite-error").assertIsDisplayed()
+
+        composeRule.runOnIdle { status = ConnectivityStatus.LOST }
+
+        // The offline banner queues behind the in-flight message instead of dismissing it.
+        composeRule.onNodeWithText("favorite-error").assertIsDisplayed()
     }
 
     @Test
@@ -47,19 +100,25 @@ class NetworkSnackbarTest {
         assertNoBanner()
     }
 
+    private fun awaitBanner(resId: Int) {
+        val message = TestStrings.get(resId)
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            composeRule.onAllNodesWithText(message).fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    private fun assertBannerAbsent(resId: Int) {
+        assertTrue(
+            composeRule
+                .onAllNodesWithText(TestStrings.get(resId))
+                .fetchSemanticsNodes()
+                .isEmpty(),
+        )
+    }
+
     private fun assertNoBanner() {
-        assertTrue(
-            composeRule
-                .onAllNodesWithText(TestStrings.get(R.string.no_internet_connection))
-                .fetchSemanticsNodes()
-                .isEmpty(),
-        )
-        assertTrue(
-            composeRule
-                .onAllNodesWithText(TestStrings.get(R.string.connection_restored))
-                .fetchSemanticsNodes()
-                .isEmpty(),
-        )
+        assertBannerAbsent(R.string.no_internet_connection)
+        assertBannerAbsent(R.string.connection_restored)
     }
 
     private fun setNetworkContent(status: () -> ConnectivityStatus) {

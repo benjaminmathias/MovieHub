@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.ui.search
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
@@ -21,13 +22,17 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 
+private const val SEARCH_QUERY_KEY = "search_query"
+
 @HiltViewModel
 class SearchViewModel
     @Inject
     constructor(
         private val repository: MovieRepository,
+        private val savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
-        private val _searchQuery = MutableStateFlow("")
+        // Restored before the paging pipeline is observed so a restored query searches immediately.
+        private val _searchQuery = MutableStateFlow(savedStateHandle.get<String>(SEARCH_QUERY_KEY).orEmpty())
         val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
         private val _activeSearchQuery = MutableStateFlow("")
         val activeSearchQuery: StateFlow<String> = _activeSearchQuery.asStateFlow()
@@ -49,5 +54,7 @@ class SearchViewModel
 
         fun onSearchQueryChanged(newQuery: String) {
             _searchQuery.value = newQuery
+            // Persist the raw query so the field is restored exactly as typed.
+            savedStateHandle[SEARCH_QUERY_KEY] = newQuery
         }
     }

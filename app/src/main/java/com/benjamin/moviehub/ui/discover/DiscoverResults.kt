@@ -1,6 +1,7 @@
 package com.benjamin.moviehub.ui.discover
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -16,9 +17,11 @@ import com.benjamin.moviehub.R
 import com.benjamin.moviehub.core.theme.MovieGridMinCellSize
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.ui.components.CompactMovieShimmerItem
+import com.benjamin.moviehub.ui.components.EmptyStateView
 import com.benjamin.moviehub.ui.components.MovieCardShimmer
 import com.benjamin.moviehub.ui.components.PagingStatus
 import com.benjamin.moviehub.ui.components.PosterMovieItem
+import com.benjamin.moviehub.ui.components.isRefreshError
 import com.benjamin.moviehub.ui.components.movieAppendFooter
 import com.benjamin.moviehub.ui.components.moviePagingItems
 import com.benjamin.moviehub.ui.components.phase
@@ -64,20 +67,30 @@ private fun DiscoverMovieGrid(
 ) {
     val appendErrorMessage = stringResource(R.string.error_loading_more_movies)
 
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = MovieGridMinCellSize),
-        modifier = modifier,
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        moviePagingItems(lazyPagingItems) { movie ->
-            PosterMovieItem(movie = movie, onMovieClick = onMovieClick)
+    Column(modifier = modifier) {
+        if (lazyPagingItems.isRefreshError) {
+            EmptyStateView(
+                message = stringResource(R.string.error_refreshing_movies),
+                onRetry = { lazyPagingItems.retry() },
+                compact = true,
+            )
         }
-        movieAppendFooter(
-            items = lazyPagingItems,
-            errorMessage = appendErrorMessage,
-            loading = { CompactMovieShimmerItem() },
-        )
+
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = MovieGridMinCellSize),
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            moviePagingItems(lazyPagingItems) { movie ->
+                PosterMovieItem(movie = movie, onMovieClick = onMovieClick)
+            }
+            movieAppendFooter(
+                items = lazyPagingItems,
+                errorMessage = appendErrorMessage,
+                loading = { CompactMovieShimmerItem() },
+            )
+        }
     }
 }

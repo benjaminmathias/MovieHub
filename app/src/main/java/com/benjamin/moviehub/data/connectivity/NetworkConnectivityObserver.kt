@@ -5,6 +5,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.os.Build
 import com.benjamin.moviehub.domain.connectivity.ConnectivityObserver
 import com.benjamin.moviehub.domain.connectivity.ConnectivityStatus
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -15,34 +16,48 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import javax.inject.Inject
 
 class NetworkConnectivityObserver
-    @Inject
-    constructor(
-        @param:ApplicationContext private val context: Context,
+    internal constructor(
+        private val registrar: NetworkCallbackRegistrar,
     ) : ConnectivityObserver {
-        private val connectivityManager =
-            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        @Inject
+        constructor(
+            @ApplicationContext context: Context,
+        ) : this(
+            AndroidNetworkCallbackRegistrar(
+                context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager,
+            ),
+        )
 
         override fun observe(): Flow<ConnectivityStatus> =
             callbackFlow {
-                trySend(currentStatus())
+                // Seed the tracked networks from a snapshot taken before registration. Without
+                // it, a callback for a second, unvalidated network arriving before the first
+                // network's callbacks would momentarily drop an already AVAILABLE state.
                 val networks = mutableSetOf<Network>()
+                val capabilitiesByNetwork = mutableMapOf<Network, NetworkCapabilities>()
+                registrar.initialCapabilities().forEach { (network, capabilities) ->
+                    networks += network
+                    capabilitiesByNetwork[network] = capabilities
+                }
 
-                fun emitCurrentStatus() {
+                fun currentStatus(): ConnectivityStatus {
                     val hasValidatedNetwork =
                         networks.any { network ->
-                            connectivityManager
-                                .getNetworkCapabilities(network)
+                            capabilitiesByNetwork[network]
                                 ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
                         }
-                    trySend(if (hasValidatedNetwork) ConnectivityStatus.AVAILABLE else ConnectivityStatus.UNAVAILABLE)
+                    return if (hasValidatedNetwork) ConnectivityStatus.AVAILABLE else ConnectivityStatus.UNAVAILABLE
                 }
+
+                trySend(currentStatus())
 
                 val callback =
                     object : ConnectivityManager.NetworkCallback() {
                         override fun onAvailable(network: Network) {
                             super.onAvailable(network)
+                            // No capabilities yet: tracking the network without emitting keeps an
+                            // already AVAILABLE state until onCapabilitiesChanged confirms it.
                             networks += network
-                            emitCurrentStatus()
                         }
 
                         override fun onCapabilitiesChanged(
@@ -51,16 +66,18 @@ class NetworkConnectivityObserver
                         ) {
                             super.onCapabilitiesChanged(network, networkCapabilities)
                             networks += network
-                            emitCurrentStatus()
+                            capabilitiesByNetwork[network] = networkCapabilities
+                            trySend(currentStatus())
                         }
 
                         override fun onLost(network: Network) {
                             super.onLost(network)
                             networks -= network
+                            capabilitiesByNetwork -= network
                             if (networks.isEmpty()) {
                                 trySend(ConnectivityStatus.LOST)
                             } else {
-                                emitCurrentStatus()
+                                trySend(currentStatus())
                             }
                         }
 
@@ -73,23 +90,69 @@ class NetworkConnectivityObserver
                 val request =
                     NetworkRequest
                         .Builder()
-                        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                        // Match the INTERNET-only snapshot, including validated VPN networks.
+                        .apply {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                clearCapabilities()
+                            } else {
+                                removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
+                                removeCapability(NetworkCapabilities.NET_CAPABILITY_TRUSTED)
+                                removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+                            }
+                        }.addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                         .build()
 
-                connectivityManager.registerNetworkCallback(request, callback)
+                registrar.register(request, callback)
 
                 awaitClose {
-                    connectivityManager.unregisterNetworkCallback(callback)
+                    registrar.unregister(callback)
                 }
             }.distinctUntilChanged()
-
-        private fun currentStatus(): ConnectivityStatus {
-            val network = connectivityManager.activeNetwork ?: return ConnectivityStatus.UNAVAILABLE
-            val capabilities = connectivityManager.getNetworkCapabilities(network)
-            return if (capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true) {
-                ConnectivityStatus.AVAILABLE
-            } else {
-                ConnectivityStatus.UNAVAILABLE
-            }
-        }
     }
+
+/**
+ * ConnectivityManager operations used by [NetworkConnectivityObserver]. Kept behind an
+ * interface so the observer can be driven with controlled callbacks in instrumented tests.
+ */
+internal interface NetworkCallbackRegistrar {
+    /**
+     * Snapshot of the currently available networks that satisfy the observer's request,
+     * paired with their capabilities, taken before the callback is registered.
+     */
+    fun initialCapabilities(): Map<Network, NetworkCapabilities>
+
+    fun register(
+        request: NetworkRequest,
+        callback: ConnectivityManager.NetworkCallback,
+    )
+
+    fun unregister(callback: ConnectivityManager.NetworkCallback)
+}
+
+private class AndroidNetworkCallbackRegistrar(
+    private val connectivityManager: ConnectivityManager,
+) : NetworkCallbackRegistrar {
+    override fun initialCapabilities(): Map<Network, NetworkCapabilities> =
+        // Seed only the active network: allNetworks can include lingering background networks
+        // that Android excludes from this app's callback and will never report as lost.
+        listOfNotNull(connectivityManager.activeNetwork)
+            .mapNotNull { network ->
+                val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return@mapNotNull null
+                if (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) {
+                    network to capabilities
+                } else {
+                    null
+                }
+            }.toMap()
+
+    override fun register(
+        request: NetworkRequest,
+        callback: ConnectivityManager.NetworkCallback,
+    ) {
+        connectivityManager.registerNetworkCallback(request, callback)
+    }
+
+    override fun unregister(callback: ConnectivityManager.NetworkCallback) {
+        connectivityManager.unregisterNetworkCallback(callback)
+    }
+}

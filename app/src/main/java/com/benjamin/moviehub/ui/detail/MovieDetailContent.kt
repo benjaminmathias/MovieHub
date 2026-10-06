@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -45,6 +46,7 @@ import com.benjamin.moviehub.domain.model.Actor
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
 import com.benjamin.moviehub.ui.components.ActorItem
+import com.benjamin.moviehub.ui.components.EmptyStateView
 import com.benjamin.moviehub.ui.components.MovieCardShimmer
 import com.benjamin.moviehub.ui.components.PosterMovieItem
 import com.benjamin.moviehub.ui.components.previewMovie
@@ -57,23 +59,29 @@ private const val COLLAPSED_SYNOPSIS_LINES = 4
 @Composable
 fun MovieDetailContent(
     movie: Movie,
-    credits: MovieCredits,
+    credits: MovieCreditsUiState,
     modifier: Modifier = Modifier,
     recommendations: MovieRecommendationsUiState = MovieRecommendationsUiState.Empty,
     listState: LazyListState = rememberLazyListState(),
     isLibraryActionPending: Boolean = false,
+    libraryObservation: LibraryObservationUiState = LibraryObservationUiState.Ready,
     onToggleFavorite: (() -> Unit)? = null,
     onToggleWatchlist: (() -> Unit)? = null,
     onToggleWatched: (() -> Unit)? = null,
     onOpenTmdb: (() -> Unit)? = null,
     onRecommendationClick: (Int) -> Unit = {},
+    onRetryCredits: () -> Unit = {},
+    onRetryRecommendations: () -> Unit = {},
+    onRetryLibraryObservation: () -> Unit = {},
 ) {
     // Edge-to-edge insets: the system bottom inset goes into contentPadding, not the
     // Modifier, so content scrolls behind the bars instead of being clipped.
     val navigationInsets = WindowInsets.navigationBars.asPaddingValues()
     val layoutDirection = LocalLayoutDirection.current
+    val libraryActionsEnabled = !isLibraryActionPending && libraryObservation is LibraryObservationUiState.Ready
+    val creditsSuccess = credits as? MovieCreditsUiState.Success
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().testTag("detail_content_list"),
         state = listState,
         contentPadding =
             PaddingValues(
@@ -85,13 +93,30 @@ fun MovieDetailContent(
         item(key = "header") {
             MovieDetailHeader(
                 movie = movie,
-                director = credits.director?.takeIf(String::isNotBlank),
-                isLibraryActionPending = isLibraryActionPending,
+                director = creditsSuccess?.credits?.director?.takeIf(String::isNotBlank),
+                isLibraryActionPending = !libraryActionsEnabled,
                 onToggleFavorite = onToggleFavorite,
                 onToggleWatchlist = onToggleWatchlist,
                 onToggleWatched = onToggleWatched,
                 onOpenTmdb = onOpenTmdb,
             )
+        }
+
+        if (libraryObservation is LibraryObservationUiState.Error) {
+            item(key = "library_sync_error") {
+                Box(
+                    modifier = Modifier.fillMaxWidth().testTag("library_sync_error"),
+                    contentAlignment = Alignment.TopCenter,
+                ) {
+                    Box(modifier = Modifier.widthIn(max = DetailContentMaxWidth).fillMaxWidth()) {
+                        EmptyStateView(
+                            message = stringResource(R.string.error_syncing_library),
+                            onRetry = onRetryLibraryObservation,
+                            compact = true,
+                        )
+                    }
+                }
+            }
         }
 
         if (movie.overview.isNotBlank()) {
@@ -104,16 +129,37 @@ fun MovieDetailContent(
             }
         }
 
-        if (credits.actors.isNotEmpty()) {
-            item(key = "cast") {
-                DetailSection(
-                    title = stringResource(R.string.cast_principal),
-                    fullBleed = true,
-                ) {
-                    LazyRow {
-                        items(credits.actors, key = Actor::id) { actor ->
-                            ActorItem(actor = actor)
+        when (credits) {
+            MovieCreditsUiState.Loading -> Unit
+
+            is MovieCreditsUiState.Success -> {
+                if (credits.credits.actors.isNotEmpty()) {
+                    item(key = "cast") {
+                        DetailSection(
+                            title = stringResource(R.string.cast_principal),
+                            fullBleed = true,
+                        ) {
+                            LazyRow {
+                                items(credits.credits.actors, key = Actor::id) { actor ->
+                                    ActorItem(actor = actor)
+                                }
+                            }
                         }
+                    }
+                }
+            }
+
+            MovieCreditsUiState.Error -> {
+                item(key = "cast_error") {
+                    DetailSection(
+                        title = stringResource(R.string.cast_principal),
+                        modifier = Modifier.testTag("credits_error"),
+                    ) {
+                        EmptyStateView(
+                            message = stringResource(R.string.error_loading_credits),
+                            onRetry = onRetryCredits,
+                            compact = true,
+                        )
                     }
                 }
             }
@@ -154,7 +200,19 @@ fun MovieDetailContent(
                 }
             }
 
-            MovieRecommendationsUiState.Empty, MovieRecommendationsUiState.Error -> Unit
+            MovieRecommendationsUiState.Error -> {
+                item(key = "recommendations_error") {
+                    RecommendationsSection(modifier = Modifier.testTag("recommendations_error")) {
+                        EmptyStateView(
+                            message = stringResource(R.string.error_loading_recommendations),
+                            onRetry = onRetryRecommendations,
+                            compact = true,
+                        )
+                    }
+                }
+            }
+
+            MovieRecommendationsUiState.Empty -> Unit
         }
     }
 }
@@ -213,9 +271,13 @@ private fun SynopsisText(
 }
 
 @Composable
-private fun RecommendationsSection(content: @Composable () -> Unit) {
+private fun RecommendationsSection(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
     DetailSection(
         title = stringResource(R.string.you_might_also_like),
+        modifier = modifier,
         fullBleed = true,
         content = content,
     )
@@ -224,11 +286,12 @@ private fun RecommendationsSection(content: @Composable () -> Unit) {
 @Composable
 private fun DetailSection(
     title: String,
+    modifier: Modifier = Modifier,
     fullBleed: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     Box(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         contentAlignment = Alignment.TopCenter,
     ) {
         Column(
@@ -262,7 +325,7 @@ private fun MovieDetailContentPreview() {
     MovieHubTheme {
         MovieDetailContent(
             movie = previewMovie().copy(runtimeMinutes = 124, voteCount = 1200),
-            credits = MovieCredits(director = "James Cameron"),
+            credits = MovieCreditsUiState.Success(MovieCredits(director = "James Cameron")),
         )
     }
 }

@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.paging.PagingData
 import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
@@ -8,6 +9,7 @@ import com.benjamin.moviehub.domain.repository.MovieRepository
 import com.benjamin.moviehub.ui.discover.DiscoverViewModel
 import com.benjamin.moviehub.util.MainDispatcherRule
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -41,7 +43,7 @@ class DiscoverViewModelTest {
         coEvery {
             repository.getMovieGenres()
         } returns listOf(MovieGenre(id = 28, name = "Action"), MovieGenre(id = 18, name = "Drame"))
-        viewModel = DiscoverViewModel(repository)
+        viewModel = DiscoverViewModel(repository, SavedStateHandle())
     }
 
     @Test
@@ -179,5 +181,78 @@ class DiscoverViewModelTest {
             assertEquals(DiscoverFilters(), viewModel.uiState.value.appliedFilters)
             verify(exactly = 2) { repository.getDiscoverMovies(DiscoverFilters()) }
             job.cancel()
+        }
+
+    @Test
+    fun `genres load in flight keeps filter edits and requests genres once`() =
+        runTest {
+            val localRepository: MovieRepository = mockk()
+            every { localRepository.getDiscoverMovies(any()) } returns flowOf(PagingData.empty())
+            val genresGate = CompletableDeferred<List<MovieGenre>>()
+            coEvery { localRepository.getMovieGenres() } coAnswers { genresGate.await() }
+
+            val localViewModel = DiscoverViewModel(localRepository, SavedStateHandle())
+            advanceUntilIdle()
+
+            localViewModel.onGenreSelected(28)
+            localViewModel.onReleaseYearSelected(2020)
+            advanceUntilIdle()
+
+            assertEquals(true, localViewModel.uiState.value.isLoadingGenres)
+            assertEquals(emptyList<MovieGenre>(), localViewModel.uiState.value.genres)
+
+            genresGate.complete(listOf(MovieGenre(id = 28, name = "Action")))
+            advanceUntilIdle()
+
+            assertEquals(false, localViewModel.uiState.value.isLoadingGenres)
+            assertEquals(listOf(MovieGenre(id = 28, name = "Action")), localViewModel.uiState.value.genres)
+            assertEquals(28, localViewModel.uiState.value.draftFilters.genreId)
+            assertEquals(2020, localViewModel.uiState.value.draftFilters.releaseYear)
+            coVerify(exactly = 1) { localRepository.getMovieGenres() }
+        }
+
+    @Test
+    fun `draft and applied filters are restored independently from primitive saved values`() =
+        runTest {
+            val handle = SavedStateHandle()
+            val first = DiscoverViewModel(repository, handle)
+            advanceUntilIdle()
+
+            first.onGenreSelected(28)
+            first.onReleaseYearSelected(2020)
+            first.onMinimumRatingSelected(8.0)
+            first.onSortSelected(DiscoverSortOption.RELEASE_DATE)
+            first.applyFilters()
+            first.onGenreSelected(18)
+            advanceUntilIdle()
+
+            assertTrue(handle.keys().isNotEmpty())
+            val savedValues = handle.keys().map { key -> handle.get<Any?>(key) }
+            assertTrue(
+                savedValues.all { value -> value == null || value is Int || value is Double || value is String },
+            )
+
+            val restoredHandle = SavedStateHandle(handle.keys().associateWith { key -> handle.get<Any?>(key) })
+            val restored = DiscoverViewModel(repository, restoredHandle)
+            advanceUntilIdle()
+
+            assertEquals(
+                DiscoverFilters(
+                    genreId = 18,
+                    releaseYear = 2020,
+                    minimumVoteAverage = 8.0,
+                    sort = DiscoverSortOption.RELEASE_DATE,
+                ),
+                restored.uiState.value.draftFilters,
+            )
+            assertEquals(
+                DiscoverFilters(
+                    genreId = 28,
+                    releaseYear = 2020,
+                    minimumVoteAverage = 8.0,
+                    sort = DiscoverSortOption.RELEASE_DATE,
+                ),
+                restored.uiState.value.appliedFilters,
+            )
         }
 }

@@ -28,17 +28,20 @@ fun NetworkStatusEffect(
 
     var wasOffline by rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(status) {
+    val isAvailable = status == ConnectivityStatus.AVAILABLE
+
+    // Keyed on the offline flag rather than the raw status so LOST <-> UNAVAILABLE does not
+    // re-announce. Restoration is announced only once a usable connection is back (AVAILABLE);
+    // the offline banner queues behind unrelated messages instead of dismissing them.
+    LaunchedEffect(isOffline, isAvailable) {
         if (isOffline) {
             wasOffline = true
-            snackbarHostState.currentSnackbarData?.dismiss()
             snackbarHostState.showSnackbar(
                 message = offlineMessage,
-                duration = SnackbarDuration.Indefinite,
+                duration = SnackbarDuration.Short,
             )
-        } else if (wasOffline && status == ConnectivityStatus.AVAILABLE) {
+        } else if (wasOffline && isAvailable) {
             wasOffline = false
-            snackbarHostState.currentSnackbarData?.dismiss()
             snackbarHostState.showSnackbar(
                 message = restoredMessage,
                 duration = SnackbarDuration.Long,

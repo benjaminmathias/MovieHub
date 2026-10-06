@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.paging.PagingData
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import com.benjamin.moviehub.ui.search.SearchViewModel
@@ -34,7 +35,7 @@ class SearchViewModelTest {
     @Before
     fun setup() {
         coEvery { repository.searchMovies(any()) } returns flowOf(PagingData.empty())
-        viewModel = SearchViewModel(repository)
+        viewModel = SearchViewModel(repository, SavedStateHandle())
     }
 
     @Test
@@ -102,4 +103,22 @@ class SearchViewModelTest {
             coVerify(exactly = 0) { repository.searchMovies("") }
             job.cancel()
         }
+
+    @Test
+    fun `raw search query is restored from saved state`() =
+        runTest {
+            val handle = SavedStateHandle()
+            SearchViewModel(repository, handle).onSearchQueryChanged("  Interstellar  ")
+
+            assertTrue(handle.keys().all { key -> handle.get<Any?>(key) is String })
+
+            val restored = SearchViewModel(repository, handle)
+
+            assertEquals("  Interstellar  ", restored.searchQuery.value)
+        }
+
+    @Test
+    fun `search query starts empty without saved state`() {
+        assertEquals("", SearchViewModel(repository, SavedStateHandle()).searchQuery.value)
+    }
 }

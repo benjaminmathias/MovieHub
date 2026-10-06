@@ -30,8 +30,8 @@ internal fun LibraryMovieItem(
 ) {
     val haptic = LocalHapticFeedback.current
     val dismissState = rememberSwipeToDismissBoxState()
-    LaunchedEffect(dismissState.currentValue) {
-        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+    LaunchedEffect(dismissState.settledValue) {
+        if (dismissState.settledValue == SwipeToDismissBoxValue.EndToStart) {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onRemove(movie)
             dismissState.reset()

@@ -12,8 +12,11 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -65,5 +68,25 @@ class SettingsViewModelTest {
             viewModel.updateTheme(AppTheme.DARK)
 
             coVerify(exactly = 1) { preferences.setTheme(AppTheme.DARK) }
+        }
+
+    @Test
+    fun `repeated cache clear requests run a single operation`() =
+        runTest {
+            val gate = CompletableDeferred<Unit>()
+            coEvery { imageCacheCleaner.clear() } coAnswers { gate.await() }
+            val viewModel = SettingsViewModel(preferences, imageCacheCleaner)
+
+            viewModel.clearImageCache()
+            viewModel.clearImageCache()
+            runCurrent()
+
+            coVerify(exactly = 1) { imageCacheCleaner.clear() }
+            assertEquals(true, viewModel.isClearing.value)
+
+            gate.complete(Unit)
+            advanceUntilIdle()
+
+            assertEquals(false, viewModel.isClearing.value)
         }
 }

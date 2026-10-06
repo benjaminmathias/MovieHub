@@ -30,23 +30,46 @@ internal fun MovieListEntry(
     snackbarHostState: SnackbarHostState,
 ) {
     val viewModel: MovieListViewModel = hiltViewModel()
-    val heroMovie by viewModel.heroMovie.collectAsStateWithLifecycle()
+    val heroState by viewModel.heroMovieState.collectAsStateWithLifecycle()
+    val favoriteErrorPending by viewModel.favoriteErrorPending.collectAsStateWithLifecycle()
     val favoriteErrorMessage = stringResource(R.string.error_updating_favorite)
 
-    LaunchedEffect(viewModel, favoriteErrorMessage) {
-        viewModel.favoriteActionErrors.collect {
-            snackbarHostState.showSnackbar(favoriteErrorMessage)
-        }
-    }
+    FavoriteErrorEffect(
+        pending = favoriteErrorPending,
+        snackbarHostState = snackbarHostState,
+        message = favoriteErrorMessage,
+        onAcknowledged = viewModel::acknowledgeFavoriteError,
+    )
 
     MovieListScreen(
         categoryMovies = viewModel.categoryMovies,
-        heroMovie = heroMovie,
+        heroState = heroState,
+        onRetryHero = viewModel::retryHero,
         onMovieClick = onOpenDetails,
         onToggleFavorite = viewModel::onToggleFavorite,
         onSearchClick = onOpenSearch,
         onSettingsClick = onOpenSettings,
     )
+}
+
+/**
+ * Shows the generic favorite-error message while [pending] is true and acknowledges it only once the
+ * snackbar has finished displaying. When the caller leaves composition while the message is visible,
+ * the pending flag survives and the message is shown again on return; repeated failures share one message.
+ */
+@Composable
+internal fun FavoriteErrorEffect(
+    pending: Boolean,
+    snackbarHostState: SnackbarHostState,
+    message: String,
+    onAcknowledged: () -> Unit,
+) {
+    LaunchedEffect(pending, message) {
+        if (pending) {
+            snackbarHostState.showSnackbar(message)
+            onAcknowledged()
+        }
+    }
 }
 
 @Composable
@@ -109,6 +132,9 @@ internal fun MovieDetailEntry(
         onToggleWatchlist = viewModel::toggleWatchlist,
         onToggleWatched = viewModel::toggleWatched,
         onRetry = { viewModel.loadMovieDetails(movieId) },
+        onRetryCredits = viewModel::retryCredits,
+        onRetryRecommendations = viewModel::retryRecommendations,
+        onRetryLibraryObservation = viewModel::retryLibraryObservation,
         libraryActionErrors = viewModel.libraryActionErrors,
         onRecommendationClick = onOpenRecommendation,
     )

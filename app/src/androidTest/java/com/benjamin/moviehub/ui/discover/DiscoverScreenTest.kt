@@ -8,6 +8,8 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -16,6 +18,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -24,6 +27,7 @@ import androidx.paging.PagingState
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.TestStrings
 import com.benjamin.moviehub.core.theme.MovieHubTheme
+import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieGenre
@@ -108,6 +112,55 @@ class DiscoverScreenTest {
         yearField.performTextInput(validYear.toString())
         composeRule.runOnIdle { assertEquals(validYear, state.draftFilters.releaseYear) }
         composeRule.onNodeWithTag("discover_apply_filters").assertIsEnabled()
+    }
+
+    @Test
+    fun filterSheetRestoresCustomYearWithInvalidText() {
+        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+        val customYear = currentYear - 20
+        val restorationTester = StateRestorationTester(composeRule)
+        val restoredState =
+            initialState().copy(
+                draftFilters = DiscoverFilters(releaseYear = customYear),
+                appliedFilters = DiscoverFilters(),
+            )
+        var state by mutableStateOf(restoredState)
+        var releaseYearSelections = 0
+
+        restorationTester.setContent {
+            MovieHubTheme {
+                DiscoverFilterSheet(
+                    state = state,
+                    currentYear = currentYear,
+                    yearOptions = listOf<Int?>(null) + (currentYear downTo currentYear - 9),
+                    onGenreSelected = {},
+                    onReleaseYearSelected = { year ->
+                        releaseYearSelections++
+                        state = state.copy(draftFilters = state.draftFilters.copy(releaseYear = year))
+                    },
+                    onMinimumRatingSelected = {},
+                    onSortSelected = {},
+                    onApplyFilters = {},
+                    onResetFilters = {},
+                    onClose = {},
+                    onRetryGenres = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("discover_year_row").performClick()
+        composeRule.onNodeWithTag("discover_custom_year").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("discover_custom_year").performTextReplacement("3000")
+        composeRule.onNodeWithTag("discover_apply_filters").assertIsNotEnabled()
+
+        restorationTester.emulateSavedInstanceStateRestore()
+
+        composeRule.onNodeWithTag("discover_custom_year").performScrollTo().assertTextContains("3000")
+        composeRule.onNodeWithTag("discover_apply_filters").assertIsNotEnabled()
+        composeRule.runOnIdle {
+            assertEquals(0, releaseYearSelections)
+            assertEquals(customYear, state.draftFilters.releaseYear)
+        }
     }
 
     @Test

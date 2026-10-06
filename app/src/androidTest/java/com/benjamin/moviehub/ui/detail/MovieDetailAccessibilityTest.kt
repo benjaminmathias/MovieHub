@@ -47,7 +47,7 @@ class MovieDetailAccessibilityTest {
     fun detailShowsCreditsAndUsefulMetadata() {
         setDetailContent(
             movie(voteAverage = 8.7, voteCount = 123, genres = listOf("Action", "Drame")),
-            credits = MovieCredits(director = "Director Name"),
+            credits = MovieCreditsUiState.Success(MovieCredits(director = "Director Name")),
         )
 
         composeRule.onNodeWithText(TestStrings.get(R.string.rating_out_of_ten, 8.7)).assertIsDisplayed()
@@ -89,7 +89,10 @@ class MovieDetailAccessibilityTest {
                 MovieHubTheme {
                     MovieDetailContent(
                         movie = movie(voteCount = 1234567).copy(title = title),
-                        credits = MovieCredits(director = "Un réalisateur au nom particulièrement long"),
+                        credits =
+                            MovieCreditsUiState.Success(
+                                MovieCredits(director = "Un réalisateur au nom particulièrement long"),
+                            ),
                     )
                 }
             }
@@ -171,8 +174,9 @@ class MovieDetailAccessibilityTest {
                     uiState =
                         MovieDetailUiState.Success(
                             movie = movie,
-                            credits = MovieCredits(),
+                            credits = MovieCreditsUiState.Success(MovieCredits()),
                             isLibraryActionPending = isLibraryActionPending,
+                            libraryObservation = LibraryObservationUiState.Ready,
                         ),
                     onBackClick = {},
                     onToggleFavorite = onToggleFavorite,
@@ -186,7 +190,7 @@ class MovieDetailAccessibilityTest {
 
     private fun setDetailContent(
         movie: Movie,
-        credits: MovieCredits = MovieCredits(),
+        credits: MovieCreditsUiState = MovieCreditsUiState.Success(MovieCredits()),
     ) {
         composeRule.setContent {
             MovieHubTheme {

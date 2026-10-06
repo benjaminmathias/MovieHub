@@ -35,6 +35,7 @@ import com.benjamin.moviehub.ui.components.CompactMovieShimmerList
 import com.benjamin.moviehub.ui.components.EmptyStateView
 import com.benjamin.moviehub.ui.components.MovieSearchBar
 import com.benjamin.moviehub.ui.components.PagingStatus
+import com.benjamin.moviehub.ui.components.isRefreshError
 import com.benjamin.moviehub.ui.components.movieAppendFooter
 import com.benjamin.moviehub.ui.components.moviePagingItems
 import com.benjamin.moviehub.ui.components.phase
@@ -132,14 +133,24 @@ private fun SearchMovieList(
 ) {
     val appendErrorMessage = stringResource(R.string.error_loading_movies)
 
-    LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
-        moviePagingItems(lazyPagingItems) { movie ->
-            CompactMovieItem(movie = movie, onMovieClick = onMovieClick)
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (lazyPagingItems.isRefreshError) {
+            EmptyStateView(
+                message = stringResource(R.string.error_refreshing_movies),
+                onRetry = { lazyPagingItems.retry() },
+                compact = true,
+            )
         }
-        movieAppendFooter(
-            items = lazyPagingItems,
-            errorMessage = appendErrorMessage,
-            loading = { CompactMovieShimmerItem() },
-        )
+
+        LazyColumn(modifier = Modifier.weight(1f), contentPadding = PaddingValues(vertical = 8.dp)) {
+            moviePagingItems(lazyPagingItems) { movie ->
+                CompactMovieItem(movie = movie, onMovieClick = onMovieClick)
+            }
+            movieAppendFooter(
+                items = lazyPagingItems,
+                errorMessage = appendErrorMessage,
+                loading = { CompactMovieShimmerItem() },
+            )
+        }
     }
 }

@@ -85,15 +85,33 @@ class MovieRepositoryImpl
                 }
             }
 
-        override suspend fun getMovieGenres(): List<MovieGenre> {
-            val genres =
-                apiService
-                    .getMovieGenres()
-                    .genres
-                    .mapNotNull { genre -> genre.validName()?.let { name -> MovieGenre(id = genre.id, name = name) } }
-            movieDao.upsertGenres(genres.map { GenreEntity(id = it.id, name = it.name) })
-            return genres
-        }
+        override suspend fun getMovieGenres(): List<MovieGenre> =
+            try {
+                val genres =
+                    apiService
+                        .getMovieGenres()
+                        .genres
+                        .mapNotNull { genre -> genre.validName()?.let { name -> MovieGenre(id = genre.id, name = name) } }
+                movieDao.upsertGenres(genres.map { GenreEntity(id = it.id, name = it.name) })
+                genres
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (!e.isRecoverable()) throw e
+                // A recoverable network failure should not empty the Discover filters: reuse
+                // the persisted dictionary when it still yields at least one usable name,
+                // otherwise surface the original failure.
+                val cached =
+                    movieDao
+                        .getGenres()
+                        .mapNotNull { entity ->
+                            entity.name
+                                .trim()
+                                .takeIf { it.isNotEmpty() }
+                                ?.let { name -> MovieGenre(id = entity.id, name = name) }
+                        }
+                if (cached.isNotEmpty()) cached else throw e
+            }
 
         override fun getHeroMovie(category: MovieCategory): Flow<Movie?> =
             movieDao.getHeroMovieFlow(category.key).map { entity -> entity?.toDomain(genreNameMap()) }

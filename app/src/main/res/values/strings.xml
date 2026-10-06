@@ -48,6 +48,11 @@
     <string name="retry">Réessayer</string>
 
     <string name="error_loading_movie_detail">Impossible de charger les détails du film.</string>
+    <string name="error_loading_credits">Impossible de charger la distribution.</string>
+    <string name="error_loading_recommendations">Impossible de charger les recommandations.</string>
+    <string name="error_syncing_library">Impossible de synchroniser la bibliothèque.</string>
+    <string name="error_loading_hero">Impossible de charger le film à la une.</string>
+    <string name="error_refreshing_movies">Impossible d’actualiser les films. Les résultats précédents restent affichés.</string>
     <string name="rating_value">%1$.1f</string>
     <string name="rating_out_of_ten">%1$.1f / 10</string>
     <string name="vote_count">%1$s votes</string>

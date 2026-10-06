@@ -78,6 +78,36 @@ class DiscoverMoviePagingSourceTest {
             coVerify { apiService.discoverMovies(null, null, null, null, "primary_release_date.desc", 1) }
         }
 
+    @Test
+    fun `page 499 below an explicit larger total still appends`() =
+        runTest {
+            val apiService = mockApi(MovieResponse(movies = listOf(movieDto(499)), totalPages = 1000))
+
+            val page = source(apiService).load(appendParams(key = 499)) as PagingSource.LoadResult.Page
+
+            assertEquals(500, page.nextKey)
+        }
+
+    @Test
+    fun `page 500 ends pagination even when the reported total exceeds the cap`() =
+        runTest {
+            val apiService = mockApi(MovieResponse(movies = listOf(movieDto(500)), totalPages = 1000))
+
+            val page = source(apiService).load(appendParams(key = 500)) as PagingSource.LoadResult.Page
+
+            assertEquals(null, page.nextKey)
+        }
+
+    @Test
+    fun `an omitted total keeps a full page open and ends a short page`() =
+        runTest {
+            val fullApi = mockApi(MovieResponse(movies = List(20) { movieDto(it) }, totalPages = null))
+            assertEquals(2, (source(fullApi).load(refreshParams()) as PagingSource.LoadResult.Page).nextKey)
+
+            val shortApi = mockApi(MovieResponse(movies = listOf(movieDto(1)), totalPages = null))
+            assertEquals(null, (source(shortApi).load(refreshParams()) as PagingSource.LoadResult.Page).nextKey)
+        }
+
     private fun source(
         apiService: MovieApiService,
         filters: DiscoverFilters = DiscoverFilters(),

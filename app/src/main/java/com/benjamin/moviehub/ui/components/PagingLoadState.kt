@@ -36,6 +36,22 @@ val LazyPagingItems<*>.isEmptyAfterEndOfPagination: Boolean
             loadState.refresh is LoadState.NotLoading &&
             (loadState.append as? LoadState.NotLoading)?.endOfPaginationReached == true
 
+/**
+ * A refresh failed while the feed already displays rows. The source and the mediator are checked
+ * explicitly because the convenience `loadState.refresh` can report NotLoading when the mediator
+ * succeeds even though the source refresh failed.
+ */
+internal fun isRefreshError(
+    hasRows: Boolean,
+    refresh: LoadState,
+    sourceRefresh: LoadState,
+    mediatorRefresh: LoadState?,
+): Boolean = hasRows && (refresh is LoadState.Error || sourceRefresh is LoadState.Error || mediatorRefresh is LoadState.Error)
+
+/** A refresh failed while the feed keeps displaying its rows, whether the source or the mediator drove it. */
+val LazyPagingItems<*>.isRefreshError: Boolean
+    get() = isRefreshError(itemCount > 0, loadState.refresh, loadState.source.refresh, loadState.mediator?.refresh)
+
 val LazyPagingItems<*>.phase: PagingPhase
     get() =
         when {

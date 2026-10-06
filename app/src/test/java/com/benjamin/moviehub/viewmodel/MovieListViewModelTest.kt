@@ -4,21 +4,23 @@ import androidx.paging.PagingData
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCategory
 import com.benjamin.moviehub.domain.repository.MovieRepository
+import com.benjamin.moviehub.ui.list.HeroMovieUiState
 import com.benjamin.moviehub.ui.list.MovieListViewModel
 import com.benjamin.moviehub.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.runs
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -53,39 +55,82 @@ class MovieListViewModelTest {
         }
 
     @Test
-    fun `hero movie is loaded from the popular feed`() =
+    fun `hero movie is exposed as success from the popular feed`() =
         runTest {
             val hero = movie()
             coEvery { repository.getHeroMovie(MovieCategory.POPULAR) } returns flowOf(hero)
             val heroViewModel = MovieListViewModel(repository)
 
-            val job = launch { heroViewModel.heroMovie.collect() }
+            val job = launch { heroViewModel.heroMovieState.collect() }
             advanceUntilIdle()
 
-            assertEquals(hero, heroViewModel.heroMovie.value)
+            assertEquals(HeroMovieUiState.Success(hero), heroViewModel.heroMovieState.value)
             coVerify { repository.getHeroMovie(MovieCategory.POPULAR) }
 
             job.cancel()
         }
 
     @Test
-    fun `toggle favorite is persisted and its failure emits an error`() =
+    fun `an empty popular feed is a legitimate hero success`() =
+        runTest {
+            val job = launch { viewModel.heroMovieState.collect() }
+            advanceUntilIdle()
+
+            assertEquals(HeroMovieUiState.Success(null), viewModel.heroMovieState.value)
+
+            job.cancel()
+        }
+
+    @Test
+    fun `hero read failure becomes an error and retry restarts the room flow`() =
+        runTest {
+            val hero = movie()
+            val failedHero = flow<Movie?> { throw IOException("offline") }
+            coEvery { repository.getHeroMovie(MovieCategory.POPULAR) } returns failedHero andThen flowOf(hero)
+            val heroViewModel = MovieListViewModel(repository)
+            val job = launch { heroViewModel.heroMovieState.collect() }
+            advanceUntilIdle()
+
+            assertEquals(HeroMovieUiState.Error, heroViewModel.heroMovieState.value)
+
+            heroViewModel.retryHero()
+            advanceUntilIdle()
+
+            assertEquals(HeroMovieUiState.Success(hero), heroViewModel.heroMovieState.value)
+            coVerify(exactly = 2) { repository.getHeroMovie(MovieCategory.POPULAR) }
+
+            job.cancel()
+        }
+
+    @Test
+    fun `favorite failure stays pending until acknowledged and repeated failures coalesce`() =
         runTest {
             val target = movie()
-            coEvery { repository.toggleFavorite(target) } just runs
-            viewModel.onToggleFavorite(target)
-            advanceUntilIdle()
-            coVerify { repository.toggleFavorite(target) }
-
-            val errors = mutableListOf<Unit>()
-            val job = launch { viewModel.favoriteActionErrors.collect { errors += it } }
-            advanceUntilIdle()
             coEvery { repository.toggleFavorite(target) } throws IOException("offline")
+
+            viewModel.onToggleFavorite(target)
+            advanceUntilIdle()
+            assertTrue(viewModel.favoriteErrorPending.value)
+
+            // A second failure before acknowledgement must not create a second message.
+            viewModel.onToggleFavorite(target)
+            advanceUntilIdle()
+            assertTrue(viewModel.favoriteErrorPending.value)
+
+            viewModel.acknowledgeFavoriteError()
+            assertFalse(viewModel.favoriteErrorPending.value)
+        }
+
+    @Test
+    fun `a successful favorite write never becomes pending`() =
+        runTest {
+            val target = movie()
+            coEvery { repository.toggleFavorite(target) } returns Unit
+
             viewModel.onToggleFavorite(target)
             advanceUntilIdle()
 
-            assertEquals(1, errors.size)
-            job.cancel()
+            assertFalse(viewModel.favoriteErrorPending.value)
         }
 
     private fun movie() =

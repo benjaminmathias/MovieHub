@@ -24,6 +24,7 @@ import com.benjamin.moviehub.ui.components.MovieCardShimmer
 import com.benjamin.moviehub.ui.components.RowMovieItem
 import com.benjamin.moviehub.ui.components.isInitialError
 import com.benjamin.moviehub.ui.components.isInitialLoading
+import com.benjamin.moviehub.ui.components.isRefreshError
 import com.benjamin.moviehub.ui.components.movieAppendFooter
 import com.benjamin.moviehub.ui.components.moviePagingItems
 
@@ -43,6 +44,14 @@ internal fun CategoryRow(
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
         )
+
+        if (lazyPagingItems.isRefreshError) {
+            EmptyStateView(
+                message = stringResource(R.string.error_refreshing_movies),
+                onRetry = { lazyPagingItems.retry() },
+                compact = true,
+            )
+        }
 
         when {
             lazyPagingItems.isInitialLoading -> CategoryRowLoadingShimmer()

@@ -85,6 +85,9 @@ fun MovieDetailScreen(
     onToggleWatchlist: () -> Unit = {},
     onToggleWatched: () -> Unit = {},
     onRetry: () -> Unit,
+    onRetryCredits: () -> Unit = {},
+    onRetryRecommendations: () -> Unit = {},
+    onRetryLibraryObservation: () -> Unit = {},
     libraryActionErrors: Flow<Unit> = emptyFlow(),
     onRecommendationClick: (Int) -> Unit = {},
 ) {
@@ -136,6 +139,7 @@ fun MovieDetailScreen(
                     recommendations = uiState.recommendations,
                     listState = listState,
                     isLibraryActionPending = uiState.isLibraryActionPending,
+                    libraryObservation = uiState.libraryObservation,
                     onToggleFavorite = onToggleFavorite,
                     onToggleWatchlist = onToggleWatchlist,
                     onToggleWatched = onToggleWatched,
@@ -144,6 +148,9 @@ fun MovieDetailScreen(
                             ?.takeIf(::isValidHttpUrl)
                             ?.let { url -> { openMovieInBrowser(context, url) } },
                     onRecommendationClick = onRecommendationClick,
+                    onRetryCredits = onRetryCredits,
+                    onRetryRecommendations = onRetryRecommendations,
+                    onRetryLibraryObservation = onRetryLibraryObservation,
                 )
             }
 
@@ -367,7 +374,7 @@ private fun MovieDetailScreenPreview() {
             uiState =
                 MovieDetailUiState.Success(
                     movie = previewMovie().copy(runtimeMinutes = 124, voteCount = 1200),
-                    credits = MovieCredits(director = "James Cameron"),
+                    credits = MovieCreditsUiState.Success(MovieCredits(director = "James Cameron")),
                 ),
             onBackClick = {},
             onToggleFavorite = {},

@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.data.paging
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.benjamin.moviehub.awaitItems
 import com.benjamin.moviehub.data.local.MovieDatabase
@@ -49,7 +50,7 @@ class DiscoverFavoritePagingTest {
             val api = FakeMovieApiService()
             val differ = newMovieDiffer()
             val emissions = AtomicInteger()
-            val viewModel = DiscoverViewModel(MovieRepositoryImpl(api, database, dao))
+            val viewModel = DiscoverViewModel(MovieRepositoryImpl(api, database, dao), SavedStateHandle())
             val job =
                 launch(Dispatchers.Main) {
                     viewModel.discoverResults.collectLatest {

@@ -54,8 +54,11 @@ class SettingsViewModel
         }
 
         fun clearImageCache() {
+            // Synchronous guard: a request received while a clear is in flight is ignored so
+            // concurrent operations cannot race on the clearing flag.
+            if (_isClearing.value) return
+            _isClearing.value = true
             viewModelScope.launch {
-                _isClearing.value = true
                 try {
                     imageCacheCleaner.clear()
                     _imageCacheMessages.tryEmit(true)

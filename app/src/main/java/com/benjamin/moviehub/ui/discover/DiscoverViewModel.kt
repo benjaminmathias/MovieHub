@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.ui.discover
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
@@ -27,6 +28,33 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * Bundle-compatible keys used to persist one [DiscoverFilters] instance. Values are stored as
+ * primitives so they survive process death without a custom [android.os.Parcelable].
+ */
+private data class FilterKeys(
+    val genreId: String,
+    val releaseYear: String,
+    val minimumRating: String,
+    val sort: String,
+)
+
+private val DRAFT_FILTER_KEYS =
+    FilterKeys(
+        genreId = "discover_draft_genre_id",
+        releaseYear = "discover_draft_release_year",
+        minimumRating = "discover_draft_minimum_rating",
+        sort = "discover_draft_sort",
+    )
+
+private val APPLIED_FILTER_KEYS =
+    FilterKeys(
+        genreId = "discover_applied_genre_id",
+        releaseYear = "discover_applied_release_year",
+        minimumRating = "discover_applied_minimum_rating",
+        sort = "discover_applied_sort",
+    )
+
 data class DiscoverUiState(
     val draftFilters: DiscoverFilters = DiscoverFilters(),
     val appliedFilters: DiscoverFilters = DiscoverFilters(),
@@ -40,8 +68,17 @@ class DiscoverViewModel
     @Inject
     constructor(
         private val repository: MovieRepository,
+        private val savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
-        private val _uiState = MutableStateFlow(DiscoverUiState())
+        // Restored before the paging pipeline is observed so the first query already uses the
+        // filters the user had applied. Paging data itself is never persisted.
+        private val _uiState =
+            MutableStateFlow(
+                DiscoverUiState(
+                    draftFilters = savedStateHandle.readFilters(DRAFT_FILTER_KEYS),
+                    appliedFilters = savedStateHandle.readFilters(APPLIED_FILTER_KEYS),
+                ),
+            )
         val uiState: StateFlow<DiscoverUiState> = _uiState.asStateFlow()
         private var genresJob: Job? = null
 
@@ -77,21 +114,34 @@ class DiscoverViewModel
 
         fun applyFilters() {
             _uiState.update { state -> state.copy(appliedFilters = state.draftFilters) }
+            persistApplied(_uiState.value.appliedFilters)
         }
 
         fun resetFilters() {
             val defaults = DiscoverFilters()
             _uiState.update { it.copy(draftFilters = defaults, appliedFilters = defaults) }
+            persistDraft(defaults)
+            persistApplied(defaults)
         }
 
         fun retryGenres() = loadGenres()
 
         private fun updateDraft(transform: (DiscoverFilters) -> DiscoverFilters) {
             _uiState.update { state -> state.copy(draftFilters = transform(state.draftFilters)) }
+            persistDraft(_uiState.value.draftFilters)
         }
 
         private fun syncDraftToApplied() {
             _uiState.update { state -> state.copy(draftFilters = state.appliedFilters) }
+            persistDraft(_uiState.value.draftFilters)
+        }
+
+        private fun persistDraft(filters: DiscoverFilters) {
+            savedStateHandle.writeFilters(DRAFT_FILTER_KEYS, filters)
+        }
+
+        private fun persistApplied(filters: DiscoverFilters) {
+            savedStateHandle.writeFilters(APPLIED_FILTER_KEYS, filters)
         }
 
         private fun loadGenres() {
@@ -100,12 +150,10 @@ class DiscoverViewModel
             genresJob =
                 viewModelScope.launch {
                     try {
-                        _uiState.update {
-                            it.copy(
-                                genres = repository.getMovieGenres().toImmutableList(),
-                                isLoadingGenres = false,
-                            )
-                        }
+                        // Fetched outside the state update: the update lambda can be retried and
+                        // must not overwrite filter edits made while the request is in flight.
+                        val genres = repository.getMovieGenres().toImmutableList()
+                        _uiState.update { it.copy(genres = genres, isLoadingGenres = false) }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
@@ -114,3 +162,26 @@ class DiscoverViewModel
                 }
         }
     }
+
+private fun SavedStateHandle.readFilters(keys: FilterKeys): DiscoverFilters =
+    DiscoverFilters(
+        genreId = get<Int>(keys.genreId),
+        releaseYear = get<Int>(keys.releaseYear),
+        minimumVoteAverage = get<Double>(keys.minimumRating),
+        sort = readSort(keys.sort),
+    )
+
+private fun SavedStateHandle.readSort(sortKey: String): DiscoverSortOption {
+    val savedName = get<String>(sortKey) ?: return DiscoverSortOption.POPULARITY
+    return DiscoverSortOption.entries.firstOrNull { it.name == savedName } ?: DiscoverSortOption.POPULARITY
+}
+
+private fun SavedStateHandle.writeFilters(
+    keys: FilterKeys,
+    filters: DiscoverFilters,
+) {
+    this[keys.genreId] = filters.genreId
+    this[keys.releaseYear] = filters.releaseYear
+    this[keys.minimumRating] = filters.minimumVoteAverage
+    this[keys.sort] = filters.sort.name
+}

@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.ui.navigation
 
+import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
@@ -99,6 +100,11 @@ fun NavigationRoot(networkStatus: ConnectivityStatus) {
     val backStack = backStacks.getValue(selected)
     val showTopLevelNavigation = TopLevelDestination.of(backStack.lastOrNull()) != null
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // System back at a non-HOME tab root returns to HOME; nested entries keep the NavDisplay handling.
+    BackHandler(enabled = selected != TopLevelDestination.HOME && backStack.size == 1) {
+        selected = TopLevelDestination.HOME
+    }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val useNavigationRail = maxWidth >= 600.dp

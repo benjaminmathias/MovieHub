@@ -11,12 +11,20 @@ data class MovieGenresResponse(
     @SerializedName("genres") val genres: List<GenreDto> = emptyList(),
 )
 
+/**
+ * TMDB exposes at most this many pages. Requesting beyond it is rejected by the API as an
+ * invalid page, so pagination must stop here even when the reported total is higher.
+ */
+private const val TMDB_MAX_PAGE = 500
+
 fun MovieResponse.isEndOfPagination(
     page: Int,
     pageSize: Int,
-): Boolean =
-    totalPages?.let { page >= it }
+): Boolean {
+    if (page >= TMDB_MAX_PAGE) return true
+    return totalPages?.let { page >= it }
         ?: (movies.isEmpty() || movies.size < pageSize)
+}
 
 data class GenreDto(
     @SerializedName("id") val id: Int,

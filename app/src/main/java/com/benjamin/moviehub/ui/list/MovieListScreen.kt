@@ -26,9 +26,9 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCategory
+import com.benjamin.moviehub.ui.components.EmptyStateView
 import com.benjamin.moviehub.ui.components.HeroMovieBanner
 import com.benjamin.moviehub.ui.components.HeroMovieShimmer
-import com.benjamin.moviehub.ui.components.isInitialLoading
 import com.benjamin.moviehub.ui.components.isRefreshing
 import kotlinx.coroutines.flow.Flow
 
@@ -36,7 +36,8 @@ import kotlinx.coroutines.flow.Flow
 @Composable
 fun MovieListScreen(
     categoryMovies: Map<MovieCategory, Flow<PagingData<Movie>>>,
-    heroMovie: Movie?,
+    heroState: HeroMovieUiState,
+    onRetryHero: () -> Unit,
     onMovieClick: (Int) -> Unit,
     onToggleFavorite: (Movie) -> Unit,
     onSearchClick: () -> Unit,
@@ -71,7 +72,8 @@ fun MovieListScreen(
     ) { paddingValues ->
         HomeContent(
             categoryMovies = categoryMovies,
-            heroMovie = heroMovie,
+            heroState = heroState,
+            onRetryHero = onRetryHero,
             onMovieClick = onMovieClick,
             onToggleFavorite = onToggleFavorite,
             modifier = Modifier.fillMaxSize().padding(paddingValues),
@@ -83,7 +85,8 @@ fun MovieListScreen(
 @Composable
 private fun HomeContent(
     categoryMovies: Map<MovieCategory, Flow<PagingData<Movie>>>,
-    heroMovie: Movie?,
+    heroState: HeroMovieUiState,
+    onRetryHero: () -> Unit,
     onMovieClick: (Int) -> Unit,
     onToggleFavorite: (Movie) -> Unit,
     modifier: Modifier = Modifier,
@@ -105,14 +108,24 @@ private fun HomeContent(
             contentPadding = PaddingValues(bottom = 8.dp),
         ) {
             item(key = "hero", contentType = "hero") {
-                if (heroMovie != null) {
-                    HeroMovieBanner(
-                        movie = heroMovie,
-                        onMovieClick = onMovieClick,
-                        onToggleFavorite = onToggleFavorite,
-                    )
-                } else if (homeMovies.getValue(MovieCategory.POPULAR).isInitialLoading) {
-                    HeroMovieShimmer()
+                when (heroState) {
+                    HeroMovieUiState.Loading -> HeroMovieShimmer()
+
+                    is HeroMovieUiState.Success ->
+                        heroState.movie?.let { movie ->
+                            HeroMovieBanner(
+                                movie = movie,
+                                onMovieClick = onMovieClick,
+                                onToggleFavorite = onToggleFavorite,
+                            )
+                        }
+
+                    HeroMovieUiState.Error ->
+                        EmptyStateView(
+                            message = stringResource(R.string.error_loading_hero),
+                            onRetry = onRetryHero,
+                            compact = true,
+                        )
                 }
             }
 
