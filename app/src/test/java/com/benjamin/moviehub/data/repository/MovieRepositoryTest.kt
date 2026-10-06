@@ -8,16 +8,11 @@ import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.remote.MovieApiService
 import com.benjamin.moviehub.data.remote.MovieDto
 import com.benjamin.moviehub.data.remote.MovieResponse
-import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCategory
 import com.benjamin.moviehub.domain.model.MovieGenre
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.runs
-import io.mockk.slot
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -59,42 +54,6 @@ class MovieRepositoryTest {
 
             assertEquals(localMovie.toDomain(), result)
             coVerify(exactly = 0) { dao.insertMovie(any()) }
-        }
-
-    @Test
-    fun `set favorite inserts missing movie with relative image paths`() =
-        runTest {
-            val apiService = mockk<MovieApiService>()
-            val database = mockk<MovieDatabase>()
-            val dao = mockk<MovieDao>()
-            val entitySlot = slot<MovieEntity>()
-            val repository = MovieRepositoryImpl(apiService, database, dao)
-            val movie =
-                Movie(
-                    id = 7,
-                    title = "Missing Movie",
-                    overview = "Overview",
-                    posterPath = "https://image.tmdb.org/t/p/w500/poster.jpg",
-                    backdropPath = "https://image.tmdb.org/t/p/w780/backdrop.jpg",
-                    voteAverage = 7.0,
-                    releaseDate = "2024-01-01",
-                    webUrl = "https://www.themoviedb.org/movie/7",
-                    isFavorite = false,
-                    genreIds = persistentListOf(),
-                    genres = persistentListOf(),
-                )
-
-            coEvery { dao.setLibraryFlag(capture(entitySlot), isFavorite = true) } just runs
-            coEvery { dao.toggleFavorite(any()) } just runs
-
-            repository.setFavorite(movie, true)
-            repository.toggleFavorite(movie)
-
-            coVerify(exactly = 1) { dao.setLibraryFlag(any(), isFavorite = true) }
-            coVerify(exactly = 1) { dao.toggleFavorite(any()) }
-            assertEquals(true, entitySlot.captured.isFavorite)
-            assertEquals("/poster.jpg", entitySlot.captured.posterPath)
-            assertEquals("/backdrop.jpg", entitySlot.captured.backdropPath)
         }
 
     @Test

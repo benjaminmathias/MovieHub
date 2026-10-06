@@ -145,7 +145,7 @@ class DiscoverViewModel
         }
 
         private fun loadGenres() {
-            genresJob?.cancel()
+            if (genresJob?.isActive == true) return
             _uiState.update { it.copy(isLoadingGenres = true, hasGenreError = false) }
             genresJob =
                 viewModelScope.launch {

@@ -13,15 +13,20 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -84,6 +89,42 @@ class DiscoverViewModelTest {
 
             assertEquals(false, viewModel.uiState.value.hasGenreError)
             assertEquals(listOf(MovieGenre(id = 28, name = "Action")), viewModel.uiState.value.genres)
+        }
+
+    @Test
+    fun `genre retries keep the initial request while it is in flight`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val localRepository: MovieRepository = mockk()
+            val genresGate = CompletableDeferred<List<MovieGenre>>()
+            var cancellations = 0
+            coEvery { localRepository.getMovieGenres() } coAnswers {
+                try {
+                    genresGate.await()
+                } catch (e: CancellationException) {
+                    cancellations++
+                    throw e
+                }
+            }
+            val viewModel = DiscoverViewModel(localRepository, SavedStateHandle())
+
+            // Ignore duplicate triggers before the initial coroutine starts as well.
+            viewModel.retryGenres()
+            runCurrent()
+            viewModel.retryGenres()
+            runCurrent()
+            viewModel.retryGenres()
+            runCurrent()
+
+            val genres = listOf(MovieGenre(id = 18, name = "Drame"))
+            genresGate.complete(genres)
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { localRepository.getMovieGenres() }
+            assertEquals(0, cancellations)
+            assertEquals(genres, viewModel.uiState.value.genres)
+            assertEquals(false, viewModel.uiState.value.isLoadingGenres)
+            assertEquals(false, viewModel.uiState.value.hasGenreError)
         }
 
     @Test

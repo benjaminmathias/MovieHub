@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.LibraryFlag
 import com.benjamin.moviehub.domain.model.Movie
+import com.benjamin.moviehub.domain.repository.LibraryRepository
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import com.benjamin.moviehub.domain.repository.setLibraryFlag
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,6 +32,7 @@ class MovieDetailViewModel
     @Inject
     constructor(
         private val repository: MovieRepository,
+        private val libraryRepository: LibraryRepository,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow<MovieDetailUiState>(MovieDetailUiState.Loading)
         val uiState: StateFlow<MovieDetailUiState> = _uiState.asStateFlow()
@@ -97,11 +99,12 @@ class MovieDetailViewModel
 
         /**
          * Reloads only the credits section, keeping the main film and the recommendations
-         * untouched. An in-flight retry is left as is.
+         * untouched. An initial load or retry already in flight is left as is.
          */
         fun retryCredits() {
-            val movieId = currentMovieId() ?: return
-            if (creditsRetryJob?.isActive == true) return
+            val state = _uiState.value as? MovieDetailUiState.Success ?: return
+            if (state.credits == MovieCreditsUiState.Loading || creditsRetryJob?.isActive == true) return
+            val movieId = state.movie.id
             creditsRetryJob =
                 viewModelScope.launch {
                     updateSuccess(movieId) { it.copy(credits = MovieCreditsUiState.Loading) }
@@ -110,10 +113,11 @@ class MovieDetailViewModel
                 }
         }
 
-        /** Reloads only the recommendations section. An in-flight retry is left as is. */
+        /** Reloads only recommendations, keeping any initial load or retry already in flight. */
         fun retryRecommendations() {
-            val movieId = currentMovieId() ?: return
-            if (recommendationsRetryJob?.isActive == true) return
+            val state = _uiState.value as? MovieDetailUiState.Success ?: return
+            if (state.recommendations == MovieRecommendationsUiState.Loading || recommendationsRetryJob?.isActive == true) return
+            val movieId = state.movie.id
             recommendationsRetryJob =
                 viewModelScope.launch {
                     updateSuccess(movieId) { it.copy(recommendations = MovieRecommendationsUiState.Loading) }
@@ -151,7 +155,7 @@ class MovieDetailViewModel
                     _uiState.value = state.copy(movie = flag.apply(previous, value), isLibraryActionPending = true)
 
                     try {
-                        repository.setLibraryFlag(previous, flag, value)
+                        libraryRepository.setLibraryFlag(previous, flag, value)
                         setLibraryActionPending(previous.id, false)
                     } catch (e: CancellationException) {
                         throw e
@@ -206,7 +210,7 @@ class MovieDetailViewModel
             libraryJob =
                 viewModelScope.launch {
                     try {
-                        repository.getLibraryMovies().collectLatest { localMovies ->
+                        libraryRepository.getLibraryMovies().collectLatest { localMovies ->
                             val localById = localMovies.associateBy(Movie::id)
                             libraryById.value = localById
                             updateSuccess(movieId) {

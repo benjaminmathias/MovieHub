@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.Movie
-import com.benjamin.moviehub.domain.repository.MovieRepository
+import com.benjamin.moviehub.domain.repository.LibraryRepository
 import com.benjamin.moviehub.domain.repository.setLibraryFlag
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
@@ -50,7 +50,7 @@ sealed class LibraryUiState {
 class LibraryViewModel
     @Inject
     constructor(
-        private val repository: MovieRepository,
+        private val repository: LibraryRepository,
     ) : ViewModel() {
         private val retryTrigger = MutableStateFlow(0)
         private val _actionErrors = MutableSharedFlow<Unit>(extraBufferCapacity = 1)

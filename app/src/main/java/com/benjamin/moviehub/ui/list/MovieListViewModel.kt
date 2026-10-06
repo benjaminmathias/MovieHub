@@ -6,6 +6,7 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCategory
+import com.benjamin.moviehub.domain.repository.LibraryRepository
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -40,6 +41,7 @@ class MovieListViewModel
     @Inject
     constructor(
         private val repository: MovieRepository,
+        private val libraryRepository: LibraryRepository,
     ) : ViewModel() {
         private val heroRetryTrigger = MutableStateFlow(0)
         private val _favoriteErrorPending = MutableStateFlow(false)
@@ -82,7 +84,7 @@ class MovieListViewModel
         fun onToggleFavorite(movie: Movie) {
             viewModelScope.launch {
                 try {
-                    repository.toggleFavorite(movie)
+                    libraryRepository.toggleFavorite(movie)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {

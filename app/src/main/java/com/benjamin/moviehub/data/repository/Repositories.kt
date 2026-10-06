@@ -130,29 +130,6 @@ class MovieRepositoryImpl
             }
         }
 
-        override suspend fun setFavorite(
-            movie: Movie,
-            isFavorite: Boolean,
-        ) = movieDao.setLibraryFlag(movie.toEntity(isFavorite = isFavorite), isFavorite = isFavorite)
-
-        override suspend fun toggleFavorite(movie: Movie) = movieDao.toggleFavorite(movie.toEntity())
-
-        override suspend fun setWatchlist(
-            movie: Movie,
-            isWatchlist: Boolean,
-        ) = movieDao.setLibraryFlag(movie.toEntity(isWatchlist = isWatchlist), isWatchlist = isWatchlist)
-
-        override suspend fun setWatched(
-            movie: Movie,
-            isWatched: Boolean,
-        ) = movieDao.setLibraryFlag(movie.toEntity(isWatched = isWatched), isWatched = isWatched)
-
-        override fun getLibraryMovies(): Flow<List<Movie>> =
-            movieDao.getLibraryMoviesFlow().map { entities ->
-                val names = genreNameMap()
-                entities.map { it.toDomain(names) }
-            }
-
         override suspend fun getMovieCredits(movieId: Int) = apiService.getMovieCredits(movieId).toDomain()
 
         override suspend fun getMovieRecommendations(movieId: Int): List<Movie> {

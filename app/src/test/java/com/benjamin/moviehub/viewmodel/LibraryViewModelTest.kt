@@ -1,7 +1,7 @@
 package com.benjamin.moviehub.viewmodel
 
 import com.benjamin.moviehub.domain.model.Movie
-import com.benjamin.moviehub.domain.repository.MovieRepository
+import com.benjamin.moviehub.domain.repository.LibraryRepository
 import com.benjamin.moviehub.ui.library.LibraryTab
 import com.benjamin.moviehub.ui.library.LibraryUiState
 import com.benjamin.moviehub.ui.library.LibraryViewModel
@@ -29,7 +29,7 @@ class LibraryViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val repository: MovieRepository = mockk()
+    private val repository: LibraryRepository = mockk()
 
     @Test
     fun `library emits all flagged movies reactively`() =

@@ -3,7 +3,6 @@ package com.benjamin.moviehub.domain.repository
 import androidx.paging.PagingData
 import com.benjamin.moviehub.core.util.AppTheme
 import com.benjamin.moviehub.domain.model.DiscoverFilters
-import com.benjamin.moviehub.domain.model.LibraryFlag
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCategory
 import com.benjamin.moviehub.domain.model.MovieCredits
@@ -37,42 +36,11 @@ interface MovieRepository {
     /** Fetch the movie from the API, preserving local library flags and runtime when cached. */
     suspend fun getMovieDetails(movieId: Int): Movie
 
-    suspend fun setFavorite(
-        movie: Movie,
-        isFavorite: Boolean,
-    )
-
-    /** Toggle a favorite from its current persisted state. */
-    suspend fun toggleFavorite(movie: Movie)
-
-    suspend fun setWatchlist(
-        movie: Movie,
-        isWatchlist: Boolean,
-    )
-
-    suspend fun setWatched(
-        movie: Movie,
-        isWatched: Boolean,
-    )
-
-    fun getLibraryMovies(): Flow<List<Movie>>
-
     /** Get movie credits from the API. Throws on network error; callers show details without credits. */
     suspend fun getMovieCredits(movieId: Int): MovieCredits
 
     /** Get movie recommendations from the API. Throws on network error; callers hide the section. */
     suspend fun getMovieRecommendations(movieId: Int): List<Movie>
-}
-
-/** Persists [flag] for [movie] through the matching repository setter. */
-suspend fun MovieRepository.setLibraryFlag(
-    movie: Movie,
-    flag: LibraryFlag,
-    value: Boolean,
-) = when (flag) {
-    LibraryFlag.FAVORITE -> setFavorite(movie, value)
-    LibraryFlag.WATCHLIST -> setWatchlist(movie, value)
-    LibraryFlag.WATCHED -> setWatched(movie, value)
 }
 
 /** Repository contract for persisted user preferences. */

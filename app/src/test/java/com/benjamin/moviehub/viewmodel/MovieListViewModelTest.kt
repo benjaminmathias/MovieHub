@@ -3,6 +3,7 @@ package com.benjamin.moviehub.viewmodel
 import androidx.paging.PagingData
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCategory
+import com.benjamin.moviehub.domain.repository.LibraryRepository
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import com.benjamin.moviehub.ui.list.HeroMovieUiState
 import com.benjamin.moviehub.ui.list.MovieListViewModel
@@ -32,13 +33,14 @@ class MovieListViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val repository: MovieRepository = mockk()
+    private val libraryRepository: LibraryRepository = mockk()
     private lateinit var viewModel: MovieListViewModel
 
     @Before
     fun setup() {
         coEvery { repository.getCategoryMovies(any()) } returns flowOf(PagingData.empty())
         coEvery { repository.getHeroMovie(any()) } returns flowOf(null)
-        viewModel = MovieListViewModel(repository)
+        viewModel = MovieListViewModel(repository, libraryRepository)
     }
 
     @Test
@@ -59,7 +61,7 @@ class MovieListViewModelTest {
         runTest {
             val hero = movie()
             coEvery { repository.getHeroMovie(MovieCategory.POPULAR) } returns flowOf(hero)
-            val heroViewModel = MovieListViewModel(repository)
+            val heroViewModel = MovieListViewModel(repository, libraryRepository)
 
             val job = launch { heroViewModel.heroMovieState.collect() }
             advanceUntilIdle()
@@ -87,7 +89,7 @@ class MovieListViewModelTest {
             val hero = movie()
             val failedHero = flow<Movie?> { throw IOException("offline") }
             coEvery { repository.getHeroMovie(MovieCategory.POPULAR) } returns failedHero andThen flowOf(hero)
-            val heroViewModel = MovieListViewModel(repository)
+            val heroViewModel = MovieListViewModel(repository, libraryRepository)
             val job = launch { heroViewModel.heroMovieState.collect() }
             advanceUntilIdle()
 
@@ -106,7 +108,7 @@ class MovieListViewModelTest {
     fun `favorite failure stays pending until acknowledged and repeated failures coalesce`() =
         runTest {
             val target = movie()
-            coEvery { repository.toggleFavorite(target) } throws IOException("offline")
+            coEvery { libraryRepository.toggleFavorite(target) } throws IOException("offline")
 
             viewModel.onToggleFavorite(target)
             advanceUntilIdle()
@@ -125,7 +127,7 @@ class MovieListViewModelTest {
     fun `a successful favorite write never becomes pending`() =
         runTest {
             val target = movie()
-            coEvery { repository.toggleFavorite(target) } returns Unit
+            coEvery { libraryRepository.toggleFavorite(target) } returns Unit
 
             viewModel.onToggleFavorite(target)
             advanceUntilIdle()
