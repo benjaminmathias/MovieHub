@@ -86,6 +86,7 @@ fun SearchScreen(
                 searchQuery = searchQuery,
                 activeSearchQuery = activeSearchQuery,
                 onMovieClick = onMovieClick,
+                modifier = Modifier.weight(1f),
             )
         }
     }
@@ -97,6 +98,7 @@ private fun SearchResults(
     searchQuery: String,
     activeSearchQuery: String,
     onMovieClick: (Int) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val items = searchResults.collectAsLazyPagingItems()
 
@@ -104,12 +106,13 @@ private fun SearchResults(
         EmptyStateView(
             message = stringResource(R.string.search_placeholder),
             icon = Icons.Default.Search,
+            modifier = modifier,
         )
         return
     }
 
     if (searchQuery.trim() != activeSearchQuery) {
-        CompactMovieShimmerList()
+        CompactMovieShimmerList(modifier = modifier)
         return
     }
 
@@ -117,11 +120,13 @@ private fun SearchResults(
         phase = items.phase,
         onRetry = { items.retry() },
         emptyMessage = stringResource(R.string.empty_search_results, searchQuery.trim()),
-        loading = { CompactMovieShimmerList() },
+        modifier = modifier,
+        loading = { CompactMovieShimmerList(modifier = modifier) },
     ) {
         SearchMovieList(
             lazyPagingItems = items,
             onMovieClick = onMovieClick,
+            modifier = modifier,
         )
     }
 }
@@ -130,10 +135,11 @@ private fun SearchResults(
 private fun SearchMovieList(
     lazyPagingItems: LazyPagingItems<Movie>,
     onMovieClick: (Int) -> Unit,
+    modifier: Modifier,
 ) {
     val appendErrorMessage = stringResource(R.string.error_loading_movies)
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = modifier) {
         if (lazyPagingItems.isRefreshError) {
             EmptyStateView(
                 message = stringResource(R.string.error_refreshing_movies),
@@ -144,7 +150,11 @@ private fun SearchMovieList(
 
         LazyColumn(modifier = Modifier.weight(1f), contentPadding = PaddingValues(vertical = 8.dp)) {
             moviePagingItems(lazyPagingItems) { movie ->
-                CompactMovieItem(movie = movie, onMovieClick = onMovieClick)
+                CompactMovieItem(
+                    movie = movie,
+                    onMovieClick = onMovieClick,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
             movieAppendFooter(
                 items = lazyPagingItems,

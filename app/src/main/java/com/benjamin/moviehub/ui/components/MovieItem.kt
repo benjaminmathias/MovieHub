@@ -45,7 +45,6 @@ fun PosterMovieItem(
         modifier =
             modifier
                 .testTag("movie_item")
-                .fillMaxWidth()
                 .semantics {
                     stateDescription = favoriteStatus
                 },
@@ -110,7 +109,6 @@ fun CompactMovieItem(
         modifier =
             modifier
                 .testTag("movie_item")
-                .fillMaxWidth()
                 .padding(horizontal = ContentHorizontalPadding, vertical = 4.dp)
                 .semantics {
                     stateDescription = favoriteStatus
@@ -192,7 +190,7 @@ private fun MovieMetadata(movie: Movie) {
 @Composable
 private fun PosterMovieItemPreview() {
     MovieHubTheme {
-        PosterMovieItem(movie = previewMovie(), onMovieClick = {})
+        PosterMovieItem(movie = previewMovie(), onMovieClick = {}, modifier = Modifier.fillMaxWidth())
     }
 }
 
@@ -200,7 +198,7 @@ private fun PosterMovieItemPreview() {
 @Composable
 private fun CompactMovieItemPreview() {
     MovieHubTheme {
-        CompactMovieItem(movie = previewMovie(), onMovieClick = {})
+        CompactMovieItem(movie = previewMovie(), onMovieClick = {}, modifier = Modifier.fillMaxWidth())
     }
 }
 

@@ -3,6 +3,7 @@ package com.benjamin.moviehub.ui.library
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -43,14 +44,14 @@ fun LibraryScreen(
     onRemove: (Movie, LibraryTab) -> Unit,
     onMovieClick: (Int) -> Unit,
     onSettingsClick: () -> Unit,
-    onRetry: () -> Unit = {},
-    actionErrorPending: Boolean = false,
-    onActionErrorAcknowledged: () -> Unit = {},
+    onRetry: () -> Unit,
+    actionError: LibraryActionErrorState,
+    onActionErrorAcknowledged: () -> Unit,
 ) {
     val snackbar = remember { SnackbarHostState() }
     val actionErrorMessage = stringResource(R.string.error_updating_library)
     PendingSnackbarEffect(
-        pending = actionErrorPending,
+        pending = actionError is LibraryActionErrorState.Failure,
         snackbarHostState = snackbar,
         message = actionErrorMessage,
         onAcknowledged = onActionErrorAcknowledged,
@@ -86,14 +87,18 @@ fun LibraryScreen(
             }
 
             when (state) {
-                LibraryUiState.Loading -> CompactMovieShimmerList(Modifier.fillMaxSize())
+                LibraryUiState.Loading -> CompactMovieShimmerList(Modifier.weight(1f))
 
                 is LibraryUiState.Success -> {
                     val movies = state.moviesByTab.getValue(selected)
                     if (movies.isEmpty()) {
-                        EmptyStateView(message = stringResource(selected.emptyMessageRes), icon = selected.emptyIcon)
+                        EmptyStateView(
+                            message = stringResource(selected.emptyMessageRes),
+                            icon = selected.emptyIcon,
+                            modifier = Modifier.weight(1f),
+                        )
                     } else {
-                        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 8.dp)) {
+                        LazyColumn(Modifier.weight(1f).fillMaxSize(), contentPadding = PaddingValues(vertical = 8.dp)) {
                             items(movies, key = { it.id }) { movie ->
                                 LibraryMovieItem(
                                     movie = movie,
@@ -101,7 +106,7 @@ fun LibraryScreen(
                                     onRemove = { onRemove(it, selected) },
                                     removeLabel = stringResource(selected.removeLabelRes),
                                     removeIcon = selected.removeIcon,
-                                    modifier = Modifier.animateItem(),
+                                    modifier = Modifier.fillMaxWidth().animateItem(),
                                 )
                             }
                         }
@@ -110,9 +115,18 @@ fun LibraryScreen(
 
                 is LibraryUiState.Error ->
                     EmptyStateView(
-                        message = stringResource(R.string.error_prefix, stringResource(state.errorMessage)),
+                        message =
+                            stringResource(
+                                R.string.error_prefix,
+                                stringResource(
+                                    when (state.code) {
+                                        LibraryLoadErrorCode.LOAD_MOVIES -> R.string.error_loading_movies
+                                    },
+                                ),
+                            ),
                         icon = Icons.Default.ErrorOutline,
                         onRetry = onRetry,
+                        modifier = Modifier.weight(1f),
                     )
             }
         }

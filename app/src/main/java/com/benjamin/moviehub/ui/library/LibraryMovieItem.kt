@@ -55,6 +55,12 @@ internal fun LibraryMovieItem(
                 DeleteBackground(icon = removeIcon)
             }
         },
-        content = { CompactMovieItem(movie = movie, onMovieClick = onMovieClick) },
+        content = {
+            CompactMovieItem(
+                movie = movie,
+                onMovieClick = onMovieClick,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
     )
 }
