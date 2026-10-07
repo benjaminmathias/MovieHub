@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.FlowRowScope
 import androidx.compose.foundation.layout.Row
@@ -15,14 +14,17 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,6 +49,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -116,7 +120,10 @@ internal fun DiscoverFilterSheet(
                     GenrePicker(
                         state = state,
                         filters = filters,
-                        onGenreSelected = onGenreSelected,
+                        onGenreSelected = { genre ->
+                            onGenreSelected(genre)
+                            selectedGroup = null
+                        },
                         onRetryGenres = onRetryGenres,
                     )
 
@@ -239,14 +246,14 @@ private fun MainFilterList(
                     title = stringResource(R.string.discover_genre),
                     value = genreValue,
                     onClick = onOpenGenre,
-                    modifier = Modifier.padding(horizontal = 16.dp).testTag("discover_genre_row"),
+                    modifier = Modifier.testTag("discover_genre_row"),
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
                 FilterSummaryRow(
                     title = stringResource(R.string.discover_decade),
                     value = decadeValue,
                     onClick = onOpenDecade,
-                    modifier = Modifier.padding(horizontal = 16.dp).testTag("discover_decade_row"),
+                    modifier = Modifier.testTag("discover_decade_row"),
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
                 RatingFilterControl(
@@ -272,7 +279,7 @@ private fun FilterSummaryRow(
                 .fillMaxWidth()
                 .heightIn(min = 64.dp)
                 .clickable(role = Role.Button, onClick = onClick)
-                .padding(vertical = 10.dp),
+                .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -299,6 +306,7 @@ private fun RatingFilterControl(
     onMinimumRatingSelected: (Double?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val ratingLabel = stringResource(R.string.discover_filter_by_rating)
     val enabled = filters.minimumVoteAverage != null
     val currentValue = (filters.minimumVoteAverage ?: DEFAULT_MINIMUM_RATING).toFloat().coerceIn(0f, 10f)
 
@@ -308,7 +316,7 @@ private fun RatingFilterControl(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = stringResource(R.string.discover_filter_by_rating),
+                text = ratingLabel,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
@@ -316,7 +324,7 @@ private fun RatingFilterControl(
             Switch(
                 checked = enabled,
                 onCheckedChange = { checked -> onMinimumRatingSelected(if (checked) DEFAULT_MINIMUM_RATING else null) },
-                modifier = Modifier.testTag("discover_rating_switch"),
+                modifier = Modifier.testTag("discover_rating_switch").semantics { contentDescription = ratingLabel },
             )
         }
         if (enabled) {
@@ -373,9 +381,9 @@ private fun SortFilterSection(
                     },
                     colors =
                         SegmentedButtonDefaults.colors(
-                            activeContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            activeContentColor = MaterialTheme.colorScheme.onSurface,
-                            activeBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.65f),
+                            activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            activeBorderColor = MaterialTheme.colorScheme.primary,
                             inactiveContainerColor = Color.Transparent,
                             inactiveContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             inactiveBorderColor = MaterialTheme.colorScheme.outlineVariant,
@@ -490,17 +498,23 @@ private fun FilterOption(
         selected = selected,
         onClick = onClick,
         label = {
-            Text(text = label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(text = label)
         },
+        leadingIcon = if (selected) ({ Icon(Icons.Default.Check, contentDescription = null) }) else null,
+        colors =
+            FilterChipDefaults.filterChipColors(
+                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            ),
         modifier = modifier.heightIn(min = 48.dp),
     )
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun OptionGrid(content: @Composable FlowRowScope.() -> Unit) {
     FlowRow(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         content = content,

@@ -3,17 +3,22 @@ package com.benjamin.moviehub.ui.discover
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.paging.PagingData
 import com.benjamin.moviehub.core.theme.MovieHubTheme
+import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieGenre
@@ -52,6 +57,13 @@ class DiscoverScreenTest {
         composeRule.onNodeWithTag("discover_filter_sheet").assertIsDisplayed()
         composeRule.onNodeWithTag("discover_genre_row").performClick()
         composeRule.onNodeWithTag("discover_genre_option_28").performScrollTo().performClick()
+        composeRule.onNodeWithTag("discover_genre_row").assertIsDisplayed()
+        composeRule.onNodeWithTag("discover_genre_section").assertDoesNotExist()
+        composeRule.runOnIdle {
+            assertFalse(applyCalled)
+            assertEquals(28, state.draftFilters.genreId)
+            assertEquals(null, state.appliedFilters.genreId)
+        }
         composeRule.onNodeWithTag("discover_apply_filters").performClick()
 
         composeRule.runOnIdle {
@@ -119,7 +131,7 @@ class DiscoverScreenTest {
         composeRule.onNodeWithTag("discover_filter_button").performClick()
         composeRule.onNodeWithTag("discover_decade_row").performClick()
 
-        // The oldest selectable decade is 1870.
+        // The oldest selectable decade is directly available.
         composeRule.onNodeWithTag("discover_decade_option_1870").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("discover_decade_option_1990").performScrollTo().performClick()
 
@@ -176,6 +188,115 @@ class DiscoverScreenTest {
         composeRule.onNodeWithTag("discover_decade_row").performClick()
         composeRule.onNodeWithTag("discover_decade_option_all").performScrollTo().assertIsSelected()
         composeRule.onNodeWithTag("discover_decade_option_$currentDecade").assertExists()
+    }
+
+    @Test
+    fun oldDecadeRemainsSelectedWhenReopening() {
+        var state by mutableStateOf(initialState())
+
+        setDiscoverContent(
+            state = { state },
+            onBeginFilterEditing = { state = state.copy(draftFilters = state.appliedFilters) },
+            onReleaseDecadeSelected = { decade -> state = state.copy(draftFilters = state.draftFilters.copy(releaseDecade = decade)) },
+            onApplyFilters = { state = state.copy(appliedFilters = state.draftFilters) },
+        )
+
+        composeRule.onNodeWithTag("discover_filter_button").performClick()
+        composeRule.onNodeWithTag("discover_decade_row").performClick()
+        composeRule.onNodeWithTag("discover_decade_option_1870").assertExists()
+        composeRule.onNodeWithTag("discover_decade_option_1870").performScrollTo().performClick()
+        composeRule.onNodeWithTag("discover_decade_row").assertIsDisplayed()
+        composeRule.onNodeWithTag("discover_apply_filters").performClick()
+
+        composeRule.onNodeWithTag("discover_filter_button").performClick()
+        composeRule.onNodeWithTag("discover_decade_row").performClick()
+        composeRule.onNodeWithTag("discover_decade_option_1870").performScrollTo().assertIsSelected()
+        composeRule.runOnIdle { assertEquals(1870, state.appliedFilters.releaseDecade) }
+    }
+
+    @Test
+    fun ratingAndSortStayDraftUntilAppliedAndCanBeCleared() {
+        var state by mutableStateOf(initialState())
+
+        setDiscoverContent(
+            state = { state },
+            onBeginFilterEditing = { state = state.copy(draftFilters = state.appliedFilters) },
+            onMinimumRatingSelected = { rating -> state = state.copy(draftFilters = state.draftFilters.copy(minimumVoteAverage = rating)) },
+            onSortSelected = { sort -> state = state.copy(draftFilters = state.draftFilters.copy(sort = sort)) },
+            onApplyFilters = { state = state.copy(appliedFilters = state.draftFilters) },
+        )
+
+        composeRule.onNodeWithTag("discover_filter_button").performClick()
+        composeRule
+            .onNodeWithTag("discover_sort_option_RATING")
+            .performScrollTo()
+            .performClick()
+            .assertIsSelected()
+        composeRule
+            .onNodeWithTag("discover_rating_switch")
+            .performScrollTo()
+            .performClick()
+            .assertIsOn()
+        composeRule.runOnIdle {
+            assertEquals(7.0, state.draftFilters.minimumVoteAverage)
+            assertEquals(null, state.appliedFilters.minimumVoteAverage)
+            assertEquals(DiscoverSortOption.POPULARITY, state.appliedFilters.sort)
+        }
+        composeRule.onNodeWithTag("discover_apply_filters").performClick()
+        composeRule.onNodeWithTag("discover_filter_button").performClick()
+        composeRule.onNodeWithTag("discover_sort_option_RATING").performScrollTo().assertIsSelected()
+        composeRule.onNodeWithTag("discover_rating_switch").performScrollTo().assertIsOn()
+        composeRule
+            .onNodeWithTag("discover_rating_switch")
+            .performScrollTo()
+            .performClick()
+            .assertIsOff()
+        composeRule.runOnIdle {
+            assertEquals(null, state.draftFilters.minimumVoteAverage)
+            assertEquals(7.0, state.appliedFilters.minimumVoteAverage)
+        }
+        composeRule.onNodeWithTag("discover_apply_filters").performClick()
+        composeRule.runOnIdle { assertEquals(null, state.appliedFilters.minimumVoteAverage) }
+    }
+
+    @Test
+    fun ratingSliderCanBeAdjustedDisabledAndDiscarded() {
+        var state by mutableStateOf(
+            initialState().copy(
+                appliedFilters = DiscoverFilters(minimumVoteAverage = 5.0),
+            ),
+        )
+
+        setDiscoverContent(
+            state = { state },
+            onBeginFilterEditing = { state = state.copy(draftFilters = state.appliedFilters) },
+            onMinimumRatingSelected = { rating -> state = state.copy(draftFilters = state.draftFilters.copy(minimumVoteAverage = rating)) },
+            onDiscardFilterEdits = { state = state.copy(draftFilters = state.appliedFilters) },
+        )
+
+        composeRule.onNodeWithTag("discover_filter_button").performClick()
+        composeRule
+            .onNodeWithTag("discover_rating_slider")
+            .performScrollTo()
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(9f) }
+        composeRule.runOnIdle {
+            assertEquals(9.0, state.draftFilters.minimumVoteAverage)
+            assertEquals(5.0, state.appliedFilters.minimumVoteAverage)
+        }
+        composeRule.onNodeWithTag("discover_rating_switch").performScrollTo().performClick()
+        composeRule.onNodeWithTag("discover_rating_slider").assertDoesNotExist()
+        composeRule.runOnIdle { assertEquals(null, state.draftFilters.minimumVoteAverage) }
+        composeRule.onNodeWithTag("discover_close_filters").performClick()
+
+        composeRule.onNodeWithTag("discover_filter_button").performClick()
+        composeRule.onNodeWithTag("discover_rating_slider").performScrollTo().assertIsDisplayed()
+        composeRule.runOnIdle { assertEquals(5.0, state.draftFilters.minimumVoteAverage) }
+        composeRule
+            .onNodeWithTag("discover_rating_switch")
+            .performScrollTo()
+            .performClick()
+            .assertIsOff()
+        composeRule.onNodeWithTag("discover_rating_slider").assertDoesNotExist()
     }
 
     private fun setDiscoverContent(
