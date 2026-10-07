@@ -28,6 +28,9 @@ class LibraryScreenTest {
                     onRemove = { _, _ -> removeCount++ },
                     onMovieClick = {},
                     onSettingsClick = {},
+                    onRetry = {},
+                    actionError = LibraryActionErrorState.None,
+                    onActionErrorAcknowledged = {},
                 )
             }
         }
@@ -64,6 +67,9 @@ class LibraryScreenTest {
                     onRemove = { movie, _ -> removed += movie },
                     onMovieClick = {},
                     onSettingsClick = {},
+                    onRetry = {},
+                    actionError = LibraryActionErrorState.None,
+                    onActionErrorAcknowledged = {},
                 )
             }
         }

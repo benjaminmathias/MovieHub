@@ -6,12 +6,15 @@ import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
 import com.benjamin.moviehub.domain.model.MovieGenre
 import com.benjamin.moviehub.domain.repository.MovieRepository
+import com.benjamin.moviehub.ui.discover.DiscoverErrorCode
+import com.benjamin.moviehub.ui.discover.DiscoverGenresUiState
 import com.benjamin.moviehub.ui.discover.DiscoverViewModel
 import com.benjamin.moviehub.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
@@ -22,6 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -59,15 +63,19 @@ class DiscoverViewModelTest {
             viewModel.retryGenres()
             advanceUntilIdle()
 
-            assertEquals(false, viewModel.uiState.value.isLoadingGenres)
-            assertEquals(true, viewModel.uiState.value.hasGenreError)
+            assertEquals(
+                DiscoverGenresUiState.Error(DiscoverErrorCode.LOAD_GENRES),
+                viewModel.uiState.value.genres,
+            )
 
             shouldFail = false
             viewModel.retryGenres()
             advanceUntilIdle()
 
-            assertEquals(false, viewModel.uiState.value.hasGenreError)
-            assertEquals(listOf(MovieGenre(id = 28, name = "Action")), viewModel.uiState.value.genres)
+            assertEquals(
+                DiscoverGenresUiState.Success(listOf(MovieGenre(id = 28, name = "Action")).toImmutableList()),
+                viewModel.uiState.value.genres,
+            )
         }
 
     @Test
@@ -192,5 +200,28 @@ class DiscoverViewModelTest {
 
             assertEquals(1990, restored.uiState.value.draftFilters.releaseDecade)
             assertEquals(1990, restored.uiState.value.appliedFilters.releaseDecade)
+        }
+
+    @Test
+    fun `non-positive rating is disabled and active rating is clamped to the effective range`() =
+        runTest {
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        "discover_draft_minimum_rating" to 0.0,
+                        "discover_applied_minimum_rating" to 12.0,
+                    ),
+                )
+            val restored = DiscoverViewModel(repository, handle)
+            advanceUntilIdle()
+
+            assertNull(restored.uiState.value.draftFilters.minimumVoteAverage)
+            assertEquals(10.0, restored.uiState.value.appliedFilters.minimumVoteAverage ?: -1.0, 0.0)
+
+            restored.onMinimumRatingSelected(0.0)
+            assertNull(restored.uiState.value.draftFilters.minimumVoteAverage)
+
+            restored.onMinimumRatingSelected(12.0)
+            assertEquals(10.0, restored.uiState.value.draftFilters.minimumVoteAverage ?: -1.0, 0.0)
         }
 }

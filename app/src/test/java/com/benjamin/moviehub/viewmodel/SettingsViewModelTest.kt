@@ -3,6 +3,8 @@ package com.benjamin.moviehub.viewmodel
 import com.benjamin.moviehub.core.util.AppTheme
 import com.benjamin.moviehub.domain.repository.ImageCacheCleaner
 import com.benjamin.moviehub.domain.repository.UserPreferencesRepository
+import com.benjamin.moviehub.ui.settings.ImageCacheErrorCode
+import com.benjamin.moviehub.ui.settings.ImageCacheResult
 import com.benjamin.moviehub.ui.settings.SettingsViewModel
 import com.benjamin.moviehub.util.MainDispatcherRule
 import io.mockk.coEvery
@@ -16,7 +18,6 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -43,7 +44,10 @@ class SettingsViewModelTest {
             viewModel.clearImageCache()
             advanceUntilIdle()
 
-            assertEquals(false, viewModel.imageCacheResult.value)
+            assertEquals(
+                ImageCacheResult.Failed(ImageCacheErrorCode.CLEAR_CACHE),
+                viewModel.imageCacheResult.value,
+            )
             assertEquals(false, viewModel.isClearing.value)
         }
 
@@ -58,19 +62,22 @@ class SettingsViewModelTest {
 
             viewModel.clearImageCache()
             advanceUntilIdle()
-            assertEquals(false, viewModel.imageCacheResult.value)
+            assertEquals(
+                ImageCacheResult.Failed(ImageCacheErrorCode.CLEAR_CACHE),
+                viewModel.imageCacheResult.value,
+            )
 
             fail = false
             viewModel.clearImageCache()
             advanceUntilIdle()
-            assertEquals(true, viewModel.imageCacheResult.value)
+            assertEquals(ImageCacheResult.Cleared, viewModel.imageCacheResult.value)
 
             // A late acknowledgement of the older failure must not clear the newer success.
-            viewModel.acknowledgeImageCacheResult(false)
-            assertEquals(true, viewModel.imageCacheResult.value)
+            viewModel.acknowledgeImageCacheResult(ImageCacheResult.Failed(ImageCacheErrorCode.CLEAR_CACHE))
+            assertEquals(ImageCacheResult.Cleared, viewModel.imageCacheResult.value)
 
-            viewModel.acknowledgeImageCacheResult(true)
-            assertNull(viewModel.imageCacheResult.value)
+            viewModel.acknowledgeImageCacheResult(ImageCacheResult.Cleared)
+            assertEquals(ImageCacheResult.Idle, viewModel.imageCacheResult.value)
         }
 
     @Test

@@ -5,10 +5,15 @@ import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
 import com.benjamin.moviehub.domain.repository.LibraryRepository
 import com.benjamin.moviehub.domain.repository.MovieRepository
+import com.benjamin.moviehub.ui.detail.LibraryObservationErrorCode
 import com.benjamin.moviehub.ui.detail.LibraryObservationUiState
+import com.benjamin.moviehub.ui.detail.MovieCreditsErrorCode
 import com.benjamin.moviehub.ui.detail.MovieCreditsUiState
+import com.benjamin.moviehub.ui.detail.MovieDetailActionErrorCode
+import com.benjamin.moviehub.ui.detail.MovieDetailActionErrorState
 import com.benjamin.moviehub.ui.detail.MovieDetailUiState
 import com.benjamin.moviehub.ui.detail.MovieDetailViewModel
+import com.benjamin.moviehub.ui.detail.MovieRecommendationsErrorCode
 import com.benjamin.moviehub.ui.detail.MovieRecommendationsUiState
 import com.benjamin.moviehub.util.MainDispatcherRule
 import io.mockk.coEvery
@@ -74,7 +79,7 @@ class MovieDetailViewModelTest {
             assertEquals(
                 MovieDetailUiState.Success(
                     movie = movie,
-                    credits = MovieCreditsUiState.Error,
+                    credits = MovieCreditsUiState.Error(MovieCreditsErrorCode.LOAD_CREDITS),
                     recommendations = MovieRecommendationsUiState.Empty,
                     libraryObservation = LibraryObservationUiState.Ready,
                 ),
@@ -217,10 +222,13 @@ class MovieDetailViewModelTest {
             advanceUntilIdle()
 
             // The error is a state: it survives until the UI acknowledges it.
-            assertTrue(viewModel.libraryActionErrorPending.value)
+            assertEquals(
+                MovieDetailActionErrorState.Failure(MovieDetailActionErrorCode.UPDATE_LIBRARY),
+                viewModel.libraryActionError.value,
+            )
 
             viewModel.acknowledgeLibraryActionError()
-            assertFalse(viewModel.libraryActionErrorPending.value)
+            assertEquals(MovieDetailActionErrorState.None, viewModel.libraryActionError.value)
         }
 
     @Test
@@ -285,7 +293,7 @@ class MovieDetailViewModelTest {
             viewModel.loadMovieDetails(1)
             advanceUntilIdle()
             assertEquals(
-                MovieRecommendationsUiState.Error,
+                MovieRecommendationsUiState.Error(MovieRecommendationsErrorCode.LOAD_RECOMMENDATIONS),
                 (viewModel.uiState.value as MovieDetailUiState.Success).recommendations,
             )
 
@@ -356,7 +364,10 @@ class MovieDetailViewModelTest {
             advanceUntilIdle()
 
             val failed = viewModel.uiState.value as MovieDetailUiState.Success
-            assertEquals(LibraryObservationUiState.Error, failed.libraryObservation)
+            assertEquals(
+                LibraryObservationUiState.Error(LibraryObservationErrorCode.LOAD_LIBRARY),
+                failed.libraryObservation,
+            )
             assertTrue(failed.movie.isFavorite)
 
             viewModel.toggleFavorite()
@@ -391,6 +402,6 @@ class MovieDetailViewModelTest {
 
             val state = viewModel.uiState.value
             assertTrue(state !is MovieDetailUiState.Error)
-            assertTrue((state as? MovieDetailUiState.Success)?.credits != MovieCreditsUiState.Error)
+            assertTrue((state as? MovieDetailUiState.Success)?.credits !is MovieCreditsUiState.Error)
         }
 }

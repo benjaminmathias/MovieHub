@@ -3,6 +3,8 @@ package com.benjamin.moviehub.viewmodel
 import com.benjamin.moviehub.domain.model.LibraryFlag
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.LibraryRepository
+import com.benjamin.moviehub.ui.library.LibraryActionErrorCode
+import com.benjamin.moviehub.ui.library.LibraryActionErrorState
 import com.benjamin.moviehub.ui.library.LibraryTab
 import com.benjamin.moviehub.ui.library.LibraryUiState
 import com.benjamin.moviehub.ui.library.LibraryViewModel
@@ -21,7 +23,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -124,15 +125,21 @@ class LibraryViewModelTest {
 
             viewModel.onRemove(target, LibraryTab.WATCHLIST)
             advanceUntilIdle()
-            assertTrue(viewModel.actionErrorPending.value)
+            assertEquals(
+                LibraryActionErrorState.Failure(LibraryActionErrorCode.REMOVE_MOVIE),
+                viewModel.actionError.value,
+            )
 
             // A repeated failure keeps the single pending message.
             viewModel.onRemove(target, LibraryTab.WATCHLIST)
             advanceUntilIdle()
-            assertTrue(viewModel.actionErrorPending.value)
+            assertEquals(
+                LibraryActionErrorState.Failure(LibraryActionErrorCode.REMOVE_MOVIE),
+                viewModel.actionError.value,
+            )
 
             viewModel.acknowledgeActionError()
-            assertFalse(viewModel.actionErrorPending.value)
+            assertEquals(LibraryActionErrorState.None, viewModel.actionError.value)
         }
 
     private fun movie(

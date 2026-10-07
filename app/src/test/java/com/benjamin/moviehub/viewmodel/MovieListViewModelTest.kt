@@ -5,6 +5,9 @@ import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCategory
 import com.benjamin.moviehub.domain.repository.LibraryRepository
 import com.benjamin.moviehub.domain.repository.MovieRepository
+import com.benjamin.moviehub.ui.list.FavoriteActionErrorCode
+import com.benjamin.moviehub.ui.list.FavoriteActionErrorState
+import com.benjamin.moviehub.ui.list.HeroMovieErrorCode
 import com.benjamin.moviehub.ui.list.HeroMovieUiState
 import com.benjamin.moviehub.ui.list.MovieListViewModel
 import com.benjamin.moviehub.util.MainDispatcherRule
@@ -20,8 +23,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -53,7 +54,10 @@ class MovieListViewModelTest {
             val job = launch { heroViewModel.heroMovieState.collect() }
             advanceUntilIdle()
 
-            assertEquals(HeroMovieUiState.Error, heroViewModel.heroMovieState.value)
+            assertEquals(
+                HeroMovieUiState.Error(HeroMovieErrorCode.LOAD_FEATURED_MOVIE),
+                heroViewModel.heroMovieState.value,
+            )
 
             heroViewModel.retryHero()
             advanceUntilIdle()
@@ -72,15 +76,21 @@ class MovieListViewModelTest {
 
             viewModel.onToggleFavorite(target)
             advanceUntilIdle()
-            assertTrue(viewModel.favoriteErrorPending.value)
+            assertEquals(
+                FavoriteActionErrorState.Failure(FavoriteActionErrorCode.UPDATE_FAVORITE),
+                viewModel.favoriteActionError.value,
+            )
 
             // A second failure before acknowledgement must not create a second message.
             viewModel.onToggleFavorite(target)
             advanceUntilIdle()
-            assertTrue(viewModel.favoriteErrorPending.value)
+            assertEquals(
+                FavoriteActionErrorState.Failure(FavoriteActionErrorCode.UPDATE_FAVORITE),
+                viewModel.favoriteActionError.value,
+            )
 
             viewModel.acknowledgeFavoriteError()
-            assertFalse(viewModel.favoriteErrorPending.value)
+            assertEquals(FavoriteActionErrorState.None, viewModel.favoriteActionError.value)
         }
 
     private fun movie() =

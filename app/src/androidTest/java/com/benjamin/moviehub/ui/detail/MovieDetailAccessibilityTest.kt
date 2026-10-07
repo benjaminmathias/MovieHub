@@ -50,6 +50,12 @@ class MovieDetailAccessibilityTest {
                     onToggleWatchlist = onToggleWatchlist,
                     onToggleWatched = onToggleWatched,
                     onRetry = {},
+                    onRetryCredits = {},
+                    onRetryRecommendations = {},
+                    onRetryLibraryObservation = {},
+                    libraryActionError = MovieDetailActionErrorState.None,
+                    onLibraryActionErrorAcknowledged = {},
+                    onRecommendationClick = {},
                 )
             }
         }

@@ -334,8 +334,7 @@ class DiscoverScreenTest {
 
     private fun initialState() =
         DiscoverUiState(
-            genres = listOf(MovieGenre(id = 28, name = "Action")).toImmutableList(),
-            isLoadingGenres = false,
+            genres = DiscoverGenresUiState.Success(listOf(MovieGenre(id = 28, name = "Action")).toImmutableList()),
         )
 
     private fun testMovie() =
