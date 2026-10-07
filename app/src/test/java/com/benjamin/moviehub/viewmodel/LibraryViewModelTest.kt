@@ -33,6 +33,24 @@ class LibraryViewModelTest {
     private val repository: LibraryRepository = mockk()
 
     @Test
+    fun `copy with new movies recomputes tabs and leaves the original state unchanged`() {
+        val original =
+            LibraryUiState.Success(
+                persistentListOf(movie(1, favorite = true), movie(2, watchlist = true)),
+            )
+
+        val updated = original.copy(movies = persistentListOf(movie(3, watched = true)))
+
+        assertEquals(listOf(3), updated.moviesByTab.getValue(LibraryTab.WATCHED).map { it.id })
+        assertTrue(updated.moviesByTab.getValue(LibraryTab.FAVORITES).isEmpty())
+        assertTrue(updated.moviesByTab.getValue(LibraryTab.WATCHLIST).isEmpty())
+
+        assertEquals(listOf(1), original.moviesByTab.getValue(LibraryTab.FAVORITES).map { it.id })
+        assertEquals(listOf(2), original.moviesByTab.getValue(LibraryTab.WATCHLIST).map { it.id })
+        assertTrue(original.moviesByTab.getValue(LibraryTab.WATCHED).isEmpty())
+    }
+
+    @Test
     fun `library emits all flagged movies reactively`() =
         runTest {
             val source = MutableStateFlow(listOf(movie(1, favorite = true, watchlist = true), movie(2, watchlist = true)))

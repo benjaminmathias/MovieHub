@@ -33,18 +33,17 @@ class NetworkConnectivityObserver
                 // Seed the tracked networks from a snapshot taken before registration. Without
                 // it, a callback for a second, unvalidated network arriving before the first
                 // network's callbacks would momentarily drop an already AVAILABLE state.
-                val networks = mutableSetOf<Network>()
-                val capabilitiesByNetwork = mutableMapOf<Network, NetworkCapabilities>()
+                // A null value marks a network announced by onAvailable whose capabilities are
+                // not known yet; the key alone still counts as a tracked network.
+                val capabilitiesByNetwork = mutableMapOf<Network, NetworkCapabilities?>()
                 registrar.initialCapabilities().forEach { (network, capabilities) ->
-                    networks += network
                     capabilitiesByNetwork[network] = capabilities
                 }
 
                 fun currentStatus(): ConnectivityStatus {
                     val hasValidatedNetwork =
-                        networks.any { network ->
-                            capabilitiesByNetwork[network]
-                                ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
+                        capabilitiesByNetwork.values.any { capabilities ->
+                            capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
                         }
                     return if (hasValidatedNetwork) ConnectivityStatus.AVAILABLE else ConnectivityStatus.UNAVAILABLE
                 }
@@ -55,9 +54,12 @@ class NetworkConnectivityObserver
                     object : ConnectivityManager.NetworkCallback() {
                         override fun onAvailable(network: Network) {
                             super.onAvailable(network)
-                            // No capabilities yet: tracking the network without emitting keeps an
-                            // already AVAILABLE state until onCapabilitiesChanged confirms it.
-                            networks += network
+                            // Track the network without emitting and without overwriting capabilities
+                            // already known from the snapshot or an earlier callback: capabilities are
+                            // still unknown, so the aggregate state must stay as it was.
+                            if (network !in capabilitiesByNetwork) {
+                                capabilitiesByNetwork[network] = null
+                            }
                         }
 
                         override fun onCapabilitiesChanged(
@@ -65,16 +67,14 @@ class NetworkConnectivityObserver
                             networkCapabilities: NetworkCapabilities,
                         ) {
                             super.onCapabilitiesChanged(network, networkCapabilities)
-                            networks += network
                             capabilitiesByNetwork[network] = networkCapabilities
                             trySend(currentStatus())
                         }
 
                         override fun onLost(network: Network) {
                             super.onLost(network)
-                            networks -= network
-                            capabilitiesByNetwork -= network
-                            if (networks.isEmpty()) {
+                            capabilitiesByNetwork.remove(network)
+                            if (capabilitiesByNetwork.isEmpty()) {
                                 trySend(ConnectivityStatus.LOST)
                             } else {
                                 trySend(currentStatus())

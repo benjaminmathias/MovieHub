@@ -91,7 +91,7 @@ class SearchViewModelTest {
         }
 
     @Test
-    fun `raw search query is restored from saved state`() =
+    fun `raw search query is restored from saved state and the normalized query reaches the repository`() =
         runTest {
             val handle = SavedStateHandle()
             SearchViewModel(repository, handle).onSearchQueryChanged("  Interstellar  ")
@@ -100,6 +100,18 @@ class SearchViewModelTest {
 
             val restored = SearchViewModel(repository, handle)
 
+            // The raw text is restored exactly as typed, before any search launches.
             assertEquals("  Interstellar  ", restored.searchQuery.value)
+            assertEquals("", restored.activeSearchQuery.value)
+
+            val job = launch { restored.searchResults.collect() }
+            advanceTimeBy(600)
+            runCurrent()
+
+            // Only the normalized query is what actually launches a search.
+            assertEquals("Interstellar", restored.activeSearchQuery.value)
+            coVerify { repository.searchMovies("Interstellar") }
+
+            job.cancel()
         }
 }

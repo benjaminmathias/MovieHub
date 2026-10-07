@@ -37,8 +37,10 @@ sealed class LibraryUiState {
 
     data class Success(
         val movies: ImmutableList<Movie>,
-        val moviesByTab: ImmutableMap<LibraryTab, ImmutableList<Movie>> = movies.byLibraryTab(),
-    ) : LibraryUiState()
+    ) : LibraryUiState() {
+        // Derived once per state instance; copied states recompute from their own movies.
+        val moviesByTab: ImmutableMap<LibraryTab, ImmutableList<Movie>> = movies.byLibraryTab()
+    }
 
     data class Error(
         @param:StringRes val errorMessage: Int,

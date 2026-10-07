@@ -31,15 +31,18 @@ class SearchViewModel
         private val repository: MovieRepository,
         private val savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
-        // Restored before the paging pipeline is observed so a restored query searches immediately.
-        private val _searchQuery = MutableStateFlow(savedStateHandle.get<String>(SEARCH_QUERY_KEY).orEmpty())
-        val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+        // Single source of truth for the raw query, restored before the pipeline is observed so a
+        // restored query searches immediately.
+        val searchQuery: StateFlow<String> = savedStateHandle.getStateFlow(SEARCH_QUERY_KEY, "")
+
         private val _activeSearchQuery = MutableStateFlow("")
+
+        /** The normalized query whose search has actually launched. */
         val activeSearchQuery: StateFlow<String> = _activeSearchQuery.asStateFlow()
 
         @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
         val searchResults: Flow<PagingData<Movie>> =
-            _searchQuery
+            searchQuery
                 .debounce { query -> if (query.isBlank()) 0L else 500L }
                 .map(String::trim)
                 .distinctUntilChanged()
@@ -53,7 +56,6 @@ class SearchViewModel
                 }.cachedIn(viewModelScope)
 
         fun onSearchQueryChanged(newQuery: String) {
-            _searchQuery.value = newQuery
             // Persist the raw query so the field is restored exactly as typed.
             savedStateHandle[SEARCH_QUERY_KEY] = newQuery
         }

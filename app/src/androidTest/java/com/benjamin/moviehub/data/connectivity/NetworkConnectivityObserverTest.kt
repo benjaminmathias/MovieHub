@@ -79,6 +79,60 @@ class NetworkConnectivityObserverTest {
         }
 
     @Test
+    fun snapshotValidationSurvivesRepeatedAvailableAndUnknownSecondNetwork() =
+        runBlocking {
+            val harness = Harness(mapOf(wifi to validated()))
+            val job = harness.start(this)
+            assertEquals(ConnectivityStatus.AVAILABLE, harness.awaitStatus())
+
+            // Re-announcing the same network must not drop the snapshot capabilities.
+            harness.callback.onAvailable(wifi)
+            harness.awaitNoStatus()
+
+            // A companion network with still-unknown capabilities changes nothing.
+            harness.callback.onAvailable(cellular)
+            harness.awaitNoStatus()
+
+            // A known but unvalidated companion leaves the validated network in charge.
+            harness.callback.onCapabilitiesChanged(cellular, unvalidated())
+            harness.awaitNoStatus()
+
+            // Losing the validated network downgrades to UNAVAILABLE, not LOST: the remaining
+            // unvalidated network still keeps the observer tracked.
+            harness.callback.onLost(wifi)
+            assertEquals(ConnectivityStatus.UNAVAILABLE, harness.awaitStatus())
+
+            harness.callback.onLost(cellular)
+            assertEquals(ConnectivityStatus.LOST, harness.awaitStatus())
+
+            job.cancelAndJoin()
+        }
+
+    @Test
+    fun unknownRemainingNetworkIsNotReportedAsLost() =
+        runBlocking {
+            val harness = Harness(mapOf(wifi to validated()))
+            val job = harness.start(this)
+            assertEquals(ConnectivityStatus.AVAILABLE, harness.awaitStatus())
+
+            harness.callback.onAvailable(cellular)
+            harness.awaitNoStatus()
+
+            // Losing validation is a genuine downgrade.
+            harness.callback.onCapabilitiesChanged(wifi, unvalidated())
+            assertEquals(ConnectivityStatus.UNAVAILABLE, harness.awaitStatus())
+
+            // The unknown remaining network keeps the observer out of LOST.
+            harness.callback.onLost(wifi)
+            harness.awaitNoStatus()
+
+            harness.callback.onLost(cellular)
+            assertEquals(ConnectivityStatus.LOST, harness.awaitStatus())
+
+            job.cancelAndJoin()
+        }
+
+    @Test
     fun collectionRegistersAndReleasesTheNetworkCallback() =
         runBlocking {
             val harness = Harness(mapOf(wifi to validated()))
