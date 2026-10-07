@@ -90,7 +90,7 @@ private val HeroTopScrim =
 internal fun MovieDetailHeader(
     movie: Movie,
     director: String?,
-    isLibraryActionPending: Boolean,
+    libraryActionsEnabled: Boolean,
     onToggleFavorite: (() -> Unit)?,
     onToggleWatchlist: (() -> Unit)?,
     onToggleWatched: (() -> Unit)?,
@@ -107,7 +107,7 @@ internal fun MovieDetailHeader(
                 if (onToggleFavorite != null || onToggleWatchlist != null || onToggleWatched != null || onOpenTmdb != null) {
                     MovieDetailActions(
                         movie = movie,
-                        isLibraryActionPending = isLibraryActionPending,
+                        libraryActionsEnabled = libraryActionsEnabled,
                         onToggleFavorite = onToggleFavorite,
                         onToggleWatchlist = onToggleWatchlist,
                         onToggleWatched = onToggleWatched,
@@ -344,7 +344,7 @@ private fun MovieDetailRating(
 @Composable
 private fun MovieDetailActions(
     movie: Movie,
-    isLibraryActionPending: Boolean,
+    libraryActionsEnabled: Boolean,
     onToggleFavorite: (() -> Unit)?,
     onToggleWatchlist: (() -> Unit)?,
     onToggleWatched: (() -> Unit)?,
@@ -400,7 +400,7 @@ private fun MovieDetailActions(
                 val stacked = maxWidth < SummaryStackBreakpoint || LocalDensity.current.fontScale > SUMMARY_STACK_FONT_SCALE
                 LibraryActionGroup(
                     actions = actions,
-                    enabled = !isLibraryActionPending,
+                    enabled = libraryActionsEnabled,
                     stacked = stacked,
                 )
             }

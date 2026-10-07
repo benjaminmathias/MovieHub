@@ -94,7 +94,7 @@ fun MovieDetailContent(
             MovieDetailHeader(
                 movie = movie,
                 director = creditsSuccess?.credits?.director?.takeIf(String::isNotBlank),
-                isLibraryActionPending = !libraryActionsEnabled,
+                libraryActionsEnabled = libraryActionsEnabled,
                 onToggleFavorite = onToggleFavorite,
                 onToggleWatchlist = onToggleWatchlist,
                 onToggleWatched = onToggleWatched,
