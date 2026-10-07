@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -29,7 +28,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -50,7 +48,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
@@ -61,20 +58,19 @@ import com.benjamin.moviehub.ui.components.RetryButton
 import kotlin.math.roundToInt
 
 private const val DEFAULT_MINIMUM_RATING = 7.0
-private const val MIN_YEAR = 1870
+private const val OLDEST_DECADE = 1870
 
 private enum class FilterGroup {
     GENRE,
-    YEAR,
+    DECADE,
 }
 
 @Composable
 internal fun DiscoverFilterSheet(
     state: DiscoverUiState,
     currentYear: Int,
-    yearOptions: List<Int?>,
     onGenreSelected: (Int?) -> Unit,
-    onReleaseYearSelected: (Int?) -> Unit,
+    onReleaseDecadeSelected: (Int?) -> Unit,
     onMinimumRatingSelected: (Double?) -> Unit,
     onSortSelected: (DiscoverSortOption) -> Unit,
     onApplyFilters: () -> Unit,
@@ -84,21 +80,8 @@ internal fun DiscoverFilterSheet(
     modifier: Modifier = Modifier,
 ) {
     val filters = state.draftFilters
-    val recentYears = yearOptions.filterNotNull()
     var selectedGroup by rememberSaveable { mutableStateOf<FilterGroup?>(null) }
-    var customYearMode by rememberSaveable {
-        mutableStateOf(filters.releaseYear != null && filters.releaseYear !in recentYears)
-    }
-    var customYearText by rememberSaveable {
-        mutableStateOf(
-            filters.releaseYear
-                ?.takeIf { it !in recentYears }
-                ?.toString()
-                .orEmpty(),
-        )
-    }
-    val customYearInvalid = customYearIsInvalid(customYearMode, customYearText, currentYear)
-    val canApply = !customYearInvalid && filters != state.appliedFilters
+    val canApply = filters != state.appliedFilters
     val draftFilterCount = filters.activeFilterCount()
 
     BackHandler(enabled = selectedGroup != null) { selectedGroup = null }
@@ -111,7 +94,7 @@ internal fun DiscoverFilterSheet(
                 when (selectedGroup) {
                     null -> stringResource(R.string.discover_filters)
                     FilterGroup.GENRE -> stringResource(R.string.discover_genre)
-                    FilterGroup.YEAR -> stringResource(R.string.discover_year)
+                    FilterGroup.DECADE -> stringResource(R.string.discover_decade)
                 },
             onBack = selectedGroup?.let { { selectedGroup = null } },
             onClose = onClose,
@@ -123,10 +106,8 @@ internal fun DiscoverFilterSheet(
                     MainFilterList(
                         state = state,
                         filters = filters,
-                        customYearMode = customYearMode,
-                        customYearText = customYearText,
                         onOpenGenre = { selectedGroup = FilterGroup.GENRE },
-                        onOpenYear = { selectedGroup = FilterGroup.YEAR },
+                        onOpenDecade = { selectedGroup = FilterGroup.DECADE },
                         onSortSelected = onSortSelected,
                         onMinimumRatingSelected = onMinimumRatingSelected,
                     )
@@ -139,18 +120,14 @@ internal fun DiscoverFilterSheet(
                         onRetryGenres = onRetryGenres,
                     )
 
-                FilterGroup.YEAR ->
-                    YearPicker(
+                FilterGroup.DECADE ->
+                    DecadePicker(
                         filters = filters,
-                        yearOptions = yearOptions,
-                        recentYears = recentYears,
                         currentYear = currentYear,
-                        customYearMode = customYearMode,
-                        onCustomYearModeChange = { customYearMode = it },
-                        customYearText = customYearText,
-                        onCustomYearTextChange = { customYearText = it },
-                        customYearInvalid = customYearInvalid,
-                        onReleaseYearSelected = onReleaseYearSelected,
+                        onDecadeSelected = { decade ->
+                            onReleaseDecadeSelected(decade)
+                            selectedGroup = null
+                        },
                     )
             }
         }
@@ -224,10 +201,8 @@ private fun SheetHeader(
 private fun MainFilterList(
     state: DiscoverUiState,
     filters: DiscoverFilters,
-    customYearMode: Boolean,
-    customYearText: String,
     onOpenGenre: () -> Unit,
-    onOpenYear: () -> Unit,
+    onOpenDecade: () -> Unit,
     onSortSelected: (DiscoverSortOption) -> Unit,
     onMinimumRatingSelected: (Double?) -> Unit,
 ) {
@@ -239,13 +214,9 @@ private fun MainFilterList(
                 state.genres.firstOrNull { it.id == filters.genreId }?.name
                     ?: stringResource(R.string.discover_all_genres)
         }
-    val yearValue =
-        when {
-            customYearMode && customYearText.isNotEmpty() -> customYearText
-            customYearMode -> stringResource(R.string.discover_other_year)
-            filters.releaseYear != null -> filters.releaseYear.toString()
-            else -> stringResource(R.string.discover_all_years)
-        }
+    val decadeValue =
+        filters.releaseDecade?.let { stringResource(R.string.discover_decade_title, it) }
+            ?: stringResource(R.string.discover_all_decades)
 
     Column(
         modifier =
@@ -272,10 +243,10 @@ private fun MainFilterList(
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
                 FilterSummaryRow(
-                    title = stringResource(R.string.discover_year),
-                    value = yearValue,
-                    onClick = onOpenYear,
-                    modifier = Modifier.padding(horizontal = 16.dp).testTag("discover_year_row"),
+                    title = stringResource(R.string.discover_decade),
+                    value = decadeValue,
+                    onClick = onOpenDecade,
+                    modifier = Modifier.padding(horizontal = 16.dp).testTag("discover_decade_row"),
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
                 RatingFilterControl(
@@ -463,93 +434,33 @@ private fun GenrePicker(
 }
 
 @Composable
-private fun YearPicker(
+private fun DecadePicker(
     filters: DiscoverFilters,
-    yearOptions: List<Int?>,
-    recentYears: List<Int>,
     currentYear: Int,
-    customYearMode: Boolean,
-    onCustomYearModeChange: (Boolean) -> Unit,
-    customYearText: String,
-    onCustomYearTextChange: (String) -> Unit,
-    customYearInvalid: Boolean,
-    onReleaseYearSelected: (Int?) -> Unit,
+    onDecadeSelected: (Int?) -> Unit,
 ) {
-    val allYears = yearOptions.firstOrNull()
-
-    PickerColumn(testTag = "discover_year_section") {
+    PickerColumn(testTag = "discover_decade_section") {
         FilterOption(
-            label = stringResource(R.string.discover_all_years),
-            selected = !customYearMode && filters.releaseYear == allYears,
-            onClick = {
-                onCustomYearModeChange(false)
-                onCustomYearTextChange("")
-                onReleaseYearSelected(allYears)
-            },
-            modifier = Modifier.fillMaxWidth().testTag("discover_year_option_all"),
+            label = stringResource(R.string.discover_all_decades),
+            selected = filters.releaseDecade == null,
+            onClick = { onDecadeSelected(null) },
+            modifier = Modifier.fillMaxWidth().testTag("discover_decade_option_all"),
         )
-
         OptionGrid {
-            yearOptions.drop(1).forEach { year ->
+            // Decades descend from the current one down to the oldest selectable decade, 1870.
+            (decadeStartOf(currentYear) downTo OLDEST_DECADE step 10).forEach { decade ->
                 FilterOption(
-                    label = year.toString(),
-                    selected = !customYearMode && filters.releaseYear == year,
-                    onClick = {
-                        onCustomYearModeChange(false)
-                        onCustomYearTextChange("")
-                        onReleaseYearSelected(year)
-                    },
-                    modifier = Modifier.testTag("discover_year_option_$year"),
+                    label = stringResource(R.string.discover_decade_title, decade),
+                    selected = filters.releaseDecade == decade,
+                    onClick = { onDecadeSelected(decade) },
+                    modifier = Modifier.testTag("discover_decade_option_$decade"),
                 )
             }
-            FilterOption(
-                label = stringResource(R.string.discover_other_year),
-                selected = customYearMode,
-                onClick = {
-                    onCustomYearModeChange(true)
-                    onCustomYearTextChange(
-                        filters.releaseYear
-                            ?.takeIf { it !in recentYears }
-                            ?.toString()
-                            .orEmpty(),
-                    )
-                    onReleaseYearSelected(null)
-                },
-                modifier = Modifier.testTag("discover_year_option_other"),
-            )
-        }
-
-        if (customYearMode) {
-            val showError = customYearInvalid && customYearText.isNotEmpty()
-            OutlinedTextField(
-                value = customYearText,
-                onValueChange = { value ->
-                    val digits = value.filter(Char::isDigit).take(4)
-                    onCustomYearTextChange(digits)
-                    val year = digits.toIntOrNull()
-                    when {
-                        digits.isEmpty() -> onReleaseYearSelected(null)
-                        digits.length == 4 && year in MIN_YEAR..currentYear -> onReleaseYearSelected(year)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp).testTag("discover_custom_year"),
-                label = { Text(stringResource(R.string.discover_other_year)) },
-                supportingText = {
-                    Text(
-                        if (showError) {
-                            stringResource(R.string.discover_year_error, MIN_YEAR, currentYear)
-                        } else {
-                            stringResource(R.string.discover_year_hint, MIN_YEAR, currentYear)
-                        },
-                    )
-                },
-                isError = showError,
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            )
         }
     }
 }
+
+private fun decadeStartOf(year: Int): Int = (year / 10) * 10
 
 @Composable
 private fun PickerColumn(
@@ -596,14 +507,6 @@ private fun OptionGrid(content: @Composable FlowRowScope.() -> Unit) {
     )
 }
 
-internal fun customYearIsInvalid(
-    customYearMode: Boolean,
-    customYearText: String,
-    currentYear: Int,
-): Boolean =
-    customYearMode &&
-        (customYearText.length != 4 || customYearText.toIntOrNull() !in MIN_YEAR..currentYear)
-
 @Composable
 internal fun sortLabel(sort: DiscoverSortOption): String =
     stringResource(
@@ -623,11 +526,11 @@ internal fun activeFiltersSummary(
         filters.genreId?.let { genreId ->
             add(genres.firstOrNull { it.id == genreId }?.name ?: stringResource(R.string.discover_selected_genre))
         }
-        filters.releaseYear?.let { add(it.toString()) }
+        filters.releaseDecade?.let { add(stringResource(R.string.discover_decade_title, it)) }
         filters.minimumVoteAverage?.let { add(stringResource(R.string.rating_out_of_ten, it)) }
         if (filters.sort != DiscoverSortOption.POPULARITY) add(sortLabel(filters.sort))
     }.joinToString(" · ")
 
 internal fun DiscoverFilters.activeFilterCount(): Int =
-    listOf(genreId, releaseYear, minimumVoteAverage).count { it != null } +
+    listOf(genreId, releaseDecade, minimumVoteAverage).count { it != null } +
         if (sort != DiscoverSortOption.POPULARITY) 1 else 0

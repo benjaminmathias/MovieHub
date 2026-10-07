@@ -55,7 +55,8 @@ class FakeMovieApiService(
 
     override suspend fun discoverMovies(
         genreId: Int?,
-        releaseYear: Int?,
+        primaryReleaseDateGte: String?,
+        primaryReleaseDateLte: String?,
         minimumVoteAverage: Double?,
         minimumVoteCount: Int?,
         sortBy: String,

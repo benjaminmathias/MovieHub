@@ -30,10 +30,13 @@ class DiscoverMoviePagingSource(
         val page = params.key ?: 1
 
         return try {
+            // The selected decade is inclusive: 1990 covers 1990-01-01 through 1999-12-31.
+            val decadeStart = filters.releaseDecade
             val response =
                 apiService.discoverMovies(
                     genreId = filters.genreId,
-                    releaseYear = filters.releaseYear,
+                    primaryReleaseDateGte = decadeStart?.let { "$it-01-01" },
+                    primaryReleaseDateLte = decadeStart?.let { "${it + 9}-12-31" },
                     minimumVoteAverage = filters.minimumVoteAverage,
                     minimumVoteCount =
                         RATING_MINIMUM_VOTE_COUNT.takeIf { filters.sort == DiscoverSortOption.RATING },

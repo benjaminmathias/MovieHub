@@ -53,7 +53,7 @@ fun DiscoverScreen(
     state: DiscoverUiState,
     discoverResults: Flow<PagingData<Movie>>,
     onGenreSelected: (Int?) -> Unit,
-    onReleaseYearSelected: (Int?) -> Unit,
+    onReleaseDecadeSelected: (Int?) -> Unit,
     onMinimumRatingSelected: (Double?) -> Unit,
     onSortSelected: (DiscoverSortOption) -> Unit,
     onBeginFilterEditing: () -> Unit,
@@ -64,7 +64,6 @@ fun DiscoverScreen(
     onMovieClick: (Int) -> Unit,
 ) {
     val currentYear = remember { Calendar.getInstance().get(Calendar.YEAR) }
-    val yearOptions = remember(currentYear) { listOf<Int?>(null) + (currentYear downTo currentYear - 9) }
     var filterSheetVisible by rememberSaveable { mutableStateOf(false) }
     val activeFilterCount = state.appliedFilters.activeFilterCount()
 
@@ -175,9 +174,8 @@ fun DiscoverScreen(
             DiscoverFilterSheet(
                 state = state,
                 currentYear = currentYear,
-                yearOptions = yearOptions,
                 onGenreSelected = onGenreSelected,
-                onReleaseYearSelected = onReleaseYearSelected,
+                onReleaseDecadeSelected = onReleaseDecadeSelected,
                 onMinimumRatingSelected = onMinimumRatingSelected,
                 onSortSelected = onSortSelected,
                 onApplyFilters = {
@@ -206,7 +204,7 @@ private fun DiscoverScreenPreview() {
             state = DiscoverUiState(isLoadingGenres = false),
             discoverResults = flowOf(PagingData.from(listOf(previewMovie()))),
             onGenreSelected = {},
-            onReleaseYearSelected = {},
+            onReleaseDecadeSelected = {},
             onMinimumRatingSelected = {},
             onSortSelected = {},
             onBeginFilterEditing = {},

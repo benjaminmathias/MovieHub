@@ -81,7 +81,7 @@ internal fun DiscoverEntry(onOpenDetails: (Int) -> Unit) {
         state = state,
         discoverResults = viewModel.discoverResults,
         onGenreSelected = viewModel::onGenreSelected,
-        onReleaseYearSelected = viewModel::onReleaseYearSelected,
+        onReleaseDecadeSelected = viewModel::onReleaseDecadeSelected,
         onMinimumRatingSelected = viewModel::onMinimumRatingSelected,
         onSortSelected = viewModel::onSortSelected,
         onBeginFilterEditing = viewModel::beginFilterEditing,

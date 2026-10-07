@@ -6,14 +6,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.performTextClearance
-import androidx.compose.ui.test.performTextInput
 import androidx.paging.PagingData
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
@@ -24,6 +22,7 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -63,42 +62,127 @@ class DiscoverScreenTest {
     }
 
     @Test
-    fun customYearValidityControlsApply() {
+    fun currentDecadeOptionSelectsAndApplies() {
+        val currentDecade = Calendar.getInstance().get(Calendar.YEAR) / 10 * 10
         var state by mutableStateOf(initialState())
-        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+        var applyCalled = false
 
         setDiscoverContent(
             state = { state },
-            onReleaseYearSelected = { year -> state = state.copy(draftFilters = state.draftFilters.copy(releaseYear = year)) },
-            results = flowOf(PagingData.empty()),
+            onBeginFilterEditing = { state = state.copy(draftFilters = state.appliedFilters) },
+            onReleaseDecadeSelected = { decade -> state = state.copy(draftFilters = state.draftFilters.copy(releaseDecade = decade)) },
+            onApplyFilters = {
+                state = state.copy(appliedFilters = state.draftFilters)
+                applyCalled = true
+            },
+            onDiscardFilterEdits = { state = state.copy(draftFilters = state.appliedFilters) },
         )
 
         composeRule.onNodeWithTag("discover_filter_button").performClick()
-        composeRule.onNodeWithTag("discover_year_row").performClick()
-        composeRule.onNodeWithTag("discover_year_option_other").performScrollTo().performClick()
-        val yearField = composeRule.onNodeWithTag("discover_custom_year")
+        composeRule.onNodeWithTag("discover_decade_row").performClick()
 
-        yearField.performTextInput("202")
-        composeRule.onNodeWithTag("discover_apply_filters").assertIsNotEnabled()
-        yearField.performTextClearance()
-        yearField.performTextInput((currentYear + 1).toString())
-        composeRule.onNodeWithTag("discover_apply_filters").assertIsNotEnabled()
-        yearField.performTextClearance()
-        yearField.performTextInput("1869")
-        composeRule.onNodeWithTag("discover_apply_filters").assertIsNotEnabled()
+        // The newest selectable decade is the current one; only decade starts are offered.
+        composeRule.onNodeWithTag("discover_decade_option_$currentDecade").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("discover_decade_option_${currentDecade + 10}").assertDoesNotExist()
+        composeRule.onNodeWithTag("discover_decade_option_${currentDecade + 5}").assertDoesNotExist()
 
-        val validYear = currentYear - 1
-        yearField.performTextClearance()
-        yearField.performTextInput(validYear.toString())
-        composeRule.runOnIdle { assertEquals(validYear, state.draftFilters.releaseYear) }
-        composeRule.onNodeWithTag("discover_apply_filters").assertIsEnabled()
+        composeRule.onNodeWithTag("discover_decade_option_$currentDecade").performClick()
+
+        // Selecting a decade stores the draft and returns to the main panel without applying.
+        composeRule.onNodeWithTag("discover_decade_row").assertIsDisplayed()
+        composeRule.onAllNodesWithTag("discover_decade_section").assertCountEquals(0)
+        composeRule.runOnIdle {
+            assertEquals(currentDecade, state.draftFilters.releaseDecade)
+            assertFalse(applyCalled)
+        }
+
+        composeRule.onNodeWithTag("discover_apply_filters").assertIsEnabled().performClick()
+        composeRule.runOnIdle {
+            assertTrue(applyCalled)
+            assertEquals(currentDecade, state.appliedFilters.releaseDecade)
+        }
+        composeRule.onAllNodesWithTag("discover_filter_sheet").assertCountEquals(0)
+    }
+
+    @Test
+    fun decadeSelectionStaysWithinEligibleBounds() {
+        var state by mutableStateOf(initialState())
+
+        setDiscoverContent(
+            state = { state },
+            onBeginFilterEditing = { state = state.copy(draftFilters = state.appliedFilters) },
+            onReleaseDecadeSelected = { decade -> state = state.copy(draftFilters = state.draftFilters.copy(releaseDecade = decade)) },
+            onApplyFilters = { state = state.copy(appliedFilters = state.draftFilters) },
+            onDiscardFilterEdits = { state = state.copy(draftFilters = state.appliedFilters) },
+        )
+
+        composeRule.onNodeWithTag("discover_filter_button").performClick()
+        composeRule.onNodeWithTag("discover_decade_row").performClick()
+
+        // The oldest selectable decade is 1870.
+        composeRule.onNodeWithTag("discover_decade_option_1870").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("discover_decade_option_1990").performScrollTo().performClick()
+
+        composeRule.onNodeWithTag("discover_decade_row").assertIsDisplayed()
+        composeRule.runOnIdle { assertEquals(1990, state.draftFilters.releaseDecade) }
+
+        composeRule.onNodeWithTag("discover_apply_filters").performClick()
+        composeRule.runOnIdle { assertEquals(1990, state.appliedFilters.releaseDecade) }
+
+        // Reopening restores the applied decade as the selected option.
+        composeRule.onNodeWithTag("discover_filter_button").performClick()
+        composeRule.onNodeWithTag("discover_decade_row").performClick()
+        composeRule.onNodeWithTag("discover_decade_option_1990").performScrollTo().assertIsSelected()
+
+        // "Toutes les décennies" clears the draft, but the applied filter stays until Apply.
+        composeRule.onNodeWithTag("discover_decade_option_all").performScrollTo().performClick()
+        composeRule.onNodeWithTag("discover_decade_row").assertIsDisplayed()
+        composeRule.onAllNodesWithTag("discover_decade_section").assertCountEquals(0)
+        composeRule.runOnIdle {
+            assertEquals(null, state.draftFilters.releaseDecade)
+            assertEquals(1990, state.appliedFilters.releaseDecade)
+        }
+
+        composeRule.onNodeWithTag("discover_apply_filters").performClick()
+        composeRule.runOnIdle { assertEquals(null, state.appliedFilters.releaseDecade) }
+    }
+
+    @Test
+    fun dismissingSheetDiscardsDecadeAndReopenUsesApplied() {
+        val currentDecade = Calendar.getInstance().get(Calendar.YEAR) / 10 * 10
+        var state by mutableStateOf(initialState())
+
+        setDiscoverContent(
+            state = { state },
+            onBeginFilterEditing = { state = state.copy(draftFilters = state.appliedFilters) },
+            onReleaseDecadeSelected = { decade -> state = state.copy(draftFilters = state.draftFilters.copy(releaseDecade = decade)) },
+            onDiscardFilterEdits = { state = state.copy(draftFilters = state.appliedFilters) },
+        )
+
+        composeRule.onNodeWithTag("discover_filter_button").performClick()
+        composeRule.onNodeWithTag("discover_decade_row").performClick()
+        composeRule.onNodeWithTag("discover_decade_option_1970").performScrollTo().performClick()
+
+        composeRule.onNodeWithTag("discover_decade_row").assertIsDisplayed()
+        composeRule.runOnIdle { assertEquals(1970, state.draftFilters.releaseDecade) }
+
+        // Dismissing cancels the pending decade and restores the applied filters.
+        composeRule.onNodeWithTag("discover_close_filters").performClick()
+        composeRule.onAllNodesWithTag("discover_filter_sheet").assertCountEquals(0)
+        composeRule.runOnIdle { assertEquals(null, state.draftFilters.releaseDecade) }
+
+        // Reopening starts from the applied draft, so no decade is selected.
+        composeRule.onNodeWithTag("discover_filter_button").performClick()
+        composeRule.onNodeWithTag("discover_decade_row").performClick()
+        composeRule.onNodeWithTag("discover_decade_option_all").performScrollTo().assertIsSelected()
+        composeRule.onNodeWithTag("discover_decade_option_$currentDecade").assertExists()
     }
 
     private fun setDiscoverContent(
         state: () -> DiscoverUiState,
         results: Flow<PagingData<Movie>> = flowOf(PagingData.from(listOf(testMovie()))),
         onGenreSelected: (Int?) -> Unit = {},
-        onReleaseYearSelected: (Int?) -> Unit = {},
+        onReleaseDecadeSelected: (Int?) -> Unit = {},
         onMinimumRatingSelected: (Double?) -> Unit = {},
         onSortSelected: (DiscoverSortOption) -> Unit = {},
         onBeginFilterEditing: () -> Unit = {},
@@ -113,7 +197,7 @@ class DiscoverScreenTest {
                     state = state(),
                     discoverResults = results,
                     onGenreSelected = onGenreSelected,
-                    onReleaseYearSelected = onReleaseYearSelected,
+                    onReleaseDecadeSelected = onReleaseDecadeSelected,
                     onMinimumRatingSelected = onMinimumRatingSelected,
                     onSortSelected = onSortSelected,
                     onBeginFilterEditing = onBeginFilterEditing,

@@ -28,7 +28,8 @@ interface MovieApiService {
     @GET("discover/movie")
     suspend fun discoverMovies(
         @Query("with_genres") genreId: Int?,
-        @Query("primary_release_year") releaseYear: Int?,
+        @Query("primary_release_date.gte") primaryReleaseDateGte: String?,
+        @Query("primary_release_date.lte") primaryReleaseDateLte: String?,
         @Query("vote_average.gte") minimumVoteAverage: Double?,
         @Query("vote_count.gte") minimumVoteCount: Int?,
         @Query("sort_by") sortBy: String,

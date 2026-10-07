@@ -34,7 +34,7 @@ import javax.inject.Inject
  */
 private data class FilterKeys(
     val genreId: String,
-    val releaseYear: String,
+    val releaseDecade: String,
     val minimumRating: String,
     val sort: String,
 )
@@ -42,7 +42,8 @@ private data class FilterKeys(
 private val DRAFT_FILTER_KEYS =
     FilterKeys(
         genreId = "discover_draft_genre_id",
-        releaseYear = "discover_draft_release_year",
+        // Legacy key kept so an upgrade still restores the persisted decade.
+        releaseDecade = "discover_draft_release_year",
         minimumRating = "discover_draft_minimum_rating",
         sort = "discover_draft_sort",
     )
@@ -50,7 +51,8 @@ private val DRAFT_FILTER_KEYS =
 private val APPLIED_FILTER_KEYS =
     FilterKeys(
         genreId = "discover_applied_genre_id",
-        releaseYear = "discover_applied_release_year",
+        // Legacy key kept so an upgrade still restores the persisted decade.
+        releaseDecade = "discover_applied_release_year",
         minimumRating = "discover_applied_minimum_rating",
         sort = "discover_applied_sort",
     )
@@ -98,7 +100,7 @@ class DiscoverViewModel
 
         fun onGenreSelected(genreId: Int?) = updateDraft { it.copy(genreId = genreId) }
 
-        fun onReleaseYearSelected(year: Int?) = updateDraft { it.copy(releaseYear = year) }
+        fun onReleaseDecadeSelected(decadeStart: Int?) = updateDraft { it.copy(releaseDecade = decadeStart) }
 
         fun onMinimumRatingSelected(rating: Double?) = updateDraft { it.copy(minimumVoteAverage = rating) }
 
@@ -166,7 +168,8 @@ class DiscoverViewModel
 private fun SavedStateHandle.readFilters(keys: FilterKeys): DiscoverFilters =
     DiscoverFilters(
         genreId = get<Int>(keys.genreId),
-        releaseYear = get<Int>(keys.releaseYear),
+        // Older versions persisted the full release year; normalize it to its decade start.
+        releaseDecade = get<Int>(keys.releaseDecade)?.let { it / 10 * 10 },
         minimumVoteAverage = get<Double>(keys.minimumRating),
         sort = readSort(keys.sort),
     )
@@ -181,7 +184,7 @@ private fun SavedStateHandle.writeFilters(
     filters: DiscoverFilters,
 ) {
     this[keys.genreId] = filters.genreId
-    this[keys.releaseYear] = filters.releaseYear
+    this[keys.releaseDecade] = filters.releaseDecade
     this[keys.minimumRating] = filters.minimumVoteAverage
     this[keys.sort] = filters.sort.name
 }

@@ -78,13 +78,13 @@ class DiscoverViewModelTest {
             val filters =
                 DiscoverFilters(
                     genreId = 28,
-                    releaseYear = 2020,
+                    releaseDecade = 2020,
                     minimumVoteAverage = 8.0,
                     sort = DiscoverSortOption.RELEASE_DATE,
                 )
 
             viewModel.onGenreSelected(filters.genreId)
-            viewModel.onReleaseYearSelected(filters.releaseYear)
+            viewModel.onReleaseDecadeSelected(filters.releaseDecade)
             viewModel.onMinimumRatingSelected(filters.minimumVoteAverage)
             viewModel.onSortSelected(filters.sort)
             advanceUntilIdle()
@@ -139,7 +139,7 @@ class DiscoverViewModelTest {
             advanceUntilIdle()
 
             first.onGenreSelected(28)
-            first.onReleaseYearSelected(2020)
+            first.onReleaseDecadeSelected(2020)
             first.onMinimumRatingSelected(8.0)
             first.onSortSelected(DiscoverSortOption.RELEASE_DATE)
             first.applyFilters()
@@ -159,7 +159,7 @@ class DiscoverViewModelTest {
             assertEquals(
                 DiscoverFilters(
                     genreId = 18,
-                    releaseYear = 2020,
+                    releaseDecade = 2020,
                     minimumVoteAverage = 8.0,
                     sort = DiscoverSortOption.RELEASE_DATE,
                 ),
@@ -168,11 +168,29 @@ class DiscoverViewModelTest {
             assertEquals(
                 DiscoverFilters(
                     genreId = 28,
-                    releaseYear = 2020,
+                    releaseDecade = 2020,
                     minimumVoteAverage = 8.0,
                     sort = DiscoverSortOption.RELEASE_DATE,
                 ),
                 restored.uiState.value.appliedFilters,
             )
+        }
+
+    @Test
+    fun `a legacy saved release year is restored as its decade start`() =
+        runTest {
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        "discover_draft_release_year" to 1994,
+                        "discover_applied_release_year" to 1994,
+                    ),
+                )
+
+            val restored = DiscoverViewModel(repository, handle)
+            advanceUntilIdle()
+
+            assertEquals(1990, restored.uiState.value.draftFilters.releaseDecade)
+            assertEquals(1990, restored.uiState.value.appliedFilters.releaseDecade)
         }
 }

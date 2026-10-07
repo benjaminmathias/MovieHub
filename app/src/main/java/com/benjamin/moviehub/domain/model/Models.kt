@@ -59,7 +59,8 @@ enum class DiscoverSortOption(
 
 data class DiscoverFilters(
     val genreId: Int? = null,
-    val releaseYear: Int? = null,
+    /** Start year of the selected release decade (for example 1990), or null for any decade. */
+    val releaseDecade: Int? = null,
     val minimumVoteAverage: Double? = null,
     val sort: DiscoverSortOption = DiscoverSortOption.POPULARITY,
 )

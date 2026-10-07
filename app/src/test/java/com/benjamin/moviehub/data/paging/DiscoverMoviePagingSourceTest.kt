@@ -15,6 +15,7 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.IOException
+import java.util.Calendar
 
 class DiscoverMoviePagingSourceTest {
     @Test
@@ -25,7 +26,7 @@ class DiscoverMoviePagingSourceTest {
             val result = source(apiService).load(refreshParams()) as PagingSource.LoadResult.Page
 
             assertEquals(listOf(1), result.data.map { it.id })
-            coVerify { apiService.discoverMovies(null, null, null, null, "popularity.desc", 1) }
+            coVerify { apiService.discoverMovies(null, null, null, null, null, "popularity.desc", 1) }
         }
 
     @Test
@@ -56,7 +57,7 @@ class DiscoverMoviePagingSourceTest {
         runTest {
             val apiService = mockk<MovieApiService>()
             val error = IOException("offline")
-            coEvery { apiService.discoverMovies(any(), any(), any(), any(), any(), any()) } throws error
+            coEvery { apiService.discoverMovies(any(), any(), any(), any(), any(), any(), any()) } throws error
 
             val result = source(apiService).load(refreshParams())
 
@@ -73,9 +74,32 @@ class DiscoverMoviePagingSourceTest {
             source(apiService, DiscoverFilters(sort = DiscoverSortOption.POPULARITY)).load(refreshParams())
             source(apiService, DiscoverFilters(sort = DiscoverSortOption.RELEASE_DATE)).load(refreshParams())
 
-            coVerify { apiService.discoverMovies(null, null, null, 200, "vote_average.desc", 1) }
-            coVerify { apiService.discoverMovies(null, null, null, null, "popularity.desc", 1) }
-            coVerify { apiService.discoverMovies(null, null, null, null, "primary_release_date.desc", 1) }
+            coVerify { apiService.discoverMovies(null, null, null, null, 200, "vote_average.desc", 1) }
+            coVerify { apiService.discoverMovies(null, null, null, null, null, "popularity.desc", 1) }
+            coVerify { apiService.discoverMovies(null, null, null, null, null, "primary_release_date.desc", 1) }
+        }
+
+    @Test
+    fun `a selected decade sends inclusive date bounds covering its full ten years`() =
+        runTest {
+            val currentDecade = Calendar.getInstance().get(Calendar.YEAR) / 10 * 10
+            val apiService = mockApi(MovieResponse(totalPages = 1))
+
+            source(apiService, DiscoverFilters(releaseDecade = 1990)).load(refreshParams())
+            source(apiService, DiscoverFilters(releaseDecade = currentDecade)).load(refreshParams())
+
+            coVerify { apiService.discoverMovies(null, "1990-01-01", "1999-12-31", null, null, "popularity.desc", 1) }
+            coVerify {
+                apiService.discoverMovies(
+                    null,
+                    "$currentDecade-01-01",
+                    "${currentDecade + 9}-12-31",
+                    null,
+                    null,
+                    "popularity.desc",
+                    1,
+                )
+            }
         }
 
     @Test
@@ -115,7 +139,7 @@ class DiscoverMoviePagingSourceTest {
 
     private fun mockApi(response: MovieResponse): MovieApiService {
         val apiService = mockk<MovieApiService>()
-        coEvery { apiService.discoverMovies(any(), any(), any(), any(), any(), any()) } returns response
+        coEvery { apiService.discoverMovies(any(), any(), any(), any(), any(), any(), any()) } returns response
         return apiService
     }
 
