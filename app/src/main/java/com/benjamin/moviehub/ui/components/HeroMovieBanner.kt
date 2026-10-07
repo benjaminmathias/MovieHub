@@ -12,13 +12,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -123,17 +123,25 @@ fun HeroMovieBanner(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Button(
-                        onClick = { onMovieClick(movie.id) },
+                    // The card already exposes the single navigation action. Keep this CTA
+                    // visual so screen readers do not receive the same action twice.
+                    Surface(
                         shape = MaterialTheme.shapes.medium,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     ) {
-                        Text(text = stringResource(R.string.view_details))
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(text = stringResource(R.string.view_details))
+                            Spacer(modifier = Modifier.size(8.dp))
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
                     }
 
                     FilledTonalIconButton(

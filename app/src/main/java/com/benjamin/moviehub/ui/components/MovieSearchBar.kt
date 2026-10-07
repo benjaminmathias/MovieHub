@@ -37,6 +37,7 @@ fun MovieSearchBar(
             modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
+        label = { Text(stringResource(R.string.search_label)) },
         placeholder = { Text(stringResource(R.string.search_placeholder)) },
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
         trailingIcon = {

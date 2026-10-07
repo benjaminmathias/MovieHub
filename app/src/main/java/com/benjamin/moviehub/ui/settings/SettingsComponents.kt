@@ -119,7 +119,7 @@ internal fun SettingsItem(
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
                 .padding(vertical = 8.dp)
-                .clickable(enabled = enabled, onClick = onClick),
+                .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
