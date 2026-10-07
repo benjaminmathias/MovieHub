@@ -120,7 +120,7 @@ private fun HomeContent(
                             )
                         }
 
-                    HeroMovieUiState.Error ->
+                    is HeroMovieUiState.Error ->
                         EmptyStateView(
                             message = stringResource(R.string.error_loading_hero),
                             onRetry = onRetryHero,

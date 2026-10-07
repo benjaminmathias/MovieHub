@@ -25,17 +25,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** Explicit state of the home hero banner. [Success] carries the movie, or null when the feed is legitimately empty. */
-sealed interface HeroMovieUiState {
-    data object Loading : HeroMovieUiState
-
-    data class Success(
-        val movie: Movie?,
-    ) : HeroMovieUiState
-
-    data object Error : HeroMovieUiState
-}
-
 @HiltViewModel
 class MovieListViewModel
     @Inject
@@ -44,10 +33,10 @@ class MovieListViewModel
         private val libraryRepository: LibraryRepository,
     ) : ViewModel() {
         private val heroRetryTrigger = MutableStateFlow(0)
-        private val _favoriteErrorPending = MutableStateFlow(false)
+        private val _favoriteActionError = MutableStateFlow<FavoriteActionErrorState>(FavoriteActionErrorState.None)
 
         /** A favorite write failed and its message has not been shown yet. */
-        val favoriteErrorPending: StateFlow<Boolean> = _favoriteErrorPending.asStateFlow()
+        val favoriteActionError: StateFlow<FavoriteActionErrorState> = _favoriteActionError.asStateFlow()
 
         /** One cached paging flow per home category, all shown on the same home screen. */
         val categoryMovies: Map<MovieCategory, Flow<PagingData<Movie>>> =
@@ -69,7 +58,7 @@ class MovieListViewModel
                         .onStart { emit(HeroMovieUiState.Loading) }
                         .catch { error ->
                             if (error is CancellationException) throw error
-                            emit(HeroMovieUiState.Error)
+                            emit(HeroMovieUiState.Error(HeroMovieErrorCode.LOAD_FEATURED_MOVIE))
                         }
                 }.stateIn(
                     scope = viewModelScope,
@@ -88,13 +77,14 @@ class MovieListViewModel
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    _favoriteErrorPending.value = true
+                    _favoriteActionError.value =
+                        FavoriteActionErrorState.Failure(FavoriteActionErrorCode.UPDATE_FAVORITE)
                 }
             }
         }
 
         /** Clears the pending favorite error once its message has finished being displayed. */
         fun acknowledgeFavoriteError() {
-            _favoriteErrorPending.value = false
+            _favoriteActionError.value = FavoriteActionErrorState.None
         }
     }

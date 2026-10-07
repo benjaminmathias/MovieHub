@@ -1,15 +1,12 @@
 package com.benjamin.moviehub.ui.detail
 
-import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.LibraryFlag
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.LibraryRepository
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -34,8 +31,8 @@ class MovieDetailViewModel
         val uiState: StateFlow<MovieDetailUiState> = _uiState.asStateFlow()
 
         /** A library write failed and its message has not been shown yet. */
-        private val _libraryActionErrorPending = MutableStateFlow(false)
-        val libraryActionErrorPending: StateFlow<Boolean> = _libraryActionErrorPending.asStateFlow()
+        private val _libraryActionError = MutableStateFlow<MovieDetailActionErrorState>(MovieDetailActionErrorState.None)
+        val libraryActionError: StateFlow<MovieDetailActionErrorState> = _libraryActionError.asStateFlow()
         private var loadJob: Job? = null
         private var loadingMovieId: Int? = null
         private var libraryJob: Job? = null
@@ -90,7 +87,7 @@ class MovieDetailViewModel
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
-                        _uiState.value = MovieDetailUiState.Error(R.string.error_loading_movie_detail)
+                        _uiState.value = MovieDetailUiState.Error(MovieDetailErrorCode.LOAD_MOVIE)
                     }
                 }
         }
@@ -144,7 +141,7 @@ class MovieDetailViewModel
 
         /** Clears the pending library error once its message has finished being displayed. */
         fun acknowledgeLibraryActionError() {
-            _libraryActionErrorPending.value = false
+            _libraryActionError.value = MovieDetailActionErrorState.None
         }
 
         private fun toggleLibraryFlag(flag: LibraryFlag) {
@@ -163,7 +160,8 @@ class MovieDetailViewModel
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
-                        _libraryActionErrorPending.value = true
+                        _libraryActionError.value =
+                            MovieDetailActionErrorState.Failure(MovieDetailActionErrorCode.UPDATE_LIBRARY)
                         rollbackLibrary(previous.id, previous, flag, value)
                         setLibraryActionPending(previous.id, false)
                     }
@@ -185,7 +183,7 @@ class MovieDetailViewModel
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                MovieCreditsUiState.Error
+                MovieCreditsUiState.Error(MovieCreditsErrorCode.LOAD_CREDITS)
             }
 
         private suspend fun loadRecommendations(movieId: Int): MovieRecommendationsUiState =
@@ -198,7 +196,7 @@ class MovieDetailViewModel
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                MovieRecommendationsUiState.Error
+                MovieRecommendationsUiState.Error(MovieRecommendationsErrorCode.LOAD_RECOMMENDATIONS)
             }
 
         /**
@@ -223,7 +221,9 @@ class MovieDetailViewModel
                     } catch (e: CancellationException) {
                         throw e
                     } catch (_: Exception) {
-                        updateSuccess(movieId) { it.copy(libraryObservation = LibraryObservationUiState.Error) }
+                        updateSuccess(movieId) {
+                            it.copy(libraryObservation = LibraryObservationUiState.Error(LibraryObservationErrorCode.LOAD_LIBRARY))
+                        }
                     }
                 }
         }
@@ -297,31 +297,3 @@ private fun Movie.withLibraryState(local: Movie?): Movie =
         isWatchlist = local?.isWatchlist ?: false,
         isWatched = local?.isWatched ?: false,
     )
-
-sealed class MovieDetailUiState {
-    data object Loading : MovieDetailUiState()
-
-    data class Success(
-        val movie: Movie,
-        val credits: MovieCreditsUiState,
-        val recommendations: MovieRecommendationsUiState = MovieRecommendationsUiState.Loading,
-        val isLibraryActionPending: Boolean = false,
-        val libraryObservation: LibraryObservationUiState = LibraryObservationUiState.Loading,
-    ) : MovieDetailUiState()
-
-    data class Error(
-        @param:StringRes val errorMessage: Int,
-    ) : MovieDetailUiState()
-}
-
-sealed interface MovieRecommendationsUiState {
-    data object Loading : MovieRecommendationsUiState
-
-    data class Success(
-        val movies: ImmutableList<Movie>,
-    ) : MovieRecommendationsUiState
-
-    data object Empty : MovieRecommendationsUiState
-
-    data object Error : MovieRecommendationsUiState
-}

@@ -1,16 +1,11 @@
 package com.benjamin.moviehub.ui.library
 
-import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.LibraryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,26 +21,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-private fun ImmutableList<Movie>.byLibraryTab(): ImmutableMap<LibraryTab, ImmutableList<Movie>> =
-    LibraryTab.entries
-        .associateWith { tab -> filter(tab.flag.isSet).toImmutableList() }
-        .toImmutableMap()
-
-sealed class LibraryUiState {
-    data object Loading : LibraryUiState()
-
-    data class Success(
-        val movies: ImmutableList<Movie>,
-    ) : LibraryUiState() {
-        // Derived once per state instance; copied states recompute from their own movies.
-        val moviesByTab: ImmutableMap<LibraryTab, ImmutableList<Movie>> = movies.byLibraryTab()
-    }
-
-    data class Error(
-        @param:StringRes val errorMessage: Int,
-    ) : LibraryUiState()
-}
-
 @HiltViewModel
 class LibraryViewModel
     @Inject
@@ -55,8 +30,8 @@ class LibraryViewModel
         private val retryTrigger = MutableStateFlow(0)
 
         /** An action failed and its message has not been shown yet. */
-        private val _actionErrorPending = MutableStateFlow(false)
-        val actionErrorPending: StateFlow<Boolean> = _actionErrorPending.asStateFlow()
+        private val _actionError = MutableStateFlow<LibraryActionErrorState>(LibraryActionErrorState.None)
+        val actionError: StateFlow<LibraryActionErrorState> = _actionError.asStateFlow()
 
         @OptIn(ExperimentalCoroutinesApi::class)
         val uiState: StateFlow<LibraryUiState> =
@@ -68,7 +43,7 @@ class LibraryViewModel
                         .onStart { emit(LibraryUiState.Loading) }
                         .catch { error ->
                             if (error is CancellationException) throw error
-                            emit(LibraryUiState.Error(R.string.error_loading_movies))
+                            emit(LibraryUiState.Error(LibraryLoadErrorCode.LOAD_MOVIES))
                         }
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LibraryUiState.Loading)
 
@@ -86,13 +61,13 @@ class LibraryViewModel
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
-                    _actionErrorPending.value = true
+                    _actionError.value = LibraryActionErrorState.Failure(LibraryActionErrorCode.REMOVE_MOVIE)
                 }
             }
         }
 
         /** Clears the pending action error once its message has finished being displayed. */
         fun acknowledgeActionError() {
-            _actionErrorPending.value = false
+            _actionError.value = LibraryActionErrorState.None
         }
     }

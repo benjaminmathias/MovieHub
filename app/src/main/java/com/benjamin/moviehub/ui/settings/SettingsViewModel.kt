@@ -25,14 +25,14 @@ class SettingsViewModel
         private val _isClearing = MutableStateFlow(false)
         val isClearing: StateFlow<Boolean> = _isClearing.asStateFlow()
 
-        // Pending image-cache result awaiting display: null = nothing to show, true = cleared,
-        // false = clearing failed. A state value survives a collector gap, unlike a one-shot event.
-        private val _imageCacheResult = MutableStateFlow<Boolean?>(null)
-        val imageCacheResult: StateFlow<Boolean?> = _imageCacheResult.asStateFlow()
+        // Pending image-cache result awaiting display. A state value survives a collector gap,
+        // unlike a one-shot event.
+        private val _imageCacheResult = MutableStateFlow<ImageCacheResult>(ImageCacheResult.Idle)
+        val imageCacheResult: StateFlow<ImageCacheResult> = _imageCacheResult.asStateFlow()
 
         /** A theme write failed and its message has not been shown yet. */
-        private val _themeUpdateErrorPending = MutableStateFlow(false)
-        val themeUpdateErrorPending: StateFlow<Boolean> = _themeUpdateErrorPending.asStateFlow()
+        private val _themeUpdateError = MutableStateFlow<SettingsActionErrorState>(SettingsActionErrorState.None)
+        val themeUpdateError: StateFlow<SettingsActionErrorState> = _themeUpdateError.asStateFlow()
 
         val currentTheme: StateFlow<AppTheme> =
             userPreferenceRepository.theme
@@ -49,7 +49,7 @@ class SettingsViewModel
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    _themeUpdateErrorPending.value = true
+                    _themeUpdateError.value = SettingsActionErrorState.Failure(SettingsActionErrorCode.UPDATE_THEME)
                 }
             }
         }
@@ -62,11 +62,11 @@ class SettingsViewModel
             viewModelScope.launch {
                 try {
                     imageCacheCleaner.clear()
-                    _imageCacheResult.value = true
+                    _imageCacheResult.value = ImageCacheResult.Cleared
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
-                    _imageCacheResult.value = false
+                    _imageCacheResult.value = ImageCacheResult.Failed(ImageCacheErrorCode.CLEAR_CACHE)
                 } finally {
                     _isClearing.value = false
                 }
@@ -74,12 +74,12 @@ class SettingsViewModel
         }
 
         /** Clears the pending image-cache result only when it still matches [result]. */
-        fun acknowledgeImageCacheResult(result: Boolean) {
-            if (_imageCacheResult.value == result) _imageCacheResult.value = null
+        fun acknowledgeImageCacheResult(result: ImageCacheResult) {
+            if (_imageCacheResult.value === result) _imageCacheResult.value = ImageCacheResult.Idle
         }
 
         /** Clears the pending theme update error once its message has finished being displayed. */
         fun acknowledgeThemeUpdateError() {
-            _themeUpdateErrorPending.value = false
+            _themeUpdateError.value = SettingsActionErrorState.None
         }
     }

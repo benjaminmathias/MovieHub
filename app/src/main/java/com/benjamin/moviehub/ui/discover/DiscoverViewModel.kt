@@ -8,11 +8,8 @@ import androidx.paging.cachedIn
 import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
 import com.benjamin.moviehub.domain.model.Movie
-import com.benjamin.moviehub.domain.model.MovieGenre
 import com.benjamin.moviehub.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -57,14 +54,6 @@ private val APPLIED_FILTER_KEYS =
         sort = "discover_applied_sort",
     )
 
-data class DiscoverUiState(
-    val draftFilters: DiscoverFilters = DiscoverFilters(),
-    val appliedFilters: DiscoverFilters = DiscoverFilters(),
-    val genres: ImmutableList<MovieGenre> = persistentListOf(),
-    val isLoadingGenres: Boolean = true,
-    val hasGenreError: Boolean = false,
-)
-
 @HiltViewModel
 class DiscoverViewModel
     @Inject
@@ -102,7 +91,7 @@ class DiscoverViewModel
 
         fun onReleaseDecadeSelected(decadeStart: Int?) = updateDraft { it.copy(releaseDecade = decadeStart) }
 
-        fun onMinimumRatingSelected(rating: Double?) = updateDraft { it.copy(minimumVoteAverage = rating) }
+        fun onMinimumRatingSelected(rating: Double?) = updateDraft { it.copy(minimumVoteAverage = rating.normalizeMinimumRating()) }
 
         fun onSortSelected(sort: DiscoverSortOption) = updateDraft { it.copy(sort = sort) }
 
@@ -148,18 +137,20 @@ class DiscoverViewModel
 
         private fun loadGenres() {
             if (genresJob?.isActive == true) return
-            _uiState.update { it.copy(isLoadingGenres = true, hasGenreError = false) }
+            _uiState.update { it.copy(genres = DiscoverGenresUiState.Loading) }
             genresJob =
                 viewModelScope.launch {
                     try {
                         // Fetched outside the state update: the update lambda can be retried and
                         // must not overwrite filter edits made while the request is in flight.
                         val genres = repository.getMovieGenres().toImmutableList()
-                        _uiState.update { it.copy(genres = genres, isLoadingGenres = false) }
+                        _uiState.update { it.copy(genres = DiscoverGenresUiState.Success(genres)) }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
-                        _uiState.update { it.copy(isLoadingGenres = false, hasGenreError = true) }
+                        _uiState.update {
+                            it.copy(genres = DiscoverGenresUiState.Error(DiscoverErrorCode.LOAD_GENRES))
+                        }
                     }
                 }
         }
@@ -170,7 +161,7 @@ private fun SavedStateHandle.readFilters(keys: FilterKeys): DiscoverFilters =
         genreId = get<Int>(keys.genreId),
         // Older versions persisted the full release year; normalize it to its decade start.
         releaseDecade = get<Int>(keys.releaseDecade)?.let { it / 10 * 10 },
-        minimumVoteAverage = get<Double>(keys.minimumRating),
+        minimumVoteAverage = get<Double>(keys.minimumRating).normalizeMinimumRating(),
         sort = readSort(keys.sort),
     )
 
@@ -178,6 +169,8 @@ private fun SavedStateHandle.readSort(sortKey: String): DiscoverSortOption {
     val savedName = get<String>(sortKey) ?: return DiscoverSortOption.POPULARITY
     return DiscoverSortOption.entries.firstOrNull { it.name == savedName } ?: DiscoverSortOption.POPULARITY
 }
+
+private fun Double?.normalizeMinimumRating(): Double? = this?.takeIf { it.isFinite() && it > 0.0 }?.coerceIn(1.0, 10.0)
 
 private fun SavedStateHandle.writeFilters(
     keys: FilterKeys,
