@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.viewmodel
 
+import com.benjamin.moviehub.domain.model.LibraryFlag
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.LibraryRepository
 import com.benjamin.moviehub.ui.library.LibraryTab
@@ -78,9 +79,7 @@ class LibraryViewModelTest {
     fun `remove uses the requested tab flag`() =
         runTest {
             every { repository.getLibraryMovies() } returns MutableStateFlow(emptyList())
-            coEvery { repository.setFavorite(any(), any()) } returns Unit
-            coEvery { repository.setWatchlist(any(), any()) } returns Unit
-            coEvery { repository.setWatched(any(), any()) } returns Unit
+            coEvery { repository.setLibraryFlag(any(), any(), any()) } returns Unit
             val viewModel = LibraryViewModel(repository)
             val target = movie(1, favorite = true, watchlist = true, watched = true)
 
@@ -89,9 +88,9 @@ class LibraryViewModelTest {
             viewModel.onRemove(target, LibraryTab.WATCHED)
             advanceUntilIdle()
 
-            coVerify { repository.setWatchlist(target, false) }
-            coVerify { repository.setFavorite(target, false) }
-            coVerify { repository.setWatched(target, false) }
+            coVerify { repository.setLibraryFlag(target, LibraryFlag.WATCHLIST, false) }
+            coVerify { repository.setLibraryFlag(target, LibraryFlag.FAVORITE, false) }
+            coVerify { repository.setLibraryFlag(target, LibraryFlag.WATCHED, false) }
         }
 
     @Test
@@ -119,7 +118,7 @@ class LibraryViewModelTest {
     fun `remove failure keeps one pending error until acknowledged`() =
         runTest {
             every { repository.getLibraryMovies() } returns MutableStateFlow(emptyList())
-            coEvery { repository.setWatchlist(any(), any()) } throws IllegalStateException("offline")
+            coEvery { repository.setLibraryFlag(any(), any(), any()) } throws IllegalStateException("offline")
             val viewModel = LibraryViewModel(repository)
             val target = movie(1, watchlist = true)
 

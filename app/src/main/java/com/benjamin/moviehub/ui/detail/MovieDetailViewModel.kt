@@ -8,7 +8,6 @@ import com.benjamin.moviehub.domain.model.LibraryFlag
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.LibraryRepository
 import com.benjamin.moviehub.domain.repository.MovieRepository
-import com.benjamin.moviehub.domain.repository.setLibraryFlag
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList

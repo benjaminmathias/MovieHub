@@ -4,7 +4,7 @@ package com.benjamin.moviehub.domain.model
  * One library flag and its responsibilities: read it, apply it optimistically
  * (watchlist and watched stay mutually exclusive) and restore the previous flags when
  * persistence fails. Persistence itself goes through
- * [com.benjamin.moviehub.domain.repository.setLibraryFlag].
+ * [com.benjamin.moviehub.domain.repository.LibraryRepository.setLibraryFlag].
  */
 enum class LibraryFlag(
     val isSet: (Movie) -> Boolean,

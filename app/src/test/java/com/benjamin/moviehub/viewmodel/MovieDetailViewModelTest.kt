@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.viewmodel
 
+import com.benjamin.moviehub.domain.model.LibraryFlag
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
 import com.benjamin.moviehub.domain.repository.LibraryRepository
@@ -113,8 +114,8 @@ class MovieDetailViewModelTest {
             val initial = movie.copy(isWatchlist = true)
             every { libraryRepository.getLibraryMovies() } returns MutableStateFlow(listOf(initial))
             coEvery { repository.getMovieDetails(1) } returns initial
-            coEvery { libraryRepository.setWatched(any(), any()) } returns Unit
-            coEvery { libraryRepository.setWatchlist(any(), any()) } returns Unit
+            coEvery { libraryRepository.setLibraryFlag(any(), LibraryFlag.WATCHED, any()) } returns Unit
+            coEvery { libraryRepository.setLibraryFlag(any(), LibraryFlag.WATCHLIST, any()) } returns Unit
             val viewModel = MovieDetailViewModel(repository, libraryRepository)
 
             viewModel.loadMovieDetails(1)
@@ -139,7 +140,7 @@ class MovieDetailViewModelTest {
             coEvery { repository.getMovieDetails(1) } returns movie
             coEvery { repository.getMovieCredits(1) } returns MovieCredits()
             val failureGate = CompletableDeferred<Unit>()
-            coEvery { libraryRepository.setFavorite(movie, true) } coAnswers {
+            coEvery { libraryRepository.setLibraryFlag(movie, LibraryFlag.FAVORITE, true) } coAnswers {
                 failureGate.await()
                 throw IllegalStateException()
             }
@@ -157,7 +158,7 @@ class MovieDetailViewModelTest {
             val restoredState = viewModel.uiState.value as MovieDetailUiState.Success
             assertFalse(restoredState.movie.isFavorite)
             assertFalse(restoredState.isLibraryActionPending)
-            coVerify(exactly = 1) { libraryRepository.setFavorite(movie, true) }
+            coVerify(exactly = 1) { libraryRepository.setLibraryFlag(movie, LibraryFlag.FAVORITE, true) }
         }
 
     @Test
@@ -165,7 +166,7 @@ class MovieDetailViewModelTest {
         runTest {
             coEvery { repository.getMovieDetails(1) } returns movie
             coEvery { repository.getMovieCredits(1) } returns MovieCredits()
-            coEvery { libraryRepository.setFavorite(any(), any()) } returns Unit
+            coEvery { libraryRepository.setLibraryFlag(any(), any(), any()) } returns Unit
             val viewModel = MovieDetailViewModel(repository, libraryRepository)
             viewModel.loadMovieDetails(1)
             advanceUntilIdle()
@@ -175,8 +176,8 @@ class MovieDetailViewModelTest {
             advanceUntilIdle()
 
             assertTrue(!(viewModel.uiState.value as MovieDetailUiState.Success).movie.isFavorite)
-            coVerify(exactly = 1) { libraryRepository.setFavorite(movie, true) }
-            coVerify(exactly = 1) { libraryRepository.setFavorite(movie.copy(isFavorite = true), false) }
+            coVerify(exactly = 1) { libraryRepository.setLibraryFlag(movie, LibraryFlag.FAVORITE, true) }
+            coVerify(exactly = 1) { libraryRepository.setLibraryFlag(movie.copy(isFavorite = true), LibraryFlag.FAVORITE, false) }
         }
 
     @Test
@@ -185,7 +186,7 @@ class MovieDetailViewModelTest {
             val creditsGate = CompletableDeferred<MovieCredits>()
             coEvery { repository.getMovieDetails(1) } returns movie
             coEvery { repository.getMovieCredits(1) } coAnswers { creditsGate.await() }
-            coEvery { libraryRepository.setFavorite(movie, true) } returns Unit
+            coEvery { libraryRepository.setLibraryFlag(movie, LibraryFlag.FAVORITE, true) } returns Unit
             val viewModel = MovieDetailViewModel(repository, libraryRepository)
 
             viewModel.loadMovieDetails(1)
@@ -207,7 +208,7 @@ class MovieDetailViewModelTest {
         runTest {
             coEvery { repository.getMovieDetails(1) } returns movie
             coEvery { repository.getMovieCredits(1) } returns MovieCredits()
-            coEvery { libraryRepository.setWatched(movie, true) } throws IllegalStateException()
+            coEvery { libraryRepository.setLibraryFlag(movie, LibraryFlag.WATCHED, true) } throws IllegalStateException()
             val viewModel = MovieDetailViewModel(repository, libraryRepository)
 
             viewModel.loadMovieDetails(1)
@@ -311,7 +312,7 @@ class MovieDetailViewModelTest {
                 }
             coEvery { repository.getMovieDetails(1) } returns movie
             coEvery { repository.getMovieCredits(1) } returns MovieCredits()
-            coEvery { libraryRepository.setFavorite(any(), any()) } returns Unit
+            coEvery { libraryRepository.setLibraryFlag(any(), any(), any()) } returns Unit
             val viewModel = MovieDetailViewModel(repository, libraryRepository)
 
             viewModel.loadMovieDetails(1)
@@ -323,7 +324,7 @@ class MovieDetailViewModelTest {
 
             viewModel.toggleFavorite()
             advanceUntilIdle()
-            coVerify(exactly = 0) { libraryRepository.setFavorite(any(), any()) }
+            coVerify(exactly = 0) { libraryRepository.setLibraryFlag(any(), any(), any()) }
             assertFalse((viewModel.uiState.value as MovieDetailUiState.Success).isLibraryActionPending)
 
             libraryGate.complete(Unit)
@@ -335,7 +336,7 @@ class MovieDetailViewModelTest {
 
             viewModel.toggleFavorite()
             advanceUntilIdle()
-            coVerify(exactly = 1) { libraryRepository.setFavorite(movie, true) }
+            coVerify(exactly = 1) { libraryRepository.setLibraryFlag(movie, LibraryFlag.FAVORITE, true) }
         }
 
     @Test
@@ -348,7 +349,7 @@ class MovieDetailViewModelTest {
                 }
             coEvery { repository.getMovieDetails(1) } returns movie
             coEvery { repository.getMovieCredits(1) } returns MovieCredits()
-            coEvery { libraryRepository.setFavorite(any(), any()) } returns Unit
+            coEvery { libraryRepository.setLibraryFlag(any(), any(), any()) } returns Unit
             val viewModel = MovieDetailViewModel(repository, libraryRepository)
 
             viewModel.loadMovieDetails(1)
@@ -363,7 +364,7 @@ class MovieDetailViewModelTest {
             val blocked = viewModel.uiState.value as MovieDetailUiState.Success
             assertTrue(blocked.movie.isFavorite)
             assertFalse(blocked.isLibraryActionPending)
-            coVerify(exactly = 0) { libraryRepository.setFavorite(any(), any()) }
+            coVerify(exactly = 0) { libraryRepository.setLibraryFlag(any(), any(), any()) }
 
             every { libraryRepository.getLibraryMovies() } returns flowOf(emptyList())
             viewModel.retryLibraryObservation()
@@ -375,7 +376,7 @@ class MovieDetailViewModelTest {
 
             viewModel.toggleFavorite()
             advanceUntilIdle()
-            coVerify(exactly = 1) { libraryRepository.setFavorite(movie, true) }
+            coVerify(exactly = 1) { libraryRepository.setLibraryFlag(movie, LibraryFlag.FAVORITE, true) }
         }
 
     @Test
