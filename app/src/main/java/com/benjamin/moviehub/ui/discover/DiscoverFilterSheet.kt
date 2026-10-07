@@ -30,12 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -45,13 +40,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
@@ -59,9 +50,9 @@ import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
 import com.benjamin.moviehub.domain.model.MovieGenre
 import com.benjamin.moviehub.ui.components.RetryButton
-import kotlin.math.roundToInt
 
 private const val DEFAULT_MINIMUM_RATING = 7.0
+private const val MINIMUM_RATING = 1.0
 private const val OLDEST_DECADE = 1870
 
 private enum class FilterGroup {
@@ -214,11 +205,11 @@ private fun MainFilterList(
     onMinimumRatingSelected: (Double?) -> Unit,
 ) {
     val genreValue =
-        when {
-            state.isLoadingGenres -> stringResource(R.string.discover_genres_loading)
-            state.hasGenreError -> stringResource(R.string.discover_genres_error)
-            else ->
-                state.genres.firstOrNull { it.id == filters.genreId }?.name
+        when (val genresState = state.genres) {
+            DiscoverGenresUiState.Loading -> stringResource(R.string.discover_genres_loading)
+            is DiscoverGenresUiState.Error -> stringResource(R.string.discover_genres_error)
+            is DiscoverGenresUiState.Success ->
+                genresState.genres.firstOrNull { it.id == filters.genreId }?.name
                     ?: stringResource(R.string.discover_all_genres)
         }
     val decadeValue =
@@ -301,101 +292,6 @@ private fun FilterSummaryRow(
 }
 
 @Composable
-private fun RatingFilterControl(
-    filters: DiscoverFilters,
-    onMinimumRatingSelected: (Double?) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val ratingLabel = stringResource(R.string.discover_filter_by_rating)
-    val enabled = filters.minimumVoteAverage != null
-    val currentValue = (filters.minimumVoteAverage ?: DEFAULT_MINIMUM_RATING).toFloat().coerceIn(0f, 10f)
-
-    Column(
-        modifier = modifier.fillMaxWidth().testTag("discover_rating_section"),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = ratingLabel,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f),
-            )
-            Switch(
-                checked = enabled,
-                onCheckedChange = { checked -> onMinimumRatingSelected(if (checked) DEFAULT_MINIMUM_RATING else null) },
-                modifier = Modifier.testTag("discover_rating_switch").semantics { contentDescription = ratingLabel },
-            )
-        }
-        if (enabled) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Slider(
-                    value = currentValue,
-                    onValueChange = { value -> onMinimumRatingSelected(value.roundToInt().toDouble()) },
-                    valueRange = 0f..10f,
-                    steps = 9,
-                    modifier = Modifier.weight(1f).testTag("discover_rating_slider"),
-                )
-                Text(
-                    text = stringResource(R.string.discover_rating_plus, currentValue.roundToInt()),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SortFilterSection(
-    filters: DiscoverFilters,
-    onSortSelected: (DiscoverSortOption) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier.fillMaxWidth().testTag("discover_sort_section"),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.discover_sort),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            DiscoverSortOption.entries.forEachIndexed { index, sort ->
-                SegmentedButton(
-                    selected = filters.sort == sort,
-                    onClick = { onSortSelected(sort) },
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = DiscoverSortOption.entries.size),
-                    label = {
-                        Text(
-                            text = sortLabel(sort),
-                            style = MaterialTheme.typography.labelMedium,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    colors =
-                        SegmentedButtonDefaults.colors(
-                            activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            activeBorderColor = MaterialTheme.colorScheme.primary,
-                            inactiveContainerColor = Color.Transparent,
-                            inactiveContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            inactiveBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                        ),
-                    modifier = Modifier.testTag("discover_sort_option_${sort.name}"),
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun GenrePicker(
     state: DiscoverUiState,
     filters: DiscoverFilters,
@@ -403,9 +299,9 @@ private fun GenrePicker(
     onRetryGenres: () -> Unit,
 ) {
     PickerColumn(testTag = "discover_genre_section") {
-        when {
-            state.isLoadingGenres -> LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-            state.hasGenreError ->
+        when (val genresState = state.genres) {
+            DiscoverGenresUiState.Loading -> LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            is DiscoverGenresUiState.Error ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -419,7 +315,7 @@ private fun GenrePicker(
                     RetryButton(onClick = onRetryGenres, modifier = Modifier.testTag("discover_retry_genres"))
                 }
 
-            else -> {
+            is DiscoverGenresUiState.Success -> {
                 FilterOption(
                     label = stringResource(R.string.discover_all_genres),
                     selected = filters.genreId == null,
@@ -427,7 +323,7 @@ private fun GenrePicker(
                     modifier = Modifier.fillMaxWidth().testTag("discover_genre_option_all"),
                 )
                 OptionGrid {
-                    state.genres.forEach { genre ->
+                    genresState.genres.forEach { genre ->
                         FilterOption(
                             label = genre.name,
                             selected = filters.genreId == genre.id,
@@ -541,10 +437,13 @@ internal fun activeFiltersSummary(
             add(genres.firstOrNull { it.id == genreId }?.name ?: stringResource(R.string.discover_selected_genre))
         }
         filters.releaseDecade?.let { add(stringResource(R.string.discover_decade_title, it)) }
-        filters.minimumVoteAverage?.let { add(stringResource(R.string.rating_out_of_ten, it)) }
+        filters.minimumVoteAverage
+            ?.takeIf { it > 0.0 }
+            ?.let { add(stringResource(R.string.rating_out_of_ten, it)) }
         if (filters.sort != DiscoverSortOption.POPULARITY) add(sortLabel(filters.sort))
     }.joinToString(" · ")
 
 internal fun DiscoverFilters.activeFilterCount(): Int =
-    listOf(genreId, releaseDecade, minimumVoteAverage).count { it != null } +
-        if (sort != DiscoverSortOption.POPULARITY) 1 else 0
+    listOf(genreId, releaseDecade).count { it != null } +
+        (if (minimumVoteAverage != null && minimumVoteAverage > 0.0) 1 else 0) +
+        (if (sort != DiscoverSortOption.POPULARITY) 1 else 0)

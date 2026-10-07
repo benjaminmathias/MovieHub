@@ -139,7 +139,8 @@ fun DiscoverScreen(
                     .consumeWindowInsets(paddingValues),
         ) {
             if (activeFilterCount > 0) {
-                val summary = activeFiltersSummary(state.appliedFilters, state.genres)
+                val genres = (state.genres as? DiscoverGenresUiState.Success)?.genres.orEmpty()
+                val summary = activeFiltersSummary(state.appliedFilters, genres)
                 val summaryDescription = stringResource(R.string.discover_active_filters, summary)
                 Text(
                     text = summaryDescription,
@@ -201,7 +202,7 @@ fun DiscoverScreen(
 private fun DiscoverScreenPreview() {
     MovieHubTheme {
         DiscoverScreen(
-            state = DiscoverUiState(isLoadingGenres = false),
+            state = DiscoverUiState(),
             discoverResults = flowOf(PagingData.from(listOf(previewMovie()))),
             onGenreSelected = {},
             onReleaseDecadeSelected = {},

@@ -84,7 +84,11 @@ private fun DiscoverMovieGrid(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             moviePagingItems(lazyPagingItems) { movie ->
-                PosterMovieItem(movie = movie, onMovieClick = onMovieClick)
+                PosterMovieItem(
+                    movie = movie,
+                    onMovieClick = onMovieClick,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
             movieAppendFooter(
                 items = lazyPagingItems,
