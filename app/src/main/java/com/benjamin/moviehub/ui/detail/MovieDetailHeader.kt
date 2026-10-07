@@ -91,9 +91,9 @@ internal fun MovieDetailHeader(
     movie: Movie,
     director: String?,
     libraryActionsEnabled: Boolean,
-    onToggleFavorite: (() -> Unit)?,
-    onToggleWatchlist: (() -> Unit)?,
-    onToggleWatched: (() -> Unit)?,
+    onToggleFavorite: () -> Unit,
+    onToggleWatchlist: () -> Unit,
+    onToggleWatched: () -> Unit,
     onOpenTmdb: (() -> Unit)?,
 ) {
     Box(modifier = Modifier.fillMaxWidth()) {
@@ -104,16 +104,14 @@ internal fun MovieDetailHeader(
         ) {
             Column(modifier = Modifier.widthIn(max = DetailContentMaxWidth).fillMaxWidth()) {
                 MovieDetailSummary(movie = movie, director = director)
-                if (onToggleFavorite != null || onToggleWatchlist != null || onToggleWatched != null || onOpenTmdb != null) {
-                    MovieDetailActions(
-                        movie = movie,
-                        libraryActionsEnabled = libraryActionsEnabled,
-                        onToggleFavorite = onToggleFavorite,
-                        onToggleWatchlist = onToggleWatchlist,
-                        onToggleWatched = onToggleWatched,
-                        onOpenTmdb = onOpenTmdb,
-                    )
-                }
+                MovieDetailActions(
+                    movie = movie,
+                    libraryActionsEnabled = libraryActionsEnabled,
+                    onToggleFavorite = onToggleFavorite,
+                    onToggleWatchlist = onToggleWatchlist,
+                    onToggleWatched = onToggleWatched,
+                    onOpenTmdb = onOpenTmdb,
+                )
             }
         }
     }
@@ -345,9 +343,9 @@ private fun MovieDetailRating(
 private fun MovieDetailActions(
     movie: Movie,
     libraryActionsEnabled: Boolean,
-    onToggleFavorite: (() -> Unit)?,
-    onToggleWatchlist: (() -> Unit)?,
-    onToggleWatched: (() -> Unit)?,
+    onToggleFavorite: () -> Unit,
+    onToggleWatchlist: () -> Unit,
+    onToggleWatched: () -> Unit,
     onOpenTmdb: (() -> Unit)?,
 ) {
     Column(
@@ -357,53 +355,45 @@ private fun MovieDetailActions(
                 .padding(start = ContentHorizontalPadding, end = ContentHorizontalPadding, top = 16.dp),
     ) {
         val actions =
-            listOfNotNull(
-                onToggleFavorite?.let { toggle ->
-                    LibraryActionSpec(
-                        selected = movie.isFavorite,
-                        label = stringResource(R.string.favorite_tab),
-                        contentDescription = favoriteActionLabel(movie.isFavorite),
-                        icon = favoriteIcon(movie.isFavorite),
-                        onClick = toggle,
-                        testTag = "detail_favorite",
-                    )
-                },
-                onToggleWatchlist?.let { toggle ->
-                    LibraryActionSpec(
-                        selected = movie.isWatchlist,
-                        label = stringResource(R.string.watchlist_short),
-                        contentDescription =
-                            stringResource(
-                                if (movie.isWatchlist) R.string.remove_watchlist_accessibility else R.string.add_watchlist_accessibility,
-                            ),
-                        icon = if (movie.isWatchlist) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                        onClick = toggle,
-                        testTag = "detail_watchlist",
-                    )
-                },
-                onToggleWatched?.let { toggle ->
-                    LibraryActionSpec(
-                        selected = movie.isWatched,
-                        label = stringResource(R.string.watched_short),
-                        contentDescription =
-                            stringResource(
-                                if (movie.isWatched) R.string.mark_unwatched_accessibility else R.string.mark_watched_accessibility,
-                            ),
-                        icon = if (movie.isWatched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircleOutline,
-                        onClick = toggle,
-                        testTag = "detail_watched",
-                    )
-                },
+            listOf(
+                LibraryActionSpec(
+                    selected = movie.isFavorite,
+                    label = stringResource(R.string.favorite_tab),
+                    contentDescription = favoriteActionLabel(movie.isFavorite),
+                    icon = favoriteIcon(movie.isFavorite),
+                    onClick = onToggleFavorite,
+                    testTag = "detail_favorite",
+                ),
+                LibraryActionSpec(
+                    selected = movie.isWatchlist,
+                    label = stringResource(R.string.watchlist_short),
+                    contentDescription =
+                        stringResource(
+                            if (movie.isWatchlist) R.string.remove_watchlist_accessibility else R.string.add_watchlist_accessibility,
+                        ),
+                    icon = if (movie.isWatchlist) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                    onClick = onToggleWatchlist,
+                    testTag = "detail_watchlist",
+                ),
+                LibraryActionSpec(
+                    selected = movie.isWatched,
+                    label = stringResource(R.string.watched_short),
+                    contentDescription =
+                        stringResource(
+                            if (movie.isWatched) R.string.mark_unwatched_accessibility else R.string.mark_watched_accessibility,
+                        ),
+                    icon = if (movie.isWatched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircleOutline,
+                    onClick = onToggleWatched,
+                    testTag = "detail_watched",
+                ),
             )
-        if (actions.isNotEmpty()) {
-            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                val stacked = maxWidth < SummaryStackBreakpoint || LocalDensity.current.fontScale > SUMMARY_STACK_FONT_SCALE
-                LibraryActionGroup(
-                    actions = actions,
-                    enabled = libraryActionsEnabled,
-                    stacked = stacked,
-                )
-            }
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val stacked = maxWidth < SummaryStackBreakpoint || LocalDensity.current.fontScale > SUMMARY_STACK_FONT_SCALE
+            LibraryActionGroup(
+                actions = actions,
+                enabled = libraryActionsEnabled,
+                stacked = stacked,
+            )
         }
         onOpenTmdb?.let { openTmdb ->
             TextButton(

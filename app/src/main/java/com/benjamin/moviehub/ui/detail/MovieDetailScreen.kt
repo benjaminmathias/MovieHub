@@ -80,15 +80,15 @@ fun MovieDetailScreen(
     uiState: MovieDetailUiState,
     onBackClick: () -> Unit,
     onToggleFavorite: () -> Unit,
-    onToggleWatchlist: () -> Unit = {},
-    onToggleWatched: () -> Unit = {},
+    onToggleWatchlist: () -> Unit,
+    onToggleWatched: () -> Unit,
     onRetry: () -> Unit,
-    onRetryCredits: () -> Unit = {},
-    onRetryRecommendations: () -> Unit = {},
-    onRetryLibraryObservation: () -> Unit = {},
-    libraryActionErrorPending: Boolean = false,
-    onLibraryActionErrorAcknowledged: () -> Unit = {},
-    onRecommendationClick: (Int) -> Unit = {},
+    onRetryCredits: () -> Unit,
+    onRetryRecommendations: () -> Unit,
+    onRetryLibraryObservation: () -> Unit,
+    libraryActionError: MovieDetailActionErrorState,
+    onLibraryActionErrorAcknowledged: () -> Unit,
+    onRecommendationClick: (Int) -> Unit,
 ) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -111,7 +111,7 @@ fun MovieDetailScreen(
     val detailTitle = (uiState as? MovieDetailUiState.Success)?.movie?.title.orEmpty()
 
     PendingSnackbarEffect(
-        pending = libraryActionErrorPending,
+        pending = libraryActionError is MovieDetailActionErrorState.Failure,
         snackbarHostState = snackbarHostState,
         message = libraryErrorMessage,
         onAcknowledged = onLibraryActionErrorAcknowledged,
@@ -138,6 +138,7 @@ fun MovieDetailScreen(
                 MovieDetailContent(
                     movie = uiState.movie,
                     credits = uiState.credits,
+                    modifier = Modifier.fillMaxSize(),
                     recommendations = uiState.recommendations,
                     listState = listState,
                     isLibraryActionPending = uiState.isLibraryActionPending,
@@ -158,7 +159,12 @@ fun MovieDetailScreen(
 
             is MovieDetailUiState.Error -> {
                 EmptyStateView(
-                    message = stringResource(uiState.errorMessage),
+                    message =
+                        stringResource(
+                            when (uiState.code) {
+                                MovieDetailErrorCode.LOAD_MOVIE -> R.string.error_loading_movie_detail
+                            },
+                        ),
                     onRetry = onRetry,
                 )
             }
@@ -383,6 +389,12 @@ private fun MovieDetailScreenPreview() {
             onToggleWatchlist = {},
             onToggleWatched = {},
             onRetry = {},
+            onRetryCredits = {},
+            onRetryRecommendations = {},
+            onRetryLibraryObservation = {},
+            libraryActionError = MovieDetailActionErrorState.None,
+            onLibraryActionErrorAcknowledged = {},
+            onRecommendationClick = {},
         )
     }
 }
