@@ -9,10 +9,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import com.benjamin.moviehub.R
 
-/**
- * Renders the coarse [PagingPhase] of a feed with shared error and empty states,
- * delegating the loading placeholders and the populated content to the caller.
- */
 @Composable
 internal fun PagingStatus(
     phase: PagingPhase,

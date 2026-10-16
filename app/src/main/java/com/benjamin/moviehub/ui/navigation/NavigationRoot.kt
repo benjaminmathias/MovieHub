@@ -65,7 +65,6 @@ import com.benjamin.moviehub.domain.connectivity.isOffline
 import com.benjamin.moviehub.ui.components.NetworkSnackbar
 import com.benjamin.moviehub.ui.components.NetworkStatusEffect
 
-/** The three top-level tabs, each owning its start route, icons and label. */
 private enum class TopLevelDestination(
     val route: Route,
     val selectedIcon: ImageVector,

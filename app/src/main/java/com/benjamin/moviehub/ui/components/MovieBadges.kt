@@ -21,7 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
 
-/** Warm rating pill shown over artwork (hero banner). */
 @Composable
 fun RatingBadge(
     value: Double,
@@ -51,7 +50,6 @@ fun RatingBadge(
     }
 }
 
-/** "● À LA UNE" pill used to label the featured movie. */
 @Composable
 fun SpotlightBadge(modifier: Modifier = Modifier) {
     Row(
@@ -79,7 +77,6 @@ fun SpotlightBadge(modifier: Modifier = Modifier) {
     }
 }
 
-/** Small translucent pill for year / genre metadata over artwork. */
 @Composable
 fun MetadataChip(
     text: String,

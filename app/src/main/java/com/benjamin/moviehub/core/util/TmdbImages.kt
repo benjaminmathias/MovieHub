@@ -1,6 +1,5 @@
 package com.benjamin.moviehub.core.util
 
-/** Base URL of the TMDB image CDN; a sized image URL is `<base><size><path>`. */
 internal const val TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/"
 
 private const val TMDB_PATH_MARKER = "/t/p/"

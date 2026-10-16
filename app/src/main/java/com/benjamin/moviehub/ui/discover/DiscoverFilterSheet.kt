@@ -351,7 +351,6 @@ private fun DecadePicker(
             modifier = Modifier.fillMaxWidth().testTag("discover_decade_option_all"),
         )
         OptionGrid {
-            // Decades descend from the current one down to the oldest selectable decade, 1870.
             (decadeStartOf(currentYear) downTo OLDEST_DECADE step 10).forEach { decade ->
                 FilterOption(
                     label = stringResource(R.string.discover_decade_title, decade),

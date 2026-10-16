@@ -66,7 +66,6 @@ class LibraryViewModel
             }
         }
 
-        /** Clears the pending action error once its message has finished being displayed. */
         fun acknowledgeActionError() {
             _actionError.value = LibraryActionErrorState.None
         }

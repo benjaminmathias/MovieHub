@@ -17,10 +17,8 @@ import kotlinx.coroutines.flow.Flow
  * second consumer. Revisit if the domain ever needs to be framework-free.
  */
 interface MovieRepository {
-    /** Get a paged feed for a home [category]. */
     fun getCategoryMovies(category: MovieCategory): Flow<PagingData<Movie>>
 
-    /** Get paged search results for [query]. */
     fun searchMovies(query: String): Flow<PagingData<Movie>>
 
     /** Get a network-backed paged feed for the currently applied Discover filters. */
@@ -38,6 +36,6 @@ interface MovieRepository {
     /** Get movie credits from the API. Throws on network error; callers show details without credits. */
     suspend fun getMovieCredits(movieId: Int): MovieCredits
 
-    /** Get movie recommendations from the API. Throws on network error; callers hide the section. */
+    /** Fetch recommendations from the API. Failures propagate so the detail screen can offer a retry. */
     suspend fun getMovieRecommendations(movieId: Int): List<Movie>
 }

@@ -38,7 +38,6 @@ class MovieListViewModel
         /** A favorite write failed and its message has not been shown yet. */
         val favoriteActionError: StateFlow<FavoriteActionErrorState> = _favoriteActionError.asStateFlow()
 
-        /** One cached paging flow per home category, all shown on the same home screen. */
         val categoryMovies: Map<MovieCategory, Flow<PagingData<Movie>>> =
             MovieCategory.entries.associateWith { category ->
                 repository.getCategoryMovies(category).cachedIn(viewModelScope)
@@ -83,7 +82,6 @@ class MovieListViewModel
             }
         }
 
-        /** Clears the pending favorite error once its message has finished being displayed. */
         fun acknowledgeFavoriteError() {
             _favoriteActionError.value = FavoriteActionErrorState.None
         }

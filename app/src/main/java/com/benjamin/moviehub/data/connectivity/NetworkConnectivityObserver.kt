@@ -116,8 +116,8 @@ class NetworkConnectivityObserver
  */
 internal interface NetworkCallbackRegistrar {
     /**
-     * Snapshot of the currently available networks that satisfy the observer's request,
-     * paired with their capabilities, taken before the callback is registered.
+     * Initial network capabilities taken before the callback is registered.
+     * The Android implementation seeds only the active INTERNET-capable network.
      */
     fun initialCapabilities(): Map<Network, NetworkCapabilities>
 

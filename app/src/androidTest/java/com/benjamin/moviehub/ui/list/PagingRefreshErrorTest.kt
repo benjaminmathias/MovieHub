@@ -87,7 +87,6 @@ class PagingRefreshErrorTest {
 
     private fun hasText(text: String): Boolean = composeRule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
 
-    /** Real fake TMDB service with a switch that makes the popular endpoint fail on demand. */
     private class ToggleFailApi(
         private val delegate: MovieApiService,
     ) : MovieApiService by delegate {

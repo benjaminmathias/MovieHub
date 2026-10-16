@@ -12,10 +12,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.domain.model.LibraryFlag
 
-/**
- * The three local movie collections. Each entry owns its labels, icons and the
- * [LibraryFlag] that selects its movies and removes one from it.
- */
 enum class LibraryTab(
     @param:StringRes val labelRes: Int,
     @param:StringRes val emptyMessageRes: Int,

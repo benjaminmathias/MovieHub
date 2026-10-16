@@ -27,7 +27,6 @@ import com.benjamin.moviehub.core.theme.ContentHorizontalPadding
 import com.benjamin.moviehub.core.theme.POSTER_ASPECT_RATIO
 import com.valentinilk.shimmer.shimmer
 
-/** Poster-card placeholder used by the discover grid, recommendation rows and home rows. */
 @Composable
 fun MovieCardShimmer(modifier: Modifier = Modifier) {
     ShimmerCard(modifier) {
@@ -50,7 +49,6 @@ fun MovieCardShimmer(modifier: Modifier = Modifier) {
     }
 }
 
-/** Full-width compact row placeholder used by search results and the library. */
 @Composable
 fun CompactMovieShimmerItem(modifier: Modifier = Modifier) {
     ShimmerCard(modifier.fillMaxWidth().padding(horizontal = ContentHorizontalPadding, vertical = 4.dp)) {
@@ -78,7 +76,6 @@ fun CompactMovieShimmerItem(modifier: Modifier = Modifier) {
     }
 }
 
-/** Full-screen vertical list of compact row placeholders used by search and the library. */
 @Composable
 fun CompactMovieShimmerList(
     modifier: Modifier = Modifier,
@@ -89,7 +86,6 @@ fun CompactMovieShimmerList(
     }
 }
 
-/** Full-width taller placeholder used while the featured movie of the home feed loads. */
 @Composable
 fun HeroMovieShimmer(modifier: Modifier = Modifier) {
     Box(

@@ -4,9 +4,7 @@ import com.benjamin.moviehub.domain.model.LibraryFlag
 import com.benjamin.moviehub.domain.model.Movie
 import kotlinx.coroutines.flow.Flow
 
-/** Repository contract for the persisted personal movie library. */
 interface LibraryRepository {
-    /** Persists [value] for [flag] on [movie]. */
     suspend fun setLibraryFlag(
         movie: Movie,
         flag: LibraryFlag,

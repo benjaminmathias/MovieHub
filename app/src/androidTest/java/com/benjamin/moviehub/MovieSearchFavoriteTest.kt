@@ -37,7 +37,6 @@ class MovieSearchFavoriteTest {
 
     @Test
     fun searchInterstellar_selectMovie_andAddToFavorites() {
-        // Search now lives on its own screen, opened from the home top bar.
         composeTestRule
             .onNodeWithContentDescription(TestStrings.get(R.string.search_label))
             .performClick()

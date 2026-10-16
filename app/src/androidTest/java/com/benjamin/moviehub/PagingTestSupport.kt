@@ -16,7 +16,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
 
-/** In-memory Room database used by the paging and persistence instrumented tests. */
 internal fun inMemoryDatabase(): MovieDatabase =
     Room
         .inMemoryDatabaseBuilder(
@@ -24,7 +23,6 @@ internal fun inMemoryDatabase(): MovieDatabase =
             MovieDatabase::class.java,
         ).build()
 
-/** Differ that materializes [Movie] paging emissions for assertions. */
 internal fun newMovieDiffer(): AsyncPagingDataDiffer<Movie> =
     AsyncPagingDataDiffer(
         diffCallback = MovieDiffCallback,
@@ -32,7 +30,6 @@ internal fun newMovieDiffer(): AsyncPagingDataDiffer<Movie> =
         mainDispatcher = Dispatchers.Main,
     )
 
-/** Waits until [condition] holds on the differ snapshot, then returns the visible items. */
 internal suspend fun AsyncPagingDataDiffer<Movie>.awaitItems(condition: (List<Movie>) -> Boolean = { it.isNotEmpty() }): List<Movie> =
     withTimeout(10_000) {
         while (!condition(snapshot().filterNotNull())) delay(20)

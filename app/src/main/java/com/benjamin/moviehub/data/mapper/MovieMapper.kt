@@ -36,12 +36,11 @@ private val tmdbGenreNames =
 
 /**
  * Merges the persisted/API genre dictionary over the static fallback so a genre
- * missing from the dictionary (e.g. newly added by TMDB) still resolves.
+ * known to the fallback still resolves when absent from an incomplete dictionary.
  */
 internal fun resolvedGenreNames(genreNames: Map<Int, String>): Map<Int, String> =
     if (genreNames.isEmpty()) tmdbGenreNames else tmdbGenreNames + genreNames
 
-/** Non-blank, trimmed genre name, or null when the API omits/locally blanks it. */
 internal fun GenreDto.validName(): String? = name?.trim()?.takeIf(String::isNotEmpty)
 
 private fun normalizeImagePath(path: String?): String? {
@@ -69,9 +68,6 @@ private fun toTmdbImageUrl(
     return "$TMDB_IMAGE_BASE_URL$size$normalizedPath"
 }
 
-/**
- * Convert a MovieDto (API response) to a MovieEntity(DB entity)
- */
 fun MovieDto.toEntity(
     isFavorite: Boolean = false,
     isWatchlist: Boolean = false,
@@ -107,7 +103,6 @@ fun MovieCreditsDto.toDomain(): MovieCredits =
             crew.firstOrNull { it.job == "Director" && !it.name.isNullOrBlank() }?.name?.trim(),
     )
 
-/** Convert a list-endpoint MovieDto to a Movie, resolving genre names when available. */
 fun MovieDto.toDomain(genreNames: Map<Int, String> = emptyMap()): Movie = toEntity().toDomain(genreNames)
 
 fun MovieDto.toDomain(baseMovie: Movie): Movie {
@@ -119,9 +114,6 @@ fun MovieDto.toDomain(baseMovie: Movie): Movie {
     )
 }
 
-/**
- * Convert a MovieEntity (DB entity) to a Movie (Domain model)
- */
 fun MovieEntity.toDomain(genreNames: Map<Int, String> = emptyMap()): Movie {
     val resolvedGenres = resolvedGenreNames(genreNames)
 
@@ -143,9 +135,6 @@ fun MovieEntity.toDomain(genreNames: Map<Int, String> = emptyMap()): Movie {
     )
 }
 
-/**
- * Convert a Movie (Domain model) to a MovieEntity (DB entity)
- */
 fun Movie.toEntity(
     isFavorite: Boolean = this.isFavorite,
     isWatchlist: Boolean = this.isWatchlist,

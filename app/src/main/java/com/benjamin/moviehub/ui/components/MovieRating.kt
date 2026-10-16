@@ -19,9 +19,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
 
-/**
- * Star rating label shared by the poster card, the compact row card and the metadata line.
- */
 @Composable
 fun MovieRating(
     value: Double,

@@ -4,7 +4,6 @@ import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
 import kotlinx.collections.immutable.ImmutableList
 
-/** Main renderable state of the detail destination. */
 sealed interface MovieDetailUiState {
     data object Loading : MovieDetailUiState
 
@@ -25,7 +24,6 @@ enum class MovieDetailErrorCode {
     LOAD_MOVIE,
 }
 
-/** State of the recommendations section, independent from the main movie payload. */
 sealed interface MovieRecommendationsUiState {
     data object Loading : MovieRecommendationsUiState
 
@@ -48,7 +46,6 @@ enum class MovieDetailActionErrorCode {
     UPDATE_LIBRARY,
 }
 
-/** Durable error state for library actions performed from the detail screen. */
 sealed interface MovieDetailActionErrorState {
     data object None : MovieDetailActionErrorState
 
@@ -57,7 +54,6 @@ sealed interface MovieDetailActionErrorState {
     ) : MovieDetailActionErrorState
 }
 
-/** Sync status of the locally persisted Library flags shown on the detail screen. */
 sealed interface LibraryObservationUiState {
     data object Loading : LibraryObservationUiState
 
@@ -72,7 +68,6 @@ enum class LibraryObservationErrorCode {
     LOAD_LIBRARY,
 }
 
-/** Cast and crew for the detail screen, tracked independently from the main payload. */
 sealed interface MovieCreditsUiState {
     data object Loading : MovieCreditsUiState
 

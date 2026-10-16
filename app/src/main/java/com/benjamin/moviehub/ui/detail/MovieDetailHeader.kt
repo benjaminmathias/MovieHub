@@ -66,10 +66,8 @@ import com.benjamin.moviehub.ui.components.favoriteIcon
 import java.text.NumberFormat
 import java.util.Locale
 
-/** Maximum width of the detail content, centered so the layout stays readable on wide screens. */
 internal val DetailContentMaxWidth = 840.dp
 
-/** Height of the backdrop hero that the summary overlaps. */
 internal val DetailHeroHeight = 232.dp
 
 private val SummaryOverlap = 32.dp

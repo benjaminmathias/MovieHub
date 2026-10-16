@@ -31,8 +31,8 @@ class SearchViewModel
         private val repository: MovieRepository,
         private val savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
-        // Single source of truth for the raw query, restored before the pipeline is observed so a
-        // restored query searches immediately.
+        // Restore the raw query before observing the pipeline. Non-blank restored queries
+        // still pass through the search debounce.
         val searchQuery: StateFlow<String> = savedStateHandle.getStateFlow(SEARCH_QUERY_KEY, "")
 
         private val _activeSearchQuery = MutableStateFlow("")

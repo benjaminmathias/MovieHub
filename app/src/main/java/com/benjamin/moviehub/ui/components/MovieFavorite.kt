@@ -8,7 +8,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import com.benjamin.moviehub.R
 
-/** Filled heart when favorited, outline otherwise. */
 internal fun favoriteIcon(isFavorite: Boolean): ImageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder
 
 /** Status description announced by a card that exposes its favorite state. */

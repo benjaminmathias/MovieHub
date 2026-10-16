@@ -55,7 +55,6 @@ internal abstract class OfflineRemoteMediator(
 ) : RemoteMediator<Int, MovieEntity>() {
     protected val movieDao: MovieDao = database.movieDao()
 
-    /** Cursor row such as a category key or a normalized search query. */
     protected abstract val remoteKeyType: String
 
     protected abstract suspend fun fetchPage(page: Int): MovieResponse
@@ -63,7 +62,6 @@ internal abstract class OfflineRemoteMediator(
     /** Feed-specific cleanup run inside the REFRESH transaction, after the page fetch. */
     protected abstract suspend fun clearFeed(fetched: List<MovieDto>)
 
-    /** Persists the association rows placing [movies] at [offset] in the feed. */
     protected abstract suspend fun persistAssociations(
         movies: List<MovieDto>,
         offset: Int,
@@ -118,7 +116,6 @@ internal abstract class OfflineRemoteMediator(
     }
 }
 
-/** Offline mediator for one Home [category] feed. */
 internal class MovieRemoteMediator(
     private val apiService: MovieApiService,
     database: MovieDatabase,
@@ -149,7 +146,6 @@ internal class MovieRemoteMediator(
     }
 }
 
-/** Offline mediator for one normalized search [query]. */
 internal class SearchMovieRemoteMediator(
     private val apiService: MovieApiService,
     database: MovieDatabase,

@@ -139,7 +139,6 @@ class MovieDetailViewModel
 
         fun toggleWatched() = toggleLibraryFlag(LibraryFlag.WATCHED)
 
-        /** Clears the pending library error once its message has finished being displayed. */
         fun acknowledgeLibraryActionError() {
             _libraryActionError.value = MovieDetailActionErrorState.None
         }
@@ -169,7 +168,6 @@ class MovieDetailViewModel
             }
         }
 
-        /** Keeps the library actions locked while a local write is in flight. */
         private fun setLibraryActionPending(
             movieId: Int,
             pending: Boolean,
@@ -233,7 +231,6 @@ class MovieDetailViewModel
             return state.movie.id
         }
 
-        /** Cancels the load, the library observer and any in-flight section retry. */
         private fun cancelSectionWork() {
             loadJob?.cancel()
             libraryJob?.cancel()

@@ -60,12 +60,11 @@ internal val MIGRATION_1_2 =
             }
 
             if (movieColumns.isEmpty()) {
-                // No movies table to preserve: create the current schema directly.
                 db.createMoviesTable(MOVIES_COLUMNS_V2)
                 return
             }
 
-            // SQLite cannot drop columns in place, so rebuild `movies` without the legacy ones.
+            // Rebuild the table for compatibility with SQLite versions without DROP COLUMN.
             db.createMoviesTable(MOVIES_COLUMNS_V2, table = "movies_new")
             val runtimeColumn = if ("runtimeMinutes" in movieColumns) "`runtimeMinutes`" else "NULL"
             db.execSQL(

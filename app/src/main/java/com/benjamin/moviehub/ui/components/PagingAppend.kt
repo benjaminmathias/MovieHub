@@ -9,7 +9,6 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemKey
 import com.benjamin.moviehub.domain.model.Movie
 
-/** Paged [Movie] rows with stable keys, keeping the null placeholder slots hidden. */
 internal fun LazyListScope.moviePagingItems(
     items: LazyPagingItems<Movie>,
     itemContent: @Composable (Movie) -> Unit,
@@ -23,7 +22,6 @@ internal fun LazyListScope.moviePagingItems(
     }
 }
 
-/** Shared append error/loading footer of a paged [Movie] list. */
 internal fun LazyListScope.movieAppendFooter(
     items: LazyPagingItems<Movie>,
     errorMessage: String,
@@ -40,7 +38,6 @@ internal fun LazyListScope.movieAppendFooter(
     }
 }
 
-/** Paged [Movie] cells with stable keys, keeping the null placeholder slots hidden. */
 internal fun LazyGridScope.moviePagingItems(
     items: LazyPagingItems<Movie>,
     itemContent: @Composable (Movie) -> Unit,
@@ -54,7 +51,6 @@ internal fun LazyGridScope.moviePagingItems(
     }
 }
 
-/** Shared append error/loading footer of a paged [Movie] grid, spanning every column. */
 internal fun LazyGridScope.movieAppendFooter(
     items: LazyPagingItems<Movie>,
     errorMessage: String,

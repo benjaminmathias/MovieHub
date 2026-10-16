@@ -2,7 +2,6 @@ package com.benjamin.moviehub.ui.list
 
 import com.benjamin.moviehub.domain.model.Movie
 
-/** Explicit state of the home hero banner. */
 sealed interface HeroMovieUiState {
     data object Loading : HeroMovieUiState
 

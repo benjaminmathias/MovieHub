@@ -275,7 +275,6 @@ private fun DetailControlButton(
     }
 }
 
-/** Structured placeholder mirroring the loaded layout while the first payload arrives. */
 @Composable
 private fun MovieDetailSkeleton(modifier: Modifier = Modifier) {
     val loadingDescription = stringResource(R.string.loading_movie_details)
@@ -356,7 +355,6 @@ private fun openMovieInBrowser(
     }
 }
 
-/** Shares a movie through an intent, with the title and matching TMDB url. */
 internal fun shareMovie(
     context: Context,
     movie: Movie,

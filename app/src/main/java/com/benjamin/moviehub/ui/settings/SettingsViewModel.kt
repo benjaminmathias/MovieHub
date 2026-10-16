@@ -78,7 +78,6 @@ class SettingsViewModel
             if (_imageCacheResult.value === result) _imageCacheResult.value = ImageCacheResult.Idle
         }
 
-        /** Clears the pending theme update error once its message has finished being displayed. */
         fun acknowledgeThemeUpdateError() {
             _themeUpdateError.value = SettingsActionErrorState.None
         }
