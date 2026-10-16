@@ -19,11 +19,7 @@ class LibraryRepositoryImpl
             movie: Movie,
             flag: LibraryFlag,
             value: Boolean,
-        ) = when (flag) {
-            LibraryFlag.FAVORITE -> movieDao.setLibraryFlag(movie.toEntity(isFavorite = value), isFavorite = value)
-            LibraryFlag.WATCHLIST -> movieDao.setLibraryFlag(movie.toEntity(isWatchlist = value), isWatchlist = value)
-            LibraryFlag.WATCHED -> movieDao.setLibraryFlag(movie.toEntity(isWatched = value), isWatched = value)
-        }
+        ) = movieDao.setLibraryFlag(movie.toEntity(), flag, value)
 
         override suspend fun toggleFavorite(movie: Movie) = movieDao.toggleFavorite(movie.toEntity())
 

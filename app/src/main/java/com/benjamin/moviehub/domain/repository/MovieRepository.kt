@@ -17,25 +17,33 @@ import kotlinx.coroutines.flow.Flow
  * second consumer. Revisit if the domain ever needs to be framework-free.
  */
 interface MovieRepository {
+    /** Observe cached category pages while refreshing them from the API. Failed refreshes retain cached rows. */
     fun getCategoryMovies(category: MovieCategory): Flow<PagingData<Movie>>
 
+    /** Observe cached results for the normalized query while refreshing them from the API. */
     fun searchMovies(query: String): Flow<PagingData<Movie>>
 
-    /** Get a network-backed paged feed for the currently applied Discover filters. */
+    /** Load API pages for the applied filters, enriched with local library flags. Pages are not persisted. */
     fun getDiscoverMovies(filters: DiscoverFilters): Flow<PagingData<Movie>>
 
-    /** Get TMDB's localized movie genres. */
+    /**
+     * Fetch and cache TMDB's localized genres. On IO failures or HTTP 408, 429 or 5xx,
+     * return usable cached genres. Rethrow the failure when no usable cache exists.
+     */
     suspend fun getMovieGenres(): List<MovieGenre>
 
-    /** First movie of a home [category], used by the hero banner. Emits null until it is cached. */
+    /** Observe the first cached movie of a home [category]. Emits null when the category has no cached movie. */
     fun getHeroMovie(category: MovieCategory = MovieCategory.POPULAR): Flow<Movie?>
 
-    /** Fetch the movie from the API, preserving local library flags and runtime when cached. */
+    /**
+     * Fetch and cache API details, preserving local library flags and cached runtime when omitted by the API.
+     * On IO failures or HTTP 408, 429 or 5xx, return the cached movie if present; otherwise rethrow.
+     */
     suspend fun getMovieDetails(movieId: Int): Movie
 
-    /** Get movie credits from the API. Throws on network error; callers show details without credits. */
+    /** Fetch credits from the API without caching. Failures propagate to the caller. */
     suspend fun getMovieCredits(movieId: Int): MovieCredits
 
-    /** Fetch recommendations from the API. Failures propagate so the detail screen can offer a retry. */
+    /** Fetch API recommendations with local library flags, without caching the results. Failures propagate. */
     suspend fun getMovieRecommendations(movieId: Int): List<Movie>
 }

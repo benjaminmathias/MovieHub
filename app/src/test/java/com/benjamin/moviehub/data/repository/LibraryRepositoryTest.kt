@@ -3,6 +3,7 @@ package com.benjamin.moviehub.data.repository
 import com.benjamin.moviehub.data.local.GenreEntity
 import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.local.MovieEntity
+import com.benjamin.moviehub.data.mapper.toEntity
 import com.benjamin.moviehub.domain.model.LibraryFlag
 import com.benjamin.moviehub.domain.model.Movie
 import io.mockk.coEvery
@@ -78,119 +79,46 @@ class LibraryRepositoryTest {
             val repository = LibraryRepositoryImpl(dao)
             val movie = baseMovie.copy(isFavorite = false, isWatchlist = false)
 
-            coEvery { dao.setLibraryFlag(capture(entitySlot), isFavorite = true) } just runs
+            coEvery { dao.setLibraryFlag(capture(entitySlot), LibraryFlag.FAVORITE, true) } just runs
             coEvery { dao.toggleFavorite(any()) } just runs
 
             repository.setLibraryFlag(movie, LibraryFlag.FAVORITE, true)
             repository.toggleFavorite(movie)
 
-            coVerify(exactly = 1) { dao.setLibraryFlag(any(), isFavorite = true) }
+            coVerify(exactly = 1) { dao.setLibraryFlag(any(), LibraryFlag.FAVORITE, true) }
             coVerify(exactly = 1) { dao.toggleFavorite(any()) }
-            assertEquals(true, entitySlot.captured.isFavorite)
+            assertEquals(false, entitySlot.captured.isFavorite)
+            assertEquals(false, entitySlot.captured.isWatchlist)
             assertEquals("/poster.jpg", entitySlot.captured.posterPath)
             assertEquals("/backdrop.jpg", entitySlot.captured.backdropPath)
         }
 
     @Test
-    fun `favorite true routes the favorite value and preserves other flags`() =
+    fun `set flag delegates typed commands with the mapped movie unchanged`() =
         runTest {
             val dao = mockk<MovieDao>()
-            val entitySlot = slot<MovieEntity>()
-            coEvery { dao.setLibraryFlag(capture(entitySlot), isFavorite = true) } just runs
+            val receivedCommands = mutableListOf<Triple<MovieEntity, LibraryFlag, Boolean>>()
+            val commands =
+                listOf(
+                    LibraryFlag.FAVORITE to true,
+                    LibraryFlag.FAVORITE to false,
+                    LibraryFlag.WATCHLIST to true,
+                    LibraryFlag.WATCHLIST to false,
+                    LibraryFlag.WATCHED to true,
+                    LibraryFlag.WATCHED to false,
+                )
+            coEvery { dao.setLibraryFlag(any(), any(), any()) } coAnswers {
+                receivedCommands += Triple(firstArg(), secondArg(), thirdArg())
+            }
+            val repository = LibraryRepositoryImpl(dao)
 
-            LibraryRepositoryImpl(dao).setLibraryFlag(baseMovie.copy(isFavorite = false), LibraryFlag.FAVORITE, true)
+            commands.forEach { (flag, value) -> repository.setLibraryFlag(baseMovie, flag, value) }
 
-            coVerify(exactly = 1) { dao.setLibraryFlag(any(), isFavorite = true) }
-            val entity = entitySlot.captured
-            assertEquals(true, entity.isFavorite)
-            assertEquals(true, entity.isWatchlist)
-            assertEquals(false, entity.isWatched)
-            assertPreservedFields(entity)
-        }
-
-    @Test
-    fun `favorite false routes the favorite value and preserves other flags`() =
-        runTest {
-            val dao = mockk<MovieDao>()
-            val entitySlot = slot<MovieEntity>()
-            coEvery { dao.setLibraryFlag(capture(entitySlot), isFavorite = false) } just runs
-
-            LibraryRepositoryImpl(dao).setLibraryFlag(baseMovie, LibraryFlag.FAVORITE, false)
-
-            coVerify(exactly = 1) { dao.setLibraryFlag(any(), isFavorite = false) }
-            val entity = entitySlot.captured
-            assertEquals(false, entity.isFavorite)
-            assertEquals(true, entity.isWatchlist)
-            assertEquals(false, entity.isWatched)
-            assertPreservedFields(entity)
-        }
-
-    @Test
-    fun `watchlist true routes the watchlist value and preserves other flags`() =
-        runTest {
-            val dao = mockk<MovieDao>()
-            val entitySlot = slot<MovieEntity>()
-            coEvery { dao.setLibraryFlag(capture(entitySlot), isWatchlist = true) } just runs
-
-            LibraryRepositoryImpl(dao).setLibraryFlag(baseMovie.copy(isWatchlist = false), LibraryFlag.WATCHLIST, true)
-
-            coVerify(exactly = 1) { dao.setLibraryFlag(any(), isWatchlist = true) }
-            val entity = entitySlot.captured
-            assertEquals(true, entity.isFavorite)
-            assertEquals(true, entity.isWatchlist)
-            assertEquals(false, entity.isWatched)
-            assertPreservedFields(entity)
-        }
-
-    @Test
-    fun `watchlist false routes the watchlist value and preserves other flags`() =
-        runTest {
-            val dao = mockk<MovieDao>()
-            val entitySlot = slot<MovieEntity>()
-            coEvery { dao.setLibraryFlag(capture(entitySlot), isWatchlist = false) } just runs
-
-            LibraryRepositoryImpl(dao).setLibraryFlag(baseMovie, LibraryFlag.WATCHLIST, false)
-
-            coVerify(exactly = 1) { dao.setLibraryFlag(any(), isWatchlist = false) }
-            val entity = entitySlot.captured
-            assertEquals(true, entity.isFavorite)
-            assertEquals(false, entity.isWatchlist)
-            assertEquals(false, entity.isWatched)
-            assertPreservedFields(entity)
-        }
-
-    @Test
-    fun `watched true routes the watched value and preserves other flags`() =
-        runTest {
-            val dao = mockk<MovieDao>()
-            val entitySlot = slot<MovieEntity>()
-            coEvery { dao.setLibraryFlag(capture(entitySlot), isWatched = true) } just runs
-
-            LibraryRepositoryImpl(dao).setLibraryFlag(baseMovie, LibraryFlag.WATCHED, true)
-
-            coVerify(exactly = 1) { dao.setLibraryFlag(any(), isWatched = true) }
-            val entity = entitySlot.captured
-            assertEquals(true, entity.isFavorite)
-            assertEquals(true, entity.isWatchlist)
-            assertEquals(true, entity.isWatched)
-            assertPreservedFields(entity)
-        }
-
-    @Test
-    fun `watched false routes the watched value and preserves other flags`() =
-        runTest {
-            val dao = mockk<MovieDao>()
-            val entitySlot = slot<MovieEntity>()
-            coEvery { dao.setLibraryFlag(capture(entitySlot), isWatched = false) } just runs
-
-            LibraryRepositoryImpl(dao).setLibraryFlag(baseMovie.copy(isWatched = true), LibraryFlag.WATCHED, false)
-
-            coVerify(exactly = 1) { dao.setLibraryFlag(any(), isWatched = false) }
-            val entity = entitySlot.captured
-            assertEquals(true, entity.isFavorite)
-            assertEquals(true, entity.isWatchlist)
-            assertEquals(false, entity.isWatched)
-            assertPreservedFields(entity)
+            commands.forEach { (flag, value) ->
+                coVerify(exactly = 1) { dao.setLibraryFlag(baseMovie.toEntity(), flag, value) }
+            }
+            assertEquals(commands.map { Triple(baseMovie.toEntity(), it.first, it.second) }, receivedCommands)
+            receivedCommands.forEach { (entity, _, _) -> assertPreservedFields(entity) }
         }
 
     private fun assertPreservedFields(entity: MovieEntity) {

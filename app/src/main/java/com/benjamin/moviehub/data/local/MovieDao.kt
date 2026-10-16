@@ -7,59 +7,60 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
+import com.benjamin.moviehub.domain.model.LibraryFlag
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface MovieDao {
+abstract class MovieDao {
     @Query("SELECT * FROM movies WHERE id = :movieId")
-    suspend fun getMovieById(movieId: Int): MovieEntity?
+    abstract suspend fun getMovieById(movieId: Int): MovieEntity?
 
     @Query("SELECT * FROM movies WHERE id IN (:ids)")
-    suspend fun getMoviesByIds(ids: List<Int>): List<MovieEntity>
+    abstract suspend fun getMoviesByIds(ids: List<Int>): List<MovieEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMovie(movie: MovieEntity)
+    protected abstract suspend fun insertMovie(movie: MovieEntity)
 
     @Transaction
-    suspend fun upsertMovieDetails(movie: MovieEntity): MovieEntity {
+    open suspend fun upsertMovieDetails(movie: MovieEntity): MovieEntity {
         upsertMovies(listOf(movie))
         return getMovieById(movie.id) ?: movie
     }
 
     /**
-     * Applies the non-null library flags, inserting the movie first when it is not
-     * cached yet. Watchlist and watched are mutually exclusive: setting one true
-     * clears the other.
+     * Updates one library flag, inserting the movie first when it is not cached.
+     * Setting watchlist or watched true clears the other; setting one false keeps
+     * the other flag unchanged.
      */
     @Transaction
-    suspend fun setLibraryFlag(
+    open suspend fun setLibraryFlag(
         movie: MovieEntity,
-        isFavorite: Boolean? = null,
-        isWatchlist: Boolean? = null,
-        isWatched: Boolean? = null,
+        flag: LibraryFlag,
+        value: Boolean,
     ) {
         if (getMovieById(movie.id) == null) {
-            insertMovie(
-                movie.copy(
-                    isFavorite = isFavorite ?: movie.isFavorite,
-                    isWatchlist = (isWatchlist ?: movie.isWatchlist) && isWatched != true,
-                    isWatched = (isWatched ?: movie.isWatched) && isWatchlist != true,
-                ),
-            )
+            val initialMovie =
+                when (flag) {
+                    LibraryFlag.FAVORITE -> movie.copy(isFavorite = value)
+                    LibraryFlag.WATCHLIST -> movie.copy(isWatchlist = value, isWatched = movie.isWatched && !value)
+                    LibraryFlag.WATCHED -> movie.copy(isWatchlist = movie.isWatchlist && !value, isWatched = value)
+                }
+            insertMovie(initialMovie)
             return
         }
 
-        updateLocalFlags(
-            movieId = movie.id,
-            isFavorite = isFavorite,
-            isWatchlist = isWatchlist ?: if (isWatched == true) false else null,
-            isWatched = isWatched ?: if (isWatchlist == true) false else null,
-        )
+        when (flag) {
+            LibraryFlag.FAVORITE -> updateLocalFlags(movie.id, isFavorite = value, isWatchlist = null, isWatched = null)
+            LibraryFlag.WATCHLIST ->
+                updateLocalFlags(movie.id, isFavorite = null, isWatchlist = value, isWatched = if (value) false else null)
+            LibraryFlag.WATCHED ->
+                updateLocalFlags(movie.id, isFavorite = null, isWatchlist = if (value) false else null, isWatched = value)
+        }
     }
 
     /** Toggle against the persisted value so rapid taps cannot reuse a stale UI flag. */
     @Transaction
-    suspend fun toggleFavorite(movie: MovieEntity) {
+    open suspend fun toggleFavorite(movie: MovieEntity) {
         val current = getMovieById(movie.id)
         if (current == null) {
             insertMovie(movie.copy(isFavorite = true))
@@ -75,7 +76,7 @@ interface MovieDao {
             isWatched = COALESCE(:isWatched, isWatched)
             WHERE id = :movieId""",
     )
-    suspend fun updateLocalFlags(
+    protected abstract suspend fun updateLocalFlags(
         movieId: Int,
         isFavorite: Boolean?,
         isWatchlist: Boolean?,
@@ -83,7 +84,7 @@ interface MovieDao {
     )
 
     @Query("SELECT * FROM movies WHERE isFavorite = 1 OR isWatchlist = 1 OR isWatched = 1 ORDER BY title COLLATE NOCASE ASC, id ASC")
-    fun getLibraryMoviesFlow(): Flow<List<MovieEntity>>
+    abstract fun getLibraryMoviesFlow(): Flow<List<MovieEntity>>
 
     @Query(
         """
@@ -93,16 +94,16 @@ interface MovieDao {
         ORDER BY movie_categories.pageOrder ASC, movies.id ASC
         """,
     )
-    fun getCategoryMoviesPaging(category: String): PagingSource<Int, MovieEntity>
+    abstract fun getCategoryMoviesPaging(category: String): PagingSource<Int, MovieEntity>
 
     @Query("SELECT movieId FROM movie_categories WHERE category = :category ORDER BY pageOrder ASC")
-    suspend fun getCategoryMovieIds(category: String): List<Int>
+    abstract suspend fun getCategoryMovieIds(category: String): List<Int>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCategoryMovies(items: List<MovieCategoryEntity>)
+    abstract suspend fun insertCategoryMovies(items: List<MovieCategoryEntity>)
 
     @Query("DELETE FROM movie_categories WHERE category = :category")
-    suspend fun clearCategoryMovies(category: String)
+    abstract suspend fun clearCategoryMovies(category: String)
 
     @Query(
         """
@@ -113,7 +114,7 @@ interface MovieDao {
         LIMIT 1
         """,
     )
-    fun getHeroMovieFlow(category: String): Flow<MovieEntity?>
+    abstract fun getHeroMovieFlow(category: String): Flow<MovieEntity?>
 
     @Query(
         """
@@ -123,14 +124,14 @@ interface MovieDao {
         ORDER BY movie_search_results.pageOrder ASC, movies.id ASC
         """,
     )
-    fun searchMoviesPaging(queryKey: String): PagingSource<Int, MovieEntity>
+    abstract fun searchMoviesPaging(queryKey: String): PagingSource<Int, MovieEntity>
 
     @Upsert
-    suspend fun upsertMoviesRaw(movies: List<MovieEntity>)
+    protected abstract suspend fun upsertMoviesRaw(movies: List<MovieEntity>)
 
     /** Upsert network data without ever overwriting local library flags. */
     @Transaction
-    suspend fun upsertMovies(movies: List<MovieEntity>) {
+    open suspend fun upsertMovies(movies: List<MovieEntity>) {
         if (movies.isEmpty()) return
         val localById = getMoviesByIds(movies.map { it.id }).associateBy { it.id }
         upsertMoviesRaw(
@@ -148,22 +149,22 @@ interface MovieDao {
     }
 
     @Upsert
-    suspend fun upsertRemoteKey(remoteKey: RemoteKey)
+    abstract suspend fun upsertRemoteKey(remoteKey: RemoteKey)
 
     @Query("SELECT * FROM remote_keys WHERE type = :type")
-    suspend fun getRemoteKey(type: String): RemoteKey?
+    abstract suspend fun getRemoteKey(type: String): RemoteKey?
 
     @Query("DELETE FROM remote_keys WHERE type = :type")
-    suspend fun clearRemoteKeysByType(type: String)
+    abstract suspend fun clearRemoteKeysByType(type: String)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertSearchResults(results: List<MovieSearchResultEntity>)
+    abstract suspend fun insertSearchResults(results: List<MovieSearchResultEntity>)
 
     @Query("DELETE FROM movie_search_results WHERE queryKey = :queryKey")
-    suspend fun clearSearchResults(queryKey: String)
+    abstract suspend fun clearSearchResults(queryKey: String)
 
     @Query("SELECT movieId FROM movie_search_results WHERE queryKey = :queryKey ORDER BY pageOrder ASC")
-    suspend fun getSearchResultMovieIds(queryKey: String): List<Int>
+    abstract suspend fun getSearchResultMovieIds(queryKey: String): List<Int>
 
     /**
      * Removes movies left behind by cleared searches while keeping the active results,
@@ -181,14 +182,14 @@ interface MovieDao {
           AND id NOT IN (SELECT movieId FROM movie_categories)
         """,
     )
-    suspend fun deleteSearchOrphans(
+    abstract suspend fun deleteSearchOrphans(
         previousResultIds: List<Int>,
         preserveMovieIds: List<Int>,
     )
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertGenres(genres: List<GenreEntity>)
+    abstract suspend fun upsertGenres(genres: List<GenreEntity>)
 
     @Query("SELECT * FROM genres")
-    suspend fun getGenres(): List<GenreEntity>
+    abstract suspend fun getGenres(): List<GenreEntity>
 }

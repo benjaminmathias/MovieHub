@@ -23,6 +23,34 @@ internal fun inMemoryDatabase(): MovieDatabase =
             MovieDatabase::class.java,
         ).build()
 
+internal fun insertMalformedMovieForTest(
+    database: MovieDatabase,
+    movie: MovieEntity,
+) {
+    database.openHelper.writableDatabase.execSQL(
+        """
+        INSERT INTO movies (
+            id, title, overview, posterPath, backdropPath, voteAverage, releaseDate,
+            genreIds, isFavorite, isWatchlist, isWatched, runtimeMinutes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """.trimIndent(),
+        arrayOf<Any?>(
+            movie.id,
+            movie.title,
+            movie.overview,
+            movie.posterPath,
+            movie.backdropPath,
+            movie.voteAverage,
+            movie.releaseDate,
+            movie.genreIds.joinToString(","),
+            if (movie.isFavorite) 1 else 0,
+            if (movie.isWatchlist) 1 else 0,
+            if (movie.isWatched) 1 else 0,
+            movie.runtimeMinutes,
+        ),
+    )
+}
+
 internal fun newMovieDiffer(): AsyncPagingDataDiffer<Movie> =
     AsyncPagingDataDiffer(
         diffCallback = MovieDiffCallback,

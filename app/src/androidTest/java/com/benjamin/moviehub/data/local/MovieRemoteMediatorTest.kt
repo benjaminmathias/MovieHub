@@ -11,6 +11,7 @@ import com.benjamin.moviehub.data.remote.movieDto
 import com.benjamin.moviehub.domain.model.MovieCategory
 import com.benjamin.moviehub.emptyPagingState
 import com.benjamin.moviehub.inMemoryDatabase
+import com.benjamin.moviehub.insertMalformedMovieForTest
 import com.benjamin.moviehub.movieEntity
 import com.benjamin.moviehub.pagingState
 import kotlinx.coroutines.runBlocking
@@ -75,7 +76,7 @@ class MovieRemoteMediatorTest {
             val dao = database.movieDao()
             val orphanCount = 1_200
             val orphans = (1..orphanCount).map { index -> movieEntity(id = 10_000 + index) }
-            dao.upsertMoviesRaw(orphans)
+            orphans.chunked(500).forEach { batch -> dao.upsertMovies(batch) }
             dao.insertSearchResults(
                 orphans.mapIndexed { index, entity ->
                     MovieSearchResultEntity(queryKey = "big", movieId = entity.id, pageOrder = index)
@@ -98,7 +99,10 @@ class MovieRemoteMediatorTest {
     fun categoryRefresh_clearsOnlyItsKeysAndPreservesFavorite() =
         runBlocking {
             val dao = database.movieDao()
-            dao.insertMovie(movieEntity(id = 1, isFavorite = true, isWatchlist = true, isWatched = true, runtimeMinutes = 137))
+            insertMalformedMovieForTest(
+                database,
+                movieEntity(id = 1, isFavorite = true, isWatchlist = true, isWatched = true, runtimeMinutes = 137),
+            )
             dao.upsertRemoteKey(RemoteKey(MovieCategory.POPULAR.key, nextKey = 9))
 
             val mediator = MovieRemoteMediator(FakeMovieApiService(mapOf(1 to listOf(movieDto(1)))), database, MovieCategory.POPULAR)

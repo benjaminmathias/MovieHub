@@ -6,6 +6,7 @@ import com.benjamin.moviehub.awaitItems
 import com.benjamin.moviehub.data.local.MovieDatabase
 import com.benjamin.moviehub.data.remote.FakeMovieApiService
 import com.benjamin.moviehub.data.repository.MovieRepositoryImpl
+import com.benjamin.moviehub.domain.model.LibraryFlag
 import com.benjamin.moviehub.inMemoryDatabase
 import com.benjamin.moviehub.movieEntity
 import com.benjamin.moviehub.newMovieDiffer
@@ -41,7 +42,7 @@ class DiscoverFavoritePagingTest {
     fun discoverResults_followRoomFavoriteIds() =
         runBlocking {
             val dao = database.movieDao()
-            dao.insertMovie(movieEntity(id = 2, isFavorite = true))
+            dao.upsertMovies(listOf(movieEntity(id = 2, isFavorite = true)))
             assertEquals(listOf(2), dao.getLibraryMoviesFlow().first().map { it.id })
 
             val api = FakeMovieApiService()
@@ -56,7 +57,7 @@ class DiscoverFavoritePagingTest {
             assertTrue(items.single { it.id == 2 }.isFavorite)
             assertFalse(items.single { it.id == 1 }.isFavorite)
 
-            dao.setLibraryFlag(movieEntity(id = 1), isFavorite = true)
+            dao.setLibraryFlag(movieEntity(id = 1), LibraryFlag.FAVORITE, true)
             items = differ.awaitItems { snapshot -> snapshot.singleOrNull { it.id == 1 }?.isFavorite == true }
             assertTrue(items.single { it.id == 1 }.isFavorite)
             assertEquals(listOf(1), api.discoverPagesRequested)

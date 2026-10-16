@@ -53,7 +53,7 @@ class MovieRepositoryTest {
             val result = repository.getMovieDetails(9)
 
             assertEquals(localMovie.toDomain(), result)
-            coVerify(exactly = 0) { dao.insertMovie(any()) }
+            coVerify(exactly = 0) { dao.upsertMovieDetails(any()) }
         }
 
     @Test
@@ -164,7 +164,7 @@ class MovieRepositoryTest {
             assertEquals(true, result.single().isFavorite)
             assertEquals(true, result.single().isWatchlist)
             assertEquals(true, result.single().isWatched)
-            coVerify(exactly = 0) { dao.insertMovie(any()) }
+            coVerify(exactly = 0) { dao.upsertMovieDetails(any()) }
         }
 
     @Test
