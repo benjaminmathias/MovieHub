@@ -5,13 +5,16 @@ import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.local.MovieDatabase
 import com.benjamin.moviehub.data.local.MovieEntity
 import com.benjamin.moviehub.data.mapper.toDomain
+import com.benjamin.moviehub.data.remote.GenreDto
 import com.benjamin.moviehub.data.remote.MovieApiService
 import com.benjamin.moviehub.data.remote.MovieDto
+import com.benjamin.moviehub.data.remote.MovieGenresResponse
 import com.benjamin.moviehub.data.remote.MovieResponse
 import com.benjamin.moviehub.domain.model.MovieGenre
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -51,6 +54,66 @@ class MovieRepositoryTest {
 
             assertEquals(localMovie.toDomain(), result)
             coVerify(exactly = 0) { dao.insertMovie(any()) }
+        }
+
+    @Test
+    fun `successful details return remote fields with saved local library state`() =
+        runTest {
+            val apiService = mockk<MovieApiService>()
+            val database = mockk<MovieDatabase>()
+            val dao = mockk<MovieDao>()
+            val repository = MovieRepositoryImpl(apiService, database, dao)
+            val detailToSave = slot<MovieEntity>()
+
+            coEvery { dao.getGenres() } returns listOf(GenreEntity(id = 18, name = "Drame"))
+            coEvery { apiService.getMovieDetails(9) } returns
+                MovieDto(
+                    id = 9,
+                    title = "Updated title",
+                    description = "Updated overview",
+                    posterPath = "/poster.jpg",
+                    backdropPath = "/backdrop.jpg",
+                    voteAverage = 8.4,
+                    releaseDate = "2025-03-14",
+                    runtimeMinutes = 150,
+                    genres = listOf(GenreDto(id = 18, name = " Drame ")),
+                    voteCount = 8673,
+                )
+            coEvery { dao.upsertMovieDetails(capture(detailToSave)) } answers {
+                detailToSave.captured.copy(
+                    isFavorite = true,
+                    isWatchlist = false,
+                    isWatched = true,
+                    runtimeMinutes = 137,
+                )
+            }
+
+            val result = repository.getMovieDetails(9)
+
+            assertEquals(
+                MovieEntity(
+                    id = 9,
+                    title = "Updated title",
+                    overview = "Updated overview",
+                    posterPath = "/poster.jpg",
+                    backdropPath = "/backdrop.jpg",
+                    voteAverage = 8.4,
+                    releaseDate = "2025-03-14",
+                    genreIds = listOf(18),
+                    runtimeMinutes = 150,
+                ),
+                detailToSave.captured,
+            )
+            assertEquals("Updated title", result.title)
+            assertEquals("Updated overview", result.overview)
+            assertEquals("https://image.tmdb.org/t/p/w500/poster.jpg", result.posterPath)
+            assertEquals("https://image.tmdb.org/t/p/w780/backdrop.jpg", result.backdropPath)
+            assertEquals(listOf("Drame"), result.genres)
+            assertEquals(true, result.isFavorite)
+            assertEquals(false, result.isWatchlist)
+            assertEquals(true, result.isWatched)
+            assertEquals(137, result.runtimeMinutes)
+            assertEquals(8673, result.voteCount)
         }
 
     @Test
@@ -102,6 +165,42 @@ class MovieRepositoryTest {
             assertEquals(true, result.single().isWatchlist)
             assertEquals(true, result.single().isWatched)
             coVerify(exactly = 0) { dao.insertMovie(any()) }
+        }
+
+    @Test
+    fun `get movie genres trims usable names and persists only those genres`() =
+        runTest {
+            val apiService = mockk<MovieApiService>()
+            val database = mockk<MovieDatabase>()
+            val dao = mockk<MovieDao>()
+            val repository = MovieRepositoryImpl(apiService, database, dao)
+            val expectedGenres =
+                listOf(
+                    MovieGenre(id = 18, name = "Drame"),
+                    MovieGenre(id = 28, name = "Action"),
+                )
+            val expectedEntities =
+                listOf(
+                    GenreEntity(id = 18, name = "Drame"),
+                    GenreEntity(id = 28, name = "Action"),
+                )
+
+            coEvery { apiService.getMovieGenres() } returns
+                MovieGenresResponse(
+                    genres =
+                        listOf(
+                            GenreDto(id = 18, name = "  Drame  "),
+                            GenreDto(id = 28, name = "Action"),
+                            GenreDto(id = 35, name = "   "),
+                            GenreDto(id = 99, name = null),
+                        ),
+                )
+            coEvery { dao.upsertGenres(expectedEntities) } returns Unit
+
+            val result = repository.getMovieGenres()
+
+            assertEquals(expectedGenres, result)
+            coVerify(exactly = 1) { dao.upsertGenres(expectedEntities) }
         }
 
     @Test

@@ -1,8 +1,9 @@
 package com.benjamin.moviehub.ui.components
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onNodeWithText
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.TestStrings
 import com.benjamin.moviehub.core.theme.MovieHubTheme
@@ -24,6 +25,7 @@ class MovieSearchBarAccessibilityTest {
             }
         }
 
-        composeRule.onNodeWithText(TestStrings.get(R.string.search_label)).assertIsDisplayed()
+        val label = TestStrings.get(R.string.search_label)
+        composeRule.onNode(hasSetTextAction() and hasText(label)).assertIsDisplayed()
     }
 }

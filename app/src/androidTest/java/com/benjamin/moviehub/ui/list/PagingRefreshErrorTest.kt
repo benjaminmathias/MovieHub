@@ -16,6 +16,7 @@ import com.benjamin.moviehub.data.local.MovieDatabase
 import com.benjamin.moviehub.data.remote.FakeMovieApiService
 import com.benjamin.moviehub.data.remote.MovieApiService
 import com.benjamin.moviehub.data.remote.MovieResponse
+import com.benjamin.moviehub.data.remote.movieDto
 import com.benjamin.moviehub.data.repository.MovieRepositoryImpl
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCategory
@@ -25,6 +26,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Cached-rows refresh failure on the Home feed, exercised through the real Room-backed
@@ -49,7 +51,7 @@ class PagingRefreshErrorTest {
     }
 
     @Test
-    fun failedMediatorRefreshKeepsCachedRowsAndRetryRecovers() {
+    fun failedMediatorRefreshKeepsCachedRowsAndRetryLoadsFreshRows() {
         val repository = MovieRepositoryImpl(api, database, database.movieDao())
         var items: LazyPagingItems<Movie>? = null
 
@@ -67,7 +69,7 @@ class PagingRefreshErrorTest {
             }
         }
 
-        composeRule.waitUntil(timeoutMillis = 10_000) { api.popularPageRequests.isNotEmpty() }
+        composeRule.waitUntil(timeoutMillis = 10_000) { api.popularPageRequestCount.get() > 0 }
         composeRule.waitUntil(timeoutMillis = 10_000) { hasText(CACHED_TITLE) }
         composeRule.onAllNodesWithText(TestStrings.get(R.string.error_refreshing_movies)).assertCountEquals(0)
 
@@ -77,12 +79,18 @@ class PagingRefreshErrorTest {
         composeRule.waitUntil(timeoutMillis = 10_000) { hasText(TestStrings.get(R.string.error_refreshing_movies)) }
         composeRule.onNodeWithText(CACHED_TITLE).assertIsDisplayed()
 
-        // Retrying through the real button now succeeds, so the message clears and the film stays.
+        // The successful retry must replace the cached row with the refreshed response.
         api.failPopular = false
+        api.returnFreshPopular = true
+        val requestsBeforeRetry = api.popularPageRequestCount.get()
         composeRule.onNodeWithText(TestStrings.get(R.string.retry)).assertIsDisplayed().performClick()
         composeRule.waitUntil(timeoutMillis = 10_000) {
-            !hasText(TestStrings.get(R.string.error_refreshing_movies)) && hasText(CACHED_TITLE)
+            api.popularPageRequestCount.get() == requestsBeforeRetry + 1 &&
+                !hasText(TestStrings.get(R.string.error_refreshing_movies)) &&
+                hasText(REFRESHED_TITLE)
         }
+        composeRule.onNodeWithText(REFRESHED_TITLE).assertIsDisplayed()
+        composeRule.onAllNodesWithText(CACHED_TITLE).assertCountEquals(0)
     }
 
     private fun hasText(text: String): Boolean = composeRule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
@@ -90,19 +98,24 @@ class PagingRefreshErrorTest {
     private class ToggleFailApi(
         private val delegate: MovieApiService,
     ) : MovieApiService by delegate {
-        val popularPageRequests = mutableListOf<Int>()
+        val popularPageRequestCount = AtomicInteger()
 
         @Volatile
         var failPopular: Boolean = false
 
+        @Volatile
+        var returnFreshPopular: Boolean = false
+
         override suspend fun getPopularMovies(page: Int): MovieResponse {
-            popularPageRequests += page
+            popularPageRequestCount.incrementAndGet()
             if (failPopular) throw IOException("offline")
+            if (returnFreshPopular) return MovieResponse(listOf(movieDto(id = 99, title = REFRESHED_TITLE)))
             return delegate.getPopularMovies(page)
         }
     }
 
     private companion object {
         const val CACHED_TITLE = "Film Populaire 1"
+        const val REFRESHED_TITLE = "Film Populaire actualisé"
     }
 }

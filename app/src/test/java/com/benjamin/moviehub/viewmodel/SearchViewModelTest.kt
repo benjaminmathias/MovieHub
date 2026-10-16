@@ -39,25 +39,72 @@ class SearchViewModelTest {
     }
 
     @Test
-    fun `search query is debounced and blank queries never search`() =
+    fun `search starts after the full 500 millisecond debounce`() =
         runTest {
             val job = launch { viewModel.searchResults.collect() }
+            runCurrent()
+
+            viewModel.onSearchQueryChanged("Ava")
+            runCurrent()
+            advanceTimeBy(499)
+
+            coVerify(exactly = 0) { repository.searchMovies("Ava") }
+            assertEquals("", viewModel.activeSearchQuery.value)
+
+            advanceTimeBy(1)
+            runCurrent()
+
+            coVerify(exactly = 1) { repository.searchMovies("Ava") }
+            assertEquals("Ava", viewModel.activeSearchQuery.value)
+
+            job.cancel()
+        }
+
+    @Test
+    fun `each typed query restarts the debounce window`() =
+        runTest {
+            val job = launch { viewModel.searchResults.collect() }
+            runCurrent()
 
             viewModel.onSearchQueryChanged("A")
+            runCurrent()
             advanceTimeBy(100)
             viewModel.onSearchQueryChanged("Av")
+            runCurrent()
             advanceTimeBy(100)
             viewModel.onSearchQueryChanged("Ava")
-            advanceTimeBy(600)
+            runCurrent()
+            advanceTimeBy(499)
 
-            coVerify { repository.searchMovies("Ava") }
+            coVerify(exactly = 0) { repository.searchMovies(any()) }
+            advanceTimeBy(1)
+            runCurrent()
+
+            coVerify(exactly = 1) { repository.searchMovies("Ava") }
             coVerify(exactly = 0) { repository.searchMovies("A") }
             coVerify(exactly = 0) { repository.searchMovies("Av") }
+            job.cancel()
+        }
 
-            viewModel.onSearchQueryChanged("   ")
-            advanceTimeBy(600)
-            coVerify(exactly = 0) { repository.searchMovies("") }
+    @Test
+    fun `queries that normalize to the same value launch one search`() =
+        runTest {
+            val job = launch { viewModel.searchResults.collect() }
+            runCurrent()
 
+            viewModel.onSearchQueryChanged("  Interstellar  ")
+            runCurrent()
+            advanceTimeBy(500)
+            runCurrent()
+            coVerify(exactly = 1) { repository.searchMovies("Interstellar") }
+
+            viewModel.onSearchQueryChanged("Interstellar")
+            runCurrent()
+            advanceTimeBy(500)
+            runCurrent()
+
+            assertEquals("Interstellar", viewModel.activeSearchQuery.value)
+            coVerify(exactly = 1) { repository.searchMovies("Interstellar") }
             job.cancel()
         }
 
@@ -82,10 +129,10 @@ class SearchViewModelTest {
             started.await()
 
             viewModel.onSearchQueryChanged("")
-            advanceTimeBy(600)
             runCurrent()
 
             assertTrue(cancelled.isCompleted)
+            assertEquals("", viewModel.activeSearchQuery.value)
             coVerify(exactly = 0) { repository.searchMovies("") }
             job.cancel()
         }

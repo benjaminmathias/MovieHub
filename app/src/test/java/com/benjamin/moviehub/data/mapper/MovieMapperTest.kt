@@ -34,19 +34,24 @@ class MovieMapperTest {
     }
 
     @Test
-    fun `toDomain from Entity should keep all status flags intact`() {
+    fun `entity mapping restores images, genres, and local flags`() {
         val domain =
             createFakeEntity(
                 isFavorite = true,
                 isWatchlist = true,
                 isWatched = true,
                 runtimeMinutes = 137,
-            ).toDomain()
+                genreIds = listOf(28, 18, 999),
+            ).toDomain(genreNames = mapOf(28 to "Action locale"))
 
         assertEquals(true, domain.isFavorite)
         assertEquals(true, domain.isWatchlist)
         assertEquals(true, domain.isWatched)
         assertEquals(137, domain.runtimeMinutes)
+        assertEquals("https://image.tmdb.org/t/p/w500/poster.jpg", domain.posterPath)
+        assertEquals("https://image.tmdb.org/t/p/w780/backdrop.jpg", domain.backdropPath)
+        assertEquals(listOf(28, 18, 999), domain.genreIds)
+        assertEquals(listOf("Action locale", "Drame"), domain.genres)
         assertEquals("https://www.themoviedb.org/movie/1", domain.webUrl)
     }
 
@@ -76,20 +81,22 @@ class MovieMapperTest {
     }
 
     @Test
-    fun `credits dto maps actors and the first director`() {
+    fun `credits keep the first fifteen actors and choose the first named director`() {
         val credits =
             MovieCreditsDto(
-                cast = listOf(ActorDto(7, "Name", "Role", "/profile.jpg")),
+                cast = (0..15).map { id -> ActorDto(id, "Actor $id", "Role $id", "/profile-$id.jpg") },
                 crew =
                     listOf(
+                        CrewMemberDto("  ", "Director"),
                         CrewMemberDto("Writer", "Writer"),
-                        CrewMemberDto("Director Name", "Director"),
+                        CrewMemberDto(" Director Name ", "Director"),
+                        CrewMemberDto("Later Director", "Director"),
                     ),
             )
 
         val result = credits.toDomain()
 
-        assertEquals(1, result.actors.size)
+        assertEquals((0..14).toList(), result.actors.map { it.id })
         assertEquals("Director Name", result.director)
     }
 
@@ -98,18 +105,20 @@ class MovieMapperTest {
         isWatchlist: Boolean = false,
         isWatched: Boolean = false,
         runtimeMinutes: Int? = null,
+        genreIds: List<Int> = emptyList(),
     ) = MovieEntity(
         id = 1,
         title = "Test Movie",
         overview = "Description",
-        posterPath = "",
-        backdropPath = "",
+        posterPath = "/poster.jpg",
+        backdropPath = "/backdrop.jpg",
         voteAverage = 7.5,
         releaseDate = "2024-01-01",
         isFavorite = isFavorite,
         isWatchlist = isWatchlist,
         isWatched = isWatched,
         runtimeMinutes = runtimeMinutes,
+        genreIds = genreIds,
     )
 
     private fun createFakeDto(posterPath: String? = null) =

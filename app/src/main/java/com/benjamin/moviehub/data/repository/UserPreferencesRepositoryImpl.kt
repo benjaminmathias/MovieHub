@@ -20,12 +20,16 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 private val themeKey = stringPreferencesKey("app_theme")
 
 class UserPreferencesRepositoryImpl
-    @Inject
-    constructor(
-        @param:ApplicationContext private val context: Context,
+    internal constructor(
+        private val dataStore: DataStore<Preferences>,
     ) : UserPreferencesRepository {
+        @Inject
+        constructor(
+            @ApplicationContext context: Context,
+        ) : this(context.dataStore)
+
         override val theme: Flow<AppTheme> =
-            context.dataStore.data
+            dataStore.data
                 .catch { exception ->
                     if (exception is IOException) emit(emptyPreferences()) else throw exception
                 }.map { preferences ->
@@ -34,6 +38,6 @@ class UserPreferencesRepositoryImpl
                 }
 
         override suspend fun setTheme(theme: AppTheme) {
-            context.dataStore.edit { preferences -> preferences[themeKey] = theme.name }
+            dataStore.edit { preferences -> preferences[themeKey] = theme.name }
         }
     }

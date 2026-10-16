@@ -1,10 +1,14 @@
 package com.benjamin.moviehub.ui.detail
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import com.benjamin.moviehub.R
 import com.benjamin.moviehub.TestStrings
@@ -21,15 +25,26 @@ class MovieDetailAccessibilityTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun favoriteActionUsesDynamicAccessibilityDescription() {
-        setDetailScreen(movie(isFavorite = true))
+    fun favoriteActionAccessibilityDescriptionTracksFavoriteState() {
+        var currentMovie by mutableStateOf(movie())
+        setDetailScreen(
+            movie = { currentMovie },
+            onToggleFavorite = { currentMovie = currentMovie.copy(isFavorite = !currentMovie.isFavorite) },
+        )
 
-        composeRule.onNodeWithContentDescription(TestStrings.get(R.string.remove_favorite)).assertHasClickAction()
+        val addFavorite = TestStrings.get(R.string.favorite)
+        val removeFavorite = TestStrings.get(R.string.remove_favorite)
+        composeRule.onNodeWithContentDescription(addFavorite).assertHasClickAction()
         composeRule.onNodeWithTag("detail_favorite").assertHeightIsAtLeast(48.dp)
+
+        composeRule.onNodeWithContentDescription(addFavorite).performClick()
+
+        composeRule.onNodeWithContentDescription(removeFavorite).assertHasClickAction()
+        composeRule.onNodeWithContentDescription(addFavorite).assertDoesNotExist()
     }
 
     private fun setDetailScreen(
-        movie: Movie,
+        movie: () -> Movie,
         onToggleFavorite: () -> Unit = {},
         onToggleWatchlist: () -> Unit = {},
         onToggleWatched: () -> Unit = {},
@@ -40,7 +55,7 @@ class MovieDetailAccessibilityTest {
                 MovieDetailScreen(
                     uiState =
                         MovieDetailUiState.Success(
-                            movie = movie,
+                            movie = movie(),
                             credits = MovieCreditsUiState.Success(MovieCredits()),
                             isLibraryActionPending = isLibraryActionPending,
                             libraryObservation = LibraryObservationUiState.Ready,

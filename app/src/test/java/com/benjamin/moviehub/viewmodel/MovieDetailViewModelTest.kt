@@ -11,6 +11,7 @@ import com.benjamin.moviehub.ui.detail.MovieCreditsErrorCode
 import com.benjamin.moviehub.ui.detail.MovieCreditsUiState
 import com.benjamin.moviehub.ui.detail.MovieDetailActionErrorCode
 import com.benjamin.moviehub.ui.detail.MovieDetailActionErrorState
+import com.benjamin.moviehub.ui.detail.MovieDetailErrorCode
 import com.benjamin.moviehub.ui.detail.MovieDetailUiState
 import com.benjamin.moviehub.ui.detail.MovieDetailViewModel
 import com.benjamin.moviehub.ui.detail.MovieRecommendationsErrorCode
@@ -85,6 +86,30 @@ class MovieDetailViewModelTest {
                 ),
                 viewModel.uiState.value,
             )
+        }
+
+    @Test
+    fun `failed main load can be retried for the same movie`() =
+        runTest {
+            var detailsCalls = 0
+            coEvery { repository.getMovieDetails(1) } coAnswers {
+                if (detailsCalls++ == 0) throw IllegalStateException("details unavailable")
+                movie
+            }
+            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
+            val viewModel = MovieDetailViewModel(repository, libraryRepository)
+
+            viewModel.loadMovieDetails(1)
+            advanceUntilIdle()
+
+            assertEquals(MovieDetailUiState.Error(MovieDetailErrorCode.LOAD_MOVIE), viewModel.uiState.value)
+
+            viewModel.loadMovieDetails(1)
+            advanceUntilIdle()
+
+            val recovered = viewModel.uiState.value as MovieDetailUiState.Success
+            assertEquals(movie, recovered.movie)
+            coVerify(exactly = 2) { repository.getMovieDetails(1) }
         }
 
     @Test
@@ -167,7 +192,7 @@ class MovieDetailViewModelTest {
         }
 
     @Test
-    fun `double toggle uses latest state and does not rollback newer transition`() =
+    fun `successful double toggle writes both transitions and returns to its starting state`() =
         runTest {
             coEvery { repository.getMovieDetails(1) } returns movie
             coEvery { repository.getMovieCredits(1) } returns MovieCredits()
@@ -183,6 +208,62 @@ class MovieDetailViewModelTest {
             assertTrue(!(viewModel.uiState.value as MovieDetailUiState.Success).movie.isFavorite)
             coVerify(exactly = 1) { libraryRepository.setLibraryFlag(movie, LibraryFlag.FAVORITE, true) }
             coVerify(exactly = 1) { libraryRepository.setLibraryFlag(movie.copy(isFavorite = true), LibraryFlag.FAVORITE, false) }
+        }
+
+    @Test
+    fun `queued newer toggle applies after a suspended library write fails`() =
+        runTest {
+            coEvery { repository.getMovieDetails(1) } returns movie
+            coEvery { repository.getMovieCredits(1) } returns MovieCredits()
+            val failedWriteGate = CompletableDeferred<Unit>()
+            val secondWriteGate = CompletableDeferred<Unit>()
+            val firstWriteStarted = CompletableDeferred<Unit>()
+            val secondWriteStarted = CompletableDeferred<Unit>()
+            var writeCount = 0
+            coEvery { libraryRepository.setLibraryFlag(movie, LibraryFlag.FAVORITE, true) } coAnswers {
+                if (writeCount++ == 0) {
+                    firstWriteStarted.complete(Unit)
+                    failedWriteGate.await()
+                    throw IllegalStateException("first write failed")
+                }
+                secondWriteStarted.complete(Unit)
+                secondWriteGate.await()
+            }
+            val viewModel = MovieDetailViewModel(repository, libraryRepository)
+            viewModel.loadMovieDetails(1)
+            advanceUntilIdle()
+
+            viewModel.toggleFavorite()
+            runCurrent()
+            assertTrue(firstWriteStarted.isCompleted)
+            viewModel.toggleFavorite()
+            runCurrent()
+
+            val firstPending = viewModel.uiState.value as MovieDetailUiState.Success
+            assertTrue(firstPending.movie.isFavorite)
+            assertTrue(firstPending.isLibraryActionPending)
+            assertFalse(secondWriteStarted.isCompleted)
+            coVerify(exactly = 1) { libraryRepository.setLibraryFlag(movie, LibraryFlag.FAVORITE, true) }
+
+            failedWriteGate.complete(Unit)
+            runCurrent()
+
+            val queuedPending = viewModel.uiState.value as MovieDetailUiState.Success
+            assertTrue(secondWriteStarted.isCompleted)
+            assertTrue(queuedPending.movie.isFavorite)
+            assertTrue(queuedPending.isLibraryActionPending)
+            assertEquals(
+                MovieDetailActionErrorState.Failure(MovieDetailActionErrorCode.UPDATE_LIBRARY),
+                viewModel.libraryActionError.value,
+            )
+            coVerify(exactly = 2) { libraryRepository.setLibraryFlag(movie, LibraryFlag.FAVORITE, true) }
+
+            secondWriteGate.complete(Unit)
+            advanceUntilIdle()
+
+            val finalState = viewModel.uiState.value as MovieDetailUiState.Success
+            assertTrue(finalState.movie.isFavorite)
+            assertFalse(finalState.isLibraryActionPending)
         }
 
     @Test
@@ -400,8 +481,9 @@ class MovieDetailViewModelTest {
             viewModel.loadMovieDetails(1)
             advanceUntilIdle()
 
-            val state = viewModel.uiState.value
-            assertTrue(state !is MovieDetailUiState.Error)
-            assertTrue((state as? MovieDetailUiState.Success)?.credits !is MovieCreditsUiState.Error)
+            val state = viewModel.uiState.value as MovieDetailUiState.Success
+            assertEquals(movie, state.movie)
+            assertFalse(state.credits is MovieCreditsUiState.Error)
+            assertFalse(state.recommendations is MovieRecommendationsUiState.Error)
         }
 }

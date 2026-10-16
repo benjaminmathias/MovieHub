@@ -49,6 +49,24 @@ class DiscoverViewModelTest {
         viewModel = DiscoverViewModel(repository, SavedStateHandle())
     }
 
+    private fun filtersHandle(
+        draft: DiscoverFilters,
+        applied: DiscoverFilters,
+    ) = SavedStateHandle(
+        mapOf(
+            "discover_draft_genre_id" to draft.genreId,
+            "discover_draft_release_year" to draft.releaseDecade,
+            "discover_draft_minimum_rating" to draft.minimumVoteAverage,
+            "discover_draft_sort" to draft.sort.name,
+            "discover_applied_genre_id" to applied.genreId,
+            "discover_applied_release_year" to applied.releaseDecade,
+            "discover_applied_minimum_rating" to applied.minimumVoteAverage,
+            "discover_applied_sort" to applied.sort.name,
+        ),
+    )
+
+    private fun copyHandle(handle: SavedStateHandle) = SavedStateHandle(handle.keys().associateWith { key -> handle.get<Any?>(key) })
+
     @Test
     fun `genres error is exposed and retry can recover`() =
         runTest {
@@ -182,6 +200,95 @@ class DiscoverViewModelTest {
                 ),
                 restored.uiState.value.appliedFilters,
             )
+        }
+
+    @Test
+    fun `begin filter editing restores persisted applied filters without requesting results`() =
+        runTest {
+            val appliedFilters =
+                DiscoverFilters(
+                    genreId = 28,
+                    releaseDecade = 2020,
+                    minimumVoteAverage = 8.0,
+                    sort = DiscoverSortOption.RELEASE_DATE,
+                )
+            val draftFilters =
+                DiscoverFilters(
+                    genreId = 18,
+                    releaseDecade = 2010,
+                    minimumVoteAverage = 6.0,
+                    sort = DiscoverSortOption.POPULARITY,
+                )
+            val handle = filtersHandle(draftFilters, appliedFilters)
+            val editing = DiscoverViewModel(repository, handle)
+            val resultsJob = launch { editing.discoverResults.collect() }
+            advanceUntilIdle()
+
+            verify(exactly = 1) { repository.getDiscoverMovies(appliedFilters) }
+            editing.beginFilterEditing()
+            advanceUntilIdle()
+            assertEquals(appliedFilters, editing.uiState.value.draftFilters)
+
+            val restored = DiscoverViewModel(repository, copyHandle(handle))
+            assertEquals(appliedFilters, restored.uiState.value.draftFilters)
+            assertEquals(appliedFilters, restored.uiState.value.appliedFilters)
+            verify(exactly = 1) { repository.getDiscoverMovies(appliedFilters) }
+            verify(exactly = 0) { repository.getDiscoverMovies(draftFilters) }
+            resultsJob.cancel()
+        }
+
+    @Test
+    fun `discard restores persisted applied filters without requesting results`() =
+        runTest {
+            val appliedFilters = DiscoverFilters(genreId = 28)
+            val editedFilters = DiscoverFilters(genreId = 18)
+            val handle = filtersHandle(appliedFilters, appliedFilters)
+            val editing = DiscoverViewModel(repository, handle)
+            val resultsJob = launch { editing.discoverResults.collect() }
+            advanceUntilIdle()
+
+            editing.onGenreSelected(editedFilters.genreId)
+            editing.discardFilterEdits()
+            advanceUntilIdle()
+
+            assertEquals(appliedFilters, editing.uiState.value.draftFilters)
+            val restored = DiscoverViewModel(repository, copyHandle(handle))
+            assertEquals(appliedFilters, restored.uiState.value.draftFilters)
+            assertEquals(appliedFilters, restored.uiState.value.appliedFilters)
+            verify(exactly = 1) { repository.getDiscoverMovies(appliedFilters) }
+            verify(exactly = 0) { repository.getDiscoverMovies(editedFilters) }
+            resultsJob.cancel()
+        }
+
+    @Test
+    fun `reset persists defaults for both filter sets and requests only default results`() =
+        runTest {
+            val appliedFilters = DiscoverFilters(genreId = 28)
+            val draftFilters = DiscoverFilters(genreId = 18)
+            val editedFilters = DiscoverFilters(genreId = 35)
+            val handle = filtersHandle(draftFilters, appliedFilters)
+            val editing = DiscoverViewModel(repository, handle)
+            val resultsJob = launch { editing.discoverResults.collect() }
+            advanceUntilIdle()
+
+            editing.onGenreSelected(editedFilters.genreId)
+            editing.resetFilters()
+            advanceUntilIdle()
+
+            assertEquals(DiscoverFilters(), editing.uiState.value.draftFilters)
+            assertEquals(DiscoverFilters(), editing.uiState.value.appliedFilters)
+            val restored = DiscoverViewModel(repository, copyHandle(handle))
+            assertEquals(DiscoverFilters(), restored.uiState.value.draftFilters)
+            assertEquals(DiscoverFilters(), restored.uiState.value.appliedFilters)
+            val restoredResultsJob = launch { restored.discoverResults.collect() }
+            advanceUntilIdle()
+
+            verify(exactly = 1) { repository.getDiscoverMovies(appliedFilters) }
+            verify(exactly = 2) { repository.getDiscoverMovies(DiscoverFilters()) }
+            verify(exactly = 0) { repository.getDiscoverMovies(draftFilters) }
+            verify(exactly = 0) { repository.getDiscoverMovies(editedFilters) }
+            resultsJob.cancel()
+            restoredResultsJob.cancel()
         }
 
     @Test

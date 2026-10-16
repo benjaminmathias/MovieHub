@@ -1,14 +1,19 @@
 package com.benjamin.moviehub.data.paging
 
+import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
+import androidx.paging.PagingState
+import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.remote.MovieApiService
 import com.benjamin.moviehub.data.remote.MovieDto
 import com.benjamin.moviehub.data.remote.MovieResponse
 import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
+import com.benjamin.moviehub.domain.model.Movie
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
@@ -66,6 +71,24 @@ class DiscoverMoviePagingSourceTest {
         }
 
     @Test
+    fun `cancellation is rethrown to the caller`() =
+        runTest {
+            val apiService = mockk<MovieApiService>()
+            val cancellation = CancellationException("cancelled")
+            coEvery { apiService.discoverMovies(any(), any(), any(), any(), any(), any(), any()) } throws cancellation
+
+            val thrown =
+                try {
+                    source(apiService).load(refreshParams())
+                    null
+                } catch (error: CancellationException) {
+                    error
+                }
+
+            assertSame(cancellation, thrown)
+        }
+
+    @Test
     fun `rating sort sends a minimum vote count, other sorts do not`() =
         runTest {
             val apiService = mockApi(MovieResponse(totalPages = 1))
@@ -77,6 +100,23 @@ class DiscoverMoviePagingSourceTest {
             coVerify { apiService.discoverMovies(null, null, null, null, 200, "vote_average.desc", 1) }
             coVerify { apiService.discoverMovies(null, null, null, null, null, "popularity.desc", 1) }
             coVerify { apiService.discoverMovies(null, null, null, null, null, "primary_release_date.desc", 1) }
+        }
+
+    @Test
+    fun `genre and minimum vote average are sent with the selected sort`() =
+        runTest {
+            val apiService = mockApi(MovieResponse(totalPages = 1))
+
+            source(
+                apiService,
+                DiscoverFilters(
+                    genreId = 28,
+                    minimumVoteAverage = 7.5,
+                    sort = DiscoverSortOption.RATING,
+                ),
+            ).load(refreshParams())
+
+            coVerify { apiService.discoverMovies(28, null, null, 7.5, 200, "vote_average.desc", 1) }
         }
 
     @Test
@@ -131,6 +171,58 @@ class DiscoverMoviePagingSourceTest {
             val shortApi = mockApi(MovieResponse(movies = listOf(movieDto(1)), totalPages = null))
             assertEquals(null, (source(shortApi).load(refreshParams()) as PagingSource.LoadResult.Page).nextKey)
         }
+
+    @Test
+    fun `refresh key follows the anchor and falls back to the next key on the first page`() {
+        val pagingSource = source(mockk())
+        val firstPage: PagingSource.LoadResult.Page<Int, Movie> =
+            PagingSource.LoadResult.Page(
+                data = (1..20).map { movieDto(it).toDomain() },
+                prevKey = null,
+                nextKey = 2,
+            )
+        val secondPage: PagingSource.LoadResult.Page<Int, Movie> =
+            PagingSource.LoadResult.Page(
+                data = (21..40).map { movieDto(it).toDomain() },
+                prevKey = 1,
+                nextKey = 3,
+            )
+        val config = PagingConfig(pageSize = 20)
+
+        assertEquals(
+            2,
+            pagingSource.getRefreshKey(
+                PagingState(
+                    pages = listOf(firstPage, secondPage),
+                    anchorPosition = 25,
+                    config = config,
+                    leadingPlaceholderCount = 0,
+                ),
+            ),
+        )
+        assertEquals(
+            1,
+            pagingSource.getRefreshKey(
+                PagingState(
+                    pages = listOf(firstPage),
+                    anchorPosition = 5,
+                    config = config,
+                    leadingPlaceholderCount = 0,
+                ),
+            ),
+        )
+        assertEquals(
+            null,
+            pagingSource.getRefreshKey(
+                PagingState(
+                    pages = listOf(firstPage),
+                    anchorPosition = null,
+                    config = config,
+                    leadingPlaceholderCount = 0,
+                ),
+            ),
+        )
+    }
 
     private fun source(
         apiService: MovieApiService,
