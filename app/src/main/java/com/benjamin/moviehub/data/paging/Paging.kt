@@ -71,16 +71,16 @@ internal abstract class OfflineRemoteMediator(
         loadType: LoadType,
         state: PagingState<Int, MovieEntity>,
     ): MediatorResult {
-        val page =
-            when (loadType) {
-                LoadType.REFRESH -> FIRST_PAGE
-                LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
-                LoadType.APPEND ->
-                    movieDao.getRemoteKey(remoteKeyType)?.nextKey
-                        ?: return MediatorResult.Success(endOfPaginationReached = true)
-            }
-
         return try {
+            val page =
+                when (loadType) {
+                    LoadType.REFRESH -> FIRST_PAGE
+                    LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
+                    LoadType.APPEND ->
+                        movieDao.getRemoteKey(remoteKeyType)?.nextKey
+                            ?: return MediatorResult.Success(endOfPaginationReached = true)
+                }
+
             val response = fetchPage(page)
             val movies = response.movies
             val endReached = response.isEndOfPagination(page, state.config.pageSize)
