@@ -3,7 +3,14 @@ package com.benjamin.moviehub.ui.library
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTouchInput
 import com.benjamin.moviehub.core.theme.MovieHubTheme
 import com.benjamin.moviehub.domain.model.Movie
@@ -86,6 +93,45 @@ class LibraryScreenTest {
         composeRule.waitUntil(timeoutMillis = 5_000) { removed.isNotEmpty() }
         composeRule.waitForIdle()
         assertEquals(listOf(watchlist), removed)
+    }
+
+    @Test
+    fun tabsKeepIndependentScrollPositionsAcrossEmptyTabAndRestoration() {
+        val restoration = StateRestorationTester(composeRule)
+        val movies =
+            (
+                (0..59).map { movie(it, "Watchlist $it", watchlist = true) } +
+                    (0..59).map { movie(100 + it, "Favorite $it", favorite = true) }
+            ).toImmutableList()
+        restoration.setContent {
+            MovieHubTheme {
+                LibraryScreen(
+                    state = LibraryUiState.Success(movies),
+                    onRemove = { _, _ -> },
+                    onMovieClick = {},
+                    onSettingsClick = {},
+                    onRetry = {},
+                    actionError = LibraryActionErrorState.None,
+                    onActionErrorAcknowledged = {},
+                )
+            }
+        }
+
+        composeRule.onNode(hasScrollAction()).performScrollToIndex(30)
+        composeRule.onNodeWithText("Watchlist 30").assertIsDisplayed()
+        composeRule.onNodeWithTag("library_tab_favorites").performClick()
+        composeRule.onNodeWithText("Favorite 0").assertIsDisplayed()
+        composeRule.onNode(hasScrollAction()).performScrollToIndex(20)
+        composeRule.onNodeWithText("Favorite 20").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("library_tab_watched").performClick()
+        composeRule.onNodeWithTag("library_tab_watchlist").performClick()
+        composeRule.onNodeWithText("Watchlist 30").assertIsDisplayed()
+
+        restoration.emulateSavedInstanceStateRestore()
+        composeRule.onNodeWithText("Watchlist 30").assertIsDisplayed()
+        composeRule.onNodeWithTag("library_tab_favorites").performClick()
+        composeRule.onNodeWithText("Favorite 20").assertIsDisplayed()
     }
 
     private fun swipeableItem(): SemanticsMatcher = SemanticsMatcher.keyIsDefined(SemanticsActions.CustomActions)

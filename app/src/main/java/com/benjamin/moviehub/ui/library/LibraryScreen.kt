@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Settings
@@ -23,6 +24,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -58,6 +60,7 @@ fun LibraryScreen(
     )
 
     var selected by rememberSaveable { mutableStateOf(LibraryTab.WATCHLIST) }
+    val listStates = LibraryTab.entries.associateWith { tab -> key(tab) { rememberLazyListState() } }
 
     Scaffold(
         topBar = {
@@ -98,7 +101,11 @@ fun LibraryScreen(
                             modifier = Modifier.weight(1f),
                         )
                     } else {
-                        LazyColumn(Modifier.weight(1f).fillMaxSize(), contentPadding = PaddingValues(vertical = 8.dp)) {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f).fillMaxSize(),
+                            state = listStates.getValue(selected),
+                            contentPadding = PaddingValues(vertical = 8.dp),
+                        ) {
                             items(movies, key = { it.id }) { movie ->
                                 LibraryMovieItem(
                                     movie = movie,
