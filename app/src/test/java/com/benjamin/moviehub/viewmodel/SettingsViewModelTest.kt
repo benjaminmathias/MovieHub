@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.viewmodel
 
+import android.util.Log
 import com.benjamin.moviehub.core.util.AppTheme
 import com.benjamin.moviehub.domain.repository.ImageCacheCleaner
 import com.benjamin.moviehub.domain.repository.UserPreferencesRepository
@@ -13,6 +14,9 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
+import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -22,6 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
@@ -38,7 +43,14 @@ class SettingsViewModelTest {
 
     @Before
     fun setUp() {
+        mockkStatic(Log::class)
+        every { Log.e(any(), any(), any<Throwable>()) } returns 0
         every { preferences.theme } returns theme
+    }
+
+    @After
+    fun tearDown() {
+        unmockkStatic(Log::class)
     }
 
     @Test
@@ -72,7 +84,8 @@ class SettingsViewModelTest {
     @Test
     fun `theme update failure remains pending until acknowledged`() =
         runTest {
-            coEvery { preferences.setTheme(AppTheme.DARK) } throws IllegalStateException("theme failure")
+            val failure = IllegalStateException("theme failure")
+            coEvery { preferences.setTheme(AppTheme.DARK) } throws failure
             val viewModel = SettingsViewModel(preferences, imageCacheCleaner)
 
             viewModel.updateTheme(AppTheme.DARK)
@@ -82,6 +95,8 @@ class SettingsViewModelTest {
                 SettingsActionErrorState.Failure(SettingsActionErrorCode.UPDATE_THEME),
                 viewModel.themeUpdateError.value,
             )
+
+            verify(exactly = 1) { Log.e("SettingsViewModel", "Failed to update theme", failure) }
 
             viewModel.acknowledgeThemeUpdateError()
             assertEquals(SettingsActionErrorState.None, viewModel.themeUpdateError.value)
@@ -97,12 +112,14 @@ class SettingsViewModelTest {
             advanceUntilIdle()
 
             assertEquals(SettingsActionErrorState.None, viewModel.themeUpdateError.value)
+            verify(exactly = 0) { Log.e(any(), any(), any<Throwable>()) }
         }
 
     @Test
     fun `clearing failure is a pending result distinguishable from success`() =
         runTest {
-            coEvery { imageCacheCleaner.clear() } throws IllegalStateException("cache failure")
+            val failure = IllegalStateException("cache failure")
+            coEvery { imageCacheCleaner.clear() } throws failure
             val viewModel = SettingsViewModel(preferences, imageCacheCleaner)
 
             viewModel.clearImageCache()
@@ -113,6 +130,7 @@ class SettingsViewModelTest {
                 viewModel.imageCacheResult.value,
             )
             assertEquals(false, viewModel.isClearing.value)
+            verify(exactly = 1) { Log.e("SettingsViewModel", "Failed to clear image cache", failure) }
         }
 
     @Test

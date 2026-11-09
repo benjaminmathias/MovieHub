@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.ui.detail
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benjamin.moviehub.domain.model.LibraryFlag
@@ -87,6 +88,7 @@ class MovieDetailViewModel
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
+                        Log.e("MovieDetailViewModel", "Failed to load movie details", e)
                         _uiState.value = MovieDetailUiState.Error(MovieDetailErrorCode.LOAD_MOVIE)
                     }
                 }
@@ -159,6 +161,7 @@ class MovieDetailViewModel
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
+                        Log.e("MovieDetailViewModel", "Failed to update library", e)
                         _libraryActionError.value =
                             MovieDetailActionErrorState.Failure(MovieDetailActionErrorCode.UPDATE_LIBRARY)
                         rollbackLibrary(previous.id, previous, flag, value)
@@ -180,7 +183,8 @@ class MovieDetailViewModel
                 MovieCreditsUiState.Success(repository.getMovieCredits(movieId))
             } catch (e: CancellationException) {
                 throw e
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.e("MovieDetailViewModel", "Failed to load credits", e)
                 MovieCreditsUiState.Error(MovieCreditsErrorCode.LOAD_CREDITS)
             }
 
@@ -193,7 +197,8 @@ class MovieDetailViewModel
                     ?: MovieRecommendationsUiState.Empty
             } catch (e: CancellationException) {
                 throw e
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.e("MovieDetailViewModel", "Failed to load recommendations", e)
                 MovieRecommendationsUiState.Error(MovieRecommendationsErrorCode.LOAD_RECOMMENDATIONS)
             }
 
@@ -218,7 +223,8 @@ class MovieDetailViewModel
                         }
                     } catch (e: CancellationException) {
                         throw e
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
+                        Log.e("MovieDetailViewModel", "Failed to observe library", e)
                         updateSuccess(movieId) {
                             it.copy(libraryObservation = LibraryObservationUiState.Error(LibraryObservationErrorCode.LOAD_LIBRARY))
                         }

@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.viewmodel
 
+import android.util.Log
 import com.benjamin.moviehub.domain.model.LibraryFlag
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCredits
@@ -21,6 +22,9 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
+import io.mockk.verify
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -31,6 +35,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -63,20 +68,29 @@ class MovieDetailViewModelTest {
 
     @Before
     fun setup() {
+        mockkStatic(Log::class)
+        every { Log.e(any(), any(), any<Throwable>()) } returns 0
         coEvery { repository.getMovieRecommendations(any()) } returns emptyList()
         every { libraryRepository.getLibraryMovies() } returns flowOf(emptyList())
+    }
+
+    @After
+    fun tearDown() {
+        unmockkStatic(Log::class)
     }
 
     @Test
     fun `details remain visible when casting is unavailable`() =
         runTest {
             coEvery { repository.getMovieDetails(1) } returns movie
-            coEvery { repository.getMovieCredits(1) } throws IllegalStateException()
+            val failure = IllegalStateException("credits unavailable")
+            coEvery { repository.getMovieCredits(1) } throws failure
             val viewModel = MovieDetailViewModel(repository, libraryRepository)
 
             viewModel.loadMovieDetails(1)
             advanceUntilIdle()
 
+            verify(exactly = 1) { Log.e("MovieDetailViewModel", "Failed to load credits", failure) }
             assertEquals(
                 MovieDetailUiState.Success(
                     movie = movie,
@@ -485,5 +499,6 @@ class MovieDetailViewModelTest {
             assertEquals(movie, state.movie)
             assertFalse(state.credits is MovieCreditsUiState.Error)
             assertFalse(state.recommendations is MovieRecommendationsUiState.Error)
+            verify(exactly = 0) { Log.e(any(), any(), any<Throwable>()) }
         }
 }

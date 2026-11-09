@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.ui.settings
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benjamin.moviehub.core.util.AppTheme
@@ -49,6 +50,7 @@ class SettingsViewModel
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
+                    Log.e("SettingsViewModel", "Failed to update theme", e)
                     _themeUpdateError.value = SettingsActionErrorState.Failure(SettingsActionErrorCode.UPDATE_THEME)
                 }
             }
@@ -65,7 +67,8 @@ class SettingsViewModel
                     _imageCacheResult.value = ImageCacheResult.Cleared
                 } catch (e: CancellationException) {
                     throw e
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    Log.e("SettingsViewModel", "Failed to clear image cache", e)
                     _imageCacheResult.value = ImageCacheResult.Failed(ImageCacheErrorCode.CLEAR_CACHE)
                 } finally {
                     _isClearing.value = false
