@@ -6,6 +6,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingState
 import androidx.paging.RemoteMediator
 import androidx.room.withTransaction
+import com.benjamin.moviehub.data.local.FeedDao
 import com.benjamin.moviehub.data.local.MovieCategoryEntity
 import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.local.MovieDatabase
@@ -53,7 +54,8 @@ internal val moviePagingConfig =
 internal abstract class OfflineRemoteMediator(
     private val database: MovieDatabase,
 ) : RemoteMediator<Int, MovieEntity>() {
-    protected val movieDao: MovieDao = database.movieDao()
+    private val movieDao: MovieDao = database.movieDao()
+    protected val feedDao: FeedDao = database.feedDao()
 
     protected abstract val remoteKeyType: String
 
@@ -77,7 +79,7 @@ internal abstract class OfflineRemoteMediator(
                     LoadType.REFRESH -> FIRST_PAGE
                     LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
                     LoadType.APPEND ->
-                        movieDao.getRemoteKey(remoteKeyType)?.nextKey
+                        feedDao.getRemoteKey(remoteKeyType)?.nextKey
                             ?: return MediatorResult.Success(endOfPaginationReached = true)
                 }
 
@@ -87,7 +89,7 @@ internal abstract class OfflineRemoteMediator(
 
             database.withTransaction {
                 if (loadType == LoadType.REFRESH) clearFeed(movies)
-                movieDao.upsertRemoteKey(
+                feedDao.upsertRemoteKey(
                     RemoteKey(
                         type = remoteKeyType,
                         nextKey = page.takeIf { !endReached }?.plus(1),
@@ -126,15 +128,15 @@ internal class MovieRemoteMediator(
     override suspend fun fetchPage(page: Int): MovieResponse = apiService.categoryMovies(category, page)
 
     override suspend fun clearFeed(fetched: List<MovieDto>) {
-        movieDao.clearRemoteKeysByType(remoteKeyType)
-        movieDao.clearCategoryMovies(remoteKeyType)
+        feedDao.clearRemoteKeysByType(remoteKeyType)
+        feedDao.clearCategoryMovies(remoteKeyType)
     }
 
     override suspend fun persistAssociations(
         movies: List<MovieDto>,
         offset: Int,
     ) {
-        movieDao.insertCategoryMovies(
+        feedDao.insertCategoryMovies(
             movies.mapIndexed { index, dto ->
                 MovieCategoryEntity(
                     movieId = dto.id,
@@ -158,20 +160,20 @@ internal class SearchMovieRemoteMediator(
     override suspend fun fetchPage(page: Int): MovieResponse = apiService.searchMovies(query = query, page = page)
 
     override suspend fun clearFeed(fetched: List<MovieDto>) {
-        val previousResultIds = movieDao.getSearchResultMovieIds(queryKey)
-        movieDao.clearSearchResults(queryKey)
-        movieDao.clearRemoteKeysByType(remoteKeyType)
+        val previousResultIds = feedDao.getSearchResultMovieIds(queryKey)
+        feedDao.clearSearchResults(queryKey)
+        feedDao.clearRemoteKeysByType(remoteKeyType)
         val preserveMovieIds = fetched.map { it.id }
         previousResultIds
             .chunked(SQL_VARIABLE_BATCH_SIZE)
-            .forEach { batch -> movieDao.deleteSearchOrphans(batch, preserveMovieIds) }
+            .forEach { batch -> feedDao.deleteSearchOrphans(batch, preserveMovieIds) }
     }
 
     override suspend fun persistAssociations(
         movies: List<MovieDto>,
         offset: Int,
     ) {
-        movieDao.insertSearchResults(
+        feedDao.insertSearchResults(
             movies.mapIndexed { index, dto ->
                 MovieSearchResultEntity(
                     queryKey = queryKey,

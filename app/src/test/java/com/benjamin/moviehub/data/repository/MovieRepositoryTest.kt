@@ -1,5 +1,7 @@
 package com.benjamin.moviehub.data.repository
 
+import com.benjamin.moviehub.data.local.FeedDao
+import com.benjamin.moviehub.data.local.GenreDao
 import com.benjamin.moviehub.data.local.GenreEntity
 import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.local.MovieDatabase
@@ -28,7 +30,9 @@ import java.io.IOException
 class MovieRepositoryTest {
     private val apiService = mockk<MovieApiService>()
     private val dao = mockk<MovieDao>()
-    private val repository = MovieRepositoryImpl(apiService, mockk<MovieDatabase>(), dao)
+    private val feedDao = mockk<FeedDao>()
+    private val genreDao = mockk<GenreDao>()
+    private val repository = MovieRepositoryImpl(apiService, mockk<MovieDatabase>(), dao, feedDao, genreDao)
 
     @Test
     fun `get movie details falls back to local movie when api fails`() =
@@ -47,7 +51,7 @@ class MovieRepositoryTest {
                 )
 
             coEvery { dao.getMovieById(9) } returns localMovie
-            coEvery { dao.getGenres() } returns emptyList()
+            coEvery { genreDao.getGenres() } returns emptyList()
             coEvery { apiService.getMovieDetails(9) } throws IOException("offline")
 
             val result = repository.getMovieDetails(9)
@@ -61,7 +65,7 @@ class MovieRepositoryTest {
         runTest {
             val detailToSave = slot<MovieEntity>()
 
-            coEvery { dao.getGenres() } returns listOf(GenreEntity(id = 18, name = "Drame"))
+            coEvery { genreDao.getGenres() } returns listOf(GenreEntity(id = 18, name = "Drame"))
             coEvery { apiService.getMovieDetails(9) } returns
                 MovieDto(
                     id = 9,
@@ -145,7 +149,7 @@ class MovieRepositoryTest {
                         isWatched = true,
                     ),
                 )
-            coEvery { dao.getGenres() } returns emptyList()
+            coEvery { genreDao.getGenres() } returns emptyList()
 
             val result = repository.getMovieRecommendations(9)
 
@@ -173,7 +177,7 @@ class MovieRepositoryTest {
             coEvery { apiService.getMovieRecommendations(1) } returns
                 MovieResponse(movies = listOf(dto, dto.copy(id = 10), dto.copy(title = "Duplicate")))
             coEvery { dao.getMoviesByIds(any()) } returns emptyList()
-            coEvery { dao.getGenres() } returns emptyList()
+            coEvery { genreDao.getGenres() } returns emptyList()
 
             val result = repository.getMovieRecommendations(1)
 
@@ -205,19 +209,19 @@ class MovieRepositoryTest {
                             GenreDto(id = 99, name = null),
                         ),
                 )
-            coEvery { dao.upsertGenres(expectedEntities) } returns Unit
+            coEvery { genreDao.upsertGenres(expectedEntities) } returns Unit
 
             val result = repository.getMovieGenres()
 
             assertEquals(expectedGenres, result)
-            coVerify(exactly = 1) { dao.upsertGenres(expectedEntities) }
+            coVerify(exactly = 1) { genreDao.upsertGenres(expectedEntities) }
         }
 
     @Test
     fun `get movie genres falls back to the cached dictionary on a recoverable failure`() =
         runTest {
             coEvery { apiService.getMovieGenres() } throws IOException("offline")
-            coEvery { dao.getGenres() } returns
+            coEvery { genreDao.getGenres() } returns
                 listOf(
                     GenreEntity(id = 18, name = "Drame"),
                     GenreEntity(id = 28, name = "Action"),
@@ -229,7 +233,7 @@ class MovieRepositoryTest {
                 listOf(MovieGenre(id = 18, name = "Drame"), MovieGenre(id = 28, name = "Action")),
                 result,
             )
-            coVerify(exactly = 0) { dao.upsertGenres(any()) }
+            coVerify(exactly = 0) { genreDao.upsertGenres(any()) }
         }
 
     @Test
@@ -237,7 +241,7 @@ class MovieRepositoryTest {
         runTest {
             coEvery { apiService.getMovieGenres() } throws
                 HttpException(Response.error<Any>(503, "".toResponseBody()))
-            coEvery { dao.getGenres() } returns listOf(GenreEntity(id = 28, name = "Action"))
+            coEvery { genreDao.getGenres() } returns listOf(GenreEntity(id = 28, name = "Action"))
 
             val result = repository.getMovieGenres()
 
@@ -249,7 +253,7 @@ class MovieRepositoryTest {
         runTest {
             val failure = IOException("offline")
             coEvery { apiService.getMovieGenres() } throws failure
-            coEvery { dao.getGenres() } returns emptyList()
+            coEvery { genreDao.getGenres() } returns emptyList()
 
             val thrown =
                 try {
@@ -277,7 +281,7 @@ class MovieRepositoryTest {
                 }
 
             assertSame(failure, thrown)
-            coVerify(exactly = 0) { dao.getGenres() }
+            coVerify(exactly = 0) { genreDao.getGenres() }
         }
 
     @Test
@@ -295,6 +299,6 @@ class MovieRepositoryTest {
                 }
 
             assertSame(failure, thrown)
-            coVerify(exactly = 0) { dao.getGenres() }
+            coVerify(exactly = 0) { genreDao.getGenres() }
         }
 }

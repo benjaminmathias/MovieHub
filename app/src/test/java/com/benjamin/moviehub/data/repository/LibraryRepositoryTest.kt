@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.data.repository
 
+import com.benjamin.moviehub.data.local.GenreDao
 import com.benjamin.moviehub.data.local.GenreEntity
 import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.local.MovieEntity
@@ -43,6 +44,7 @@ class LibraryRepositoryTest {
     fun `library maps local genres and flags and emits removal`() =
         runTest {
             val dao = mockk<MovieDao>()
+            val genreDao = mockk<GenreDao>()
             val localMovie =
                 MovieEntity(
                     id = 9,
@@ -58,9 +60,9 @@ class LibraryRepositoryTest {
                     runtimeMinutes = 120,
                 )
             every { dao.getLibraryMoviesFlow() } returns flowOf(listOf(localMovie), emptyList())
-            coEvery { dao.getGenres() } returns listOf(GenreEntity(id = 18, name = "Drame"))
+            coEvery { genreDao.getGenres() } returns listOf(GenreEntity(id = 18, name = "Drame"))
 
-            val snapshots = LibraryRepositoryImpl(dao).getLibraryMovies().toList()
+            val snapshots = LibraryRepositoryImpl(dao, genreDao).getLibraryMovies().toList()
             val movie = snapshots.first().single()
 
             assertEquals(listOf("Drame"), movie.genres)
@@ -75,8 +77,9 @@ class LibraryRepositoryTest {
     fun `set flag writes relative image paths and keeps toggleFavorite working`() =
         runTest {
             val dao = mockk<MovieDao>()
+            val genreDao = mockk<GenreDao>()
             val entitySlot = slot<MovieEntity>()
-            val repository = LibraryRepositoryImpl(dao)
+            val repository = LibraryRepositoryImpl(dao, genreDao)
             val movie = baseMovie.copy(isFavorite = false, isWatchlist = false)
 
             coEvery { dao.setLibraryFlag(capture(entitySlot), LibraryFlag.FAVORITE, true) } just runs
@@ -97,6 +100,7 @@ class LibraryRepositoryTest {
     fun `set flag delegates typed commands with the mapped movie unchanged`() =
         runTest {
             val dao = mockk<MovieDao>()
+            val genreDao = mockk<GenreDao>()
             val receivedCommands = mutableListOf<Triple<MovieEntity, LibraryFlag, Boolean>>()
             val commands =
                 listOf(
@@ -110,7 +114,7 @@ class LibraryRepositoryTest {
             coEvery { dao.setLibraryFlag(any(), any(), any()) } coAnswers {
                 receivedCommands += Triple(firstArg(), secondArg(), thirdArg())
             }
-            val repository = LibraryRepositoryImpl(dao)
+            val repository = LibraryRepositoryImpl(dao, genreDao)
 
             commands.forEach { (flag, value) -> repository.setLibraryFlag(baseMovie, flag, value) }
 

@@ -47,7 +47,8 @@ class DiscoverFavoritePagingTest {
 
             val api = FakeMovieApiService()
             val differ = newMovieDiffer()
-            val viewModel = DiscoverViewModel(MovieRepositoryImpl(api, database, dao), SavedStateHandle())
+            val repository = MovieRepositoryImpl(api, database, dao, database.feedDao(), database.genreDao())
+            val viewModel = DiscoverViewModel(repository, SavedStateHandle())
             val job =
                 launch(Dispatchers.Main) {
                     viewModel.discoverResults.collectLatest { differ.submitData(it) }

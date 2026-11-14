@@ -30,7 +30,7 @@ class MovieDaoTest {
     @Test
     fun remoteKey_isStoredIndependentlyPerFeed() =
         runBlocking {
-            val dao = database.movieDao()
+            val dao = database.feedDao()
 
             dao.upsertRemoteKey(RemoteKey(MovieCategory.POPULAR.key, nextKey = 2))
             dao.upsertRemoteKey(RemoteKey(MovieCategory.UPCOMING.key, nextKey = null))
