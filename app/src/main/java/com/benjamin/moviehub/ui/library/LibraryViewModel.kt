@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.ui.library
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benjamin.moviehub.domain.model.Movie
@@ -60,7 +61,8 @@ class LibraryViewModel
                     repository.setLibraryFlag(movie, tab.flag, false)
                 } catch (e: CancellationException) {
                     throw e
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    Log.e("LibraryViewModel", "Failed to remove movie from library", e)
                     _actionError.value = LibraryActionErrorState.Failure(LibraryActionErrorCode.REMOVE_MOVIE)
                 }
             }

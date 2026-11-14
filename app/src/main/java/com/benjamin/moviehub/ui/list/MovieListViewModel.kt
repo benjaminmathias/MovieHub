@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.ui.list
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
@@ -76,6 +77,7 @@ class MovieListViewModel
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
+                    Log.e("MovieListViewModel", "Failed to toggle favorite", e)
                     _favoriteActionError.value =
                         FavoriteActionErrorState.Failure(FavoriteActionErrorCode.UPDATE_FAVORITE)
                 }

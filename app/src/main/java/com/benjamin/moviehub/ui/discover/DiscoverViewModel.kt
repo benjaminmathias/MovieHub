@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.ui.discover
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -148,6 +149,7 @@ class DiscoverViewModel
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
+                        Log.e("DiscoverViewModel", "Failed to load genres", e)
                         _uiState.update {
                             it.copy(genres = DiscoverGenresUiState.Error(DiscoverErrorCode.LOAD_GENRES))
                         }

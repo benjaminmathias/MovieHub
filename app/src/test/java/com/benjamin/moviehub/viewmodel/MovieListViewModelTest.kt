@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.viewmodel
 
+import android.util.Log
 import androidx.paging.PagingData
 import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.model.MovieCategory
@@ -13,7 +14,10 @@ import com.benjamin.moviehub.ui.list.MovieListViewModel
 import com.benjamin.moviehub.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
@@ -22,6 +26,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
@@ -39,9 +44,16 @@ class MovieListViewModelTest {
 
     @Before
     fun setup() {
+        mockkStatic(Log::class)
+        every { Log.e(any(), any(), any<Throwable>()) } returns 0
         coEvery { repository.getCategoryMovies(any()) } returns flowOf(PagingData.empty())
         coEvery { repository.getHeroMovie(any()) } returns flowOf(null)
         viewModel = MovieListViewModel(repository, libraryRepository)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkStatic(Log::class)
     }
 
     @Test
