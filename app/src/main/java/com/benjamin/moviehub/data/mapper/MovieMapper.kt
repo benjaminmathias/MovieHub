@@ -98,7 +98,14 @@ fun ActorDto.toDomain(): Actor = Actor(id, name.orEmpty(), character.orEmpty(), 
 
 fun MovieCreditsDto.toDomain(): MovieCredits =
     MovieCredits(
-        actors = cast.take(15).map { it.toDomain() }.toImmutableList(),
+        // TMDB lists one cast entry per role, so an actor with several roles repeats an id
+        // that the credits row uses as its lazy item key.
+        actors =
+            cast
+                .distinctBy { it.id }
+                .take(15)
+                .map { it.toDomain() }
+                .toImmutableList(),
         director =
             crew.firstOrNull { it.job == "Director" && !it.name.isNullOrBlank() }?.name?.trim(),
     )

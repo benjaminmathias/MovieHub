@@ -168,6 +168,31 @@ class MovieRepositoryTest {
         }
 
     @Test
+    fun `get movie recommendations drops repeated movie ids`() =
+        runTest {
+            val apiService = mockk<MovieApiService>()
+            val dao = mockk<MovieDao>()
+            val repository = MovieRepositoryImpl(apiService, mockk(), dao)
+            val dto =
+                MovieDto(
+                    id = 9,
+                    title = "Recommended",
+                    posterPath = null,
+                    backdropPath = null,
+                    voteAverage = 7.5,
+                )
+            coEvery { apiService.getMovieRecommendations(1) } returns
+                MovieResponse(movies = listOf(dto, dto.copy(id = 10), dto.copy(title = "Duplicate")))
+            coEvery { dao.getMoviesByIds(any()) } returns emptyList()
+            coEvery { dao.getGenres() } returns emptyList()
+
+            val result = repository.getMovieRecommendations(1)
+
+            assertEquals(listOf(9, 10), result.map { it.id })
+            assertEquals("Recommended", result.first().title)
+        }
+
+    @Test
     fun `get movie genres trims usable names and persists only those genres`() =
         runTest {
             val apiService = mockk<MovieApiService>()

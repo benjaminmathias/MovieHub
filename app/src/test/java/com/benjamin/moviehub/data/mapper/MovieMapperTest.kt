@@ -100,6 +100,24 @@ class MovieMapperTest {
         assertEquals("Director Name", result.director)
     }
 
+    @Test
+    fun `credits keep one entry per actor when an actor plays several roles`() {
+        val credits =
+            MovieCreditsDto(
+                cast =
+                    listOf(
+                        ActorDto(1, "Actor", "First role", null),
+                        ActorDto(2, "Other", "Role", null),
+                        ActorDto(1, "Actor", "Second role", null),
+                    ),
+            )
+
+        val result = credits.toDomain()
+
+        assertEquals(listOf(1, 2), result.actors.map { it.id })
+        assertEquals("First role", result.actors.first().character)
+    }
+
     private fun createFakeEntity(
         isFavorite: Boolean = false,
         isWatchlist: Boolean = false,

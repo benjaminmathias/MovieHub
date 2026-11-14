@@ -122,7 +122,8 @@ class MovieRepositoryImpl
         override suspend fun getMovieCredits(movieId: Int) = apiService.getMovieCredits(movieId).toDomain()
 
         override suspend fun getMovieRecommendations(movieId: Int): List<Movie> {
-            val dtos = apiService.getMovieRecommendations(movieId).movies
+            // Recommendations are keyed by movie id in the detail row.
+            val dtos = apiService.getMovieRecommendations(movieId).movies.distinctBy { it.id }
             val localById = movieDao.getMoviesByIds(dtos.map { it.id }).associateBy { it.id }
             val names = genreNameMap()
             return dtos.map { dto -> dto.toDomain(names).withLocalFlags(localById[dto.id]) }
