@@ -10,12 +10,11 @@ import com.benjamin.moviehub.ui.settings.SettingsActionErrorCode
 import com.benjamin.moviehub.ui.settings.SettingsActionErrorState
 import com.benjamin.moviehub.ui.settings.SettingsViewModel
 import com.benjamin.moviehub.util.MainDispatcherRule
+import com.benjamin.moviehub.util.MockLogRule
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -26,7 +25,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
@@ -37,20 +35,16 @@ class SettingsViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
+    @get:Rule
+    val mockLogRule = MockLogRule()
+
     private val preferences: UserPreferencesRepository = mockk()
     private val imageCacheCleaner: ImageCacheCleaner = mockk()
     private val theme = MutableStateFlow(AppTheme.SYSTEM)
 
     @Before
     fun setUp() {
-        mockkStatic(Log::class)
-        every { Log.e(any(), any(), any<Throwable>()) } returns 0
         every { preferences.theme } returns theme
-    }
-
-    @After
-    fun tearDown() {
-        unmockkStatic(Log::class)
     }
 
     @Test

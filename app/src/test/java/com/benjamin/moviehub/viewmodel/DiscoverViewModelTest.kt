@@ -1,6 +1,5 @@
 package com.benjamin.moviehub.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.paging.PagingData
 import com.benjamin.moviehub.domain.model.DiscoverFilters
@@ -11,11 +10,10 @@ import com.benjamin.moviehub.ui.discover.DiscoverErrorCode
 import com.benjamin.moviehub.ui.discover.DiscoverGenresUiState
 import com.benjamin.moviehub.ui.discover.DiscoverViewModel
 import com.benjamin.moviehub.util.MainDispatcherRule
+import com.benjamin.moviehub.util.MockLogRule
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CompletableDeferred
@@ -27,7 +25,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -41,23 +38,19 @@ class DiscoverViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
+    @get:Rule
+    val mockLogRule = MockLogRule()
+
     private val repository: MovieRepository = mockk()
     private lateinit var viewModel: DiscoverViewModel
 
     @Before
     fun setup() {
-        mockkStatic(Log::class)
-        every { Log.e(any(), any(), any<Throwable>()) } returns 0
         every { repository.getDiscoverMovies(any()) } returns flowOf(PagingData.empty())
         coEvery {
             repository.getMovieGenres()
         } returns listOf(MovieGenre(id = 28, name = "Action"), MovieGenre(id = 18, name = "Drame"))
         viewModel = DiscoverViewModel(repository, SavedStateHandle())
-    }
-
-    @After
-    fun tearDown() {
-        unmockkStatic(Log::class)
     }
 
     private fun filtersHandle(

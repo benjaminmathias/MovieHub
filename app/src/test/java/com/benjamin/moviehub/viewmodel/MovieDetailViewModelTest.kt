@@ -18,12 +18,11 @@ import com.benjamin.moviehub.ui.detail.MovieDetailViewModel
 import com.benjamin.moviehub.ui.detail.MovieRecommendationsErrorCode
 import com.benjamin.moviehub.ui.detail.MovieRecommendationsUiState
 import com.benjamin.moviehub.util.MainDispatcherRule
+import com.benjamin.moviehub.util.MockLogRule
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CancellationException
@@ -35,7 +34,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -47,6 +45,9 @@ import org.junit.Test
 class MovieDetailViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @get:Rule
+    val mockLogRule = MockLogRule()
 
     private val repository: MovieRepository = mockk()
     private val libraryRepository: LibraryRepository = mockk()
@@ -68,15 +69,8 @@ class MovieDetailViewModelTest {
 
     @Before
     fun setup() {
-        mockkStatic(Log::class)
-        every { Log.e(any(), any(), any<Throwable>()) } returns 0
         coEvery { repository.getMovieRecommendations(any()) } returns emptyList()
         every { libraryRepository.getLibraryMovies() } returns flowOf(emptyList())
-    }
-
-    @After
-    fun tearDown() {
-        unmockkStatic(Log::class)
     }
 
     @Test

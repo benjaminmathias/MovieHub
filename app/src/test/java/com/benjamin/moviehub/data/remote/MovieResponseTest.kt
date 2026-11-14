@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.data.remote
 
+import com.benjamin.moviehub.util.testMovieDto
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -38,9 +39,7 @@ class MovieResponseTest {
         movies: List<MovieDto> = emptyList(),
     ) = MovieResponse(movies = movies, totalPages = totalPages)
 
-    private fun fullPage(): List<MovieDto> = List(pageSize) { movie(it) }
+    private fun fullPage(): List<MovieDto> = List(pageSize) { testMovieDto(it) }
 
-    private fun shortPage(): List<MovieDto> = listOf(movie(1))
-
-    private fun movie(id: Int) = MovieDto(id = id, posterPath = null, backdropPath = null, voteAverage = 0.0)
+    private fun shortPage(): List<MovieDto> = listOf(testMovieDto(1))
 }

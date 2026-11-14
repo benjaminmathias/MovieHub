@@ -1,8 +1,6 @@
 package com.benjamin.moviehub.viewmodel
 
-import android.util.Log
 import com.benjamin.moviehub.domain.model.LibraryFlag
-import com.benjamin.moviehub.domain.model.Movie
 import com.benjamin.moviehub.domain.repository.LibraryRepository
 import com.benjamin.moviehub.ui.library.LibraryActionErrorCode
 import com.benjamin.moviehub.ui.library.LibraryActionErrorState
@@ -10,12 +8,12 @@ import com.benjamin.moviehub.ui.library.LibraryTab
 import com.benjamin.moviehub.ui.library.LibraryUiState
 import com.benjamin.moviehub.ui.library.LibraryViewModel
 import com.benjamin.moviehub.util.MainDispatcherRule
+import com.benjamin.moviehub.util.MockLogRule
+import com.benjamin.moviehub.util.testMovie
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,10 +23,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
@@ -37,27 +33,19 @@ class LibraryViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
+    @get:Rule
+    val mockLogRule = MockLogRule()
+
     private val repository: LibraryRepository = mockk()
-
-    @Before
-    fun setUp() {
-        mockkStatic(Log::class)
-        every { Log.e(any(), any(), any<Throwable>()) } returns 0
-    }
-
-    @After
-    fun tearDown() {
-        unmockkStatic(Log::class)
-    }
 
     @Test
     fun `copy with new movies recomputes tabs and leaves the original state unchanged`() {
         val original =
             LibraryUiState.Success(
-                persistentListOf(movie(1, favorite = true), movie(2, watchlist = true)),
+                persistentListOf(testMovie(1, favorite = true), testMovie(2, watchlist = true)),
             )
 
-        val updated = original.copy(movies = persistentListOf(movie(3, watched = true)))
+        val updated = original.copy(movies = persistentListOf(testMovie(3, watched = true)))
 
         assertEquals(listOf(3), updated.moviesByTab.getValue(LibraryTab.WATCHED).map { it.id })
         assertTrue(updated.moviesByTab.getValue(LibraryTab.FAVORITES).isEmpty())
@@ -71,7 +59,7 @@ class LibraryViewModelTest {
     @Test
     fun `library emits all flagged movies reactively`() =
         runTest {
-            val source = MutableStateFlow(listOf(movie(1, favorite = true, watchlist = true), movie(2, watchlist = true)))
+            val source = MutableStateFlow(listOf(testMovie(1, favorite = true, watchlist = true), testMovie(2, watchlist = true)))
             every { repository.getLibraryMovies() } returns source
             val viewModel = LibraryViewModel(repository)
             val job = launch { viewModel.uiState.collect {} }
@@ -83,7 +71,7 @@ class LibraryViewModelTest {
             assertEquals(listOf(1), initialState.moviesByTab.getValue(LibraryTab.FAVORITES).map { it.id })
             assertTrue(initialState.moviesByTab.getValue(LibraryTab.WATCHED).isEmpty())
 
-            source.value = listOf(movie(3, watched = true))
+            source.value = listOf(testMovie(3, watched = true))
             advanceUntilIdle()
             val updatedState = viewModel.uiState.value as LibraryUiState.Success
             assertEquals(listOf(3), updatedState.movies.map { it.id })
@@ -98,7 +86,7 @@ class LibraryViewModelTest {
             every { repository.getLibraryMovies() } returns MutableStateFlow(emptyList())
             coEvery { repository.setLibraryFlag(any(), any(), any()) } returns Unit
             val viewModel = LibraryViewModel(repository)
-            val target = movie(1, favorite = true, watchlist = true, watched = true)
+            val target = testMovie(1, favorite = true, watchlist = true, watched = true)
 
             viewModel.onRemove(target, LibraryTab.WATCHLIST)
             viewModel.onRemove(target, LibraryTab.FAVORITES)
@@ -115,7 +103,7 @@ class LibraryViewModelTest {
         runTest {
             var shouldFail = true
             every { repository.getLibraryMovies() } answers {
-                if (shouldFail) flow { throw IllegalStateException("offline") } else flowOf(listOf(movie(1, favorite = true)))
+                if (shouldFail) flow { throw IllegalStateException("offline") } else flowOf(listOf(testMovie(1, favorite = true)))
             }
             val viewModel = LibraryViewModel(repository)
             val job = launch { viewModel.uiState.collect {} }
@@ -137,7 +125,7 @@ class LibraryViewModelTest {
             every { repository.getLibraryMovies() } returns MutableStateFlow(emptyList())
             coEvery { repository.setLibraryFlag(any(), any(), any()) } throws IllegalStateException("offline")
             val viewModel = LibraryViewModel(repository)
-            val target = movie(1, watchlist = true)
+            val target = testMovie(1, watchlist = true)
 
             viewModel.onRemove(target, LibraryTab.WATCHLIST)
             advanceUntilIdle()
@@ -157,25 +145,4 @@ class LibraryViewModelTest {
             viewModel.acknowledgeActionError()
             assertEquals(LibraryActionErrorState.None, viewModel.actionError.value)
         }
-
-    private fun movie(
-        id: Int,
-        favorite: Boolean = false,
-        watchlist: Boolean = false,
-        watched: Boolean = false,
-    ) = Movie(
-        id = id,
-        title = "Movie $id",
-        overview = "",
-        posterPath = null,
-        backdropPath = null,
-        voteAverage = 0.0,
-        releaseDate = "",
-        webUrl = null,
-        isFavorite = favorite,
-        isWatchlist = watchlist,
-        isWatched = watched,
-        genreIds = persistentListOf(),
-        genres = persistentListOf(),
-    )
 }

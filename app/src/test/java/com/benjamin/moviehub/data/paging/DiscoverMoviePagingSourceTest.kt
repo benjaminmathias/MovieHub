@@ -5,11 +5,11 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.remote.MovieApiService
-import com.benjamin.moviehub.data.remote.MovieDto
 import com.benjamin.moviehub.data.remote.MovieResponse
 import com.benjamin.moviehub.domain.model.DiscoverFilters
 import com.benjamin.moviehub.domain.model.DiscoverSortOption
 import com.benjamin.moviehub.domain.model.Movie
+import com.benjamin.moviehub.util.testMovieDto
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -26,7 +26,7 @@ class DiscoverMoviePagingSourceTest {
     @Test
     fun `refresh without a key requests the first page`() =
         runTest {
-            val apiService = mockApi(MovieResponse(movies = listOf(movieDto(1)), totalPages = 1))
+            val apiService = mockApi(MovieResponse(movies = listOf(testMovieDto(1)), totalPages = 1))
 
             val result = source(apiService).load(refreshParams()) as PagingSource.LoadResult.Page
 
@@ -37,17 +37,17 @@ class DiscoverMoviePagingSourceTest {
     @Test
     fun `a non terminal page requests the next one and the last page ends pagination`() =
         runTest {
-            val middleApi = mockApi(MovieResponse(movies = listOf(movieDto(1)), totalPages = 3))
+            val middleApi = mockApi(MovieResponse(movies = listOf(testMovieDto(1)), totalPages = 3))
             assertEquals(2, (source(middleApi).load(appendParams(key = 1)) as PagingSource.LoadResult.Page).nextKey)
 
-            val lastApi = mockApi(MovieResponse(movies = listOf(movieDto(3)), totalPages = 3))
+            val lastApi = mockApi(MovieResponse(movies = listOf(testMovieDto(3)), totalPages = 3))
             assertEquals(null, (source(lastApi).load(appendParams(key = 3)) as PagingSource.LoadResult.Page).nextKey)
         }
 
     @Test
     fun `duplicate ids across pages are dropped to keep grid keys unique`() =
         runTest {
-            val apiService = mockApi(MovieResponse(movies = listOf(movieDto(1), movieDto(2)), totalPages = 3))
+            val apiService = mockApi(MovieResponse(movies = listOf(testMovieDto(1), testMovieDto(2)), totalPages = 3))
             val pagingSource = source(apiService)
 
             val first = pagingSource.load(refreshParams()) as PagingSource.LoadResult.Page
@@ -145,7 +145,7 @@ class DiscoverMoviePagingSourceTest {
     @Test
     fun `page 499 below an explicit larger total still appends`() =
         runTest {
-            val apiService = mockApi(MovieResponse(movies = listOf(movieDto(499)), totalPages = 1000))
+            val apiService = mockApi(MovieResponse(movies = listOf(testMovieDto(499)), totalPages = 1000))
 
             val page = source(apiService).load(appendParams(key = 499)) as PagingSource.LoadResult.Page
 
@@ -155,7 +155,7 @@ class DiscoverMoviePagingSourceTest {
     @Test
     fun `page 500 ends pagination even when the reported total exceeds the cap`() =
         runTest {
-            val apiService = mockApi(MovieResponse(movies = listOf(movieDto(500)), totalPages = 1000))
+            val apiService = mockApi(MovieResponse(movies = listOf(testMovieDto(500)), totalPages = 1000))
 
             val page = source(apiService).load(appendParams(key = 500)) as PagingSource.LoadResult.Page
 
@@ -165,10 +165,10 @@ class DiscoverMoviePagingSourceTest {
     @Test
     fun `an omitted total keeps a full page open and ends a short page`() =
         runTest {
-            val fullApi = mockApi(MovieResponse(movies = List(20) { movieDto(it) }, totalPages = null))
+            val fullApi = mockApi(MovieResponse(movies = List(20) { testMovieDto(it) }, totalPages = null))
             assertEquals(2, (source(fullApi).load(refreshParams()) as PagingSource.LoadResult.Page).nextKey)
 
-            val shortApi = mockApi(MovieResponse(movies = listOf(movieDto(1)), totalPages = null))
+            val shortApi = mockApi(MovieResponse(movies = listOf(testMovieDto(1)), totalPages = null))
             assertEquals(null, (source(shortApi).load(refreshParams()) as PagingSource.LoadResult.Page).nextKey)
         }
 
@@ -177,13 +177,13 @@ class DiscoverMoviePagingSourceTest {
         val pagingSource = source(mockk())
         val firstPage: PagingSource.LoadResult.Page<Int, Movie> =
             PagingSource.LoadResult.Page(
-                data = (1..20).map { movieDto(it).toDomain() },
+                data = (1..20).map { testMovieDto(it).toDomain() },
                 prevKey = null,
                 nextKey = 2,
             )
         val secondPage: PagingSource.LoadResult.Page<Int, Movie> =
             PagingSource.LoadResult.Page(
-                data = (21..40).map { movieDto(it).toDomain() },
+                data = (21..40).map { testMovieDto(it).toDomain() },
                 prevKey = 1,
                 nextKey = 3,
             )
@@ -238,13 +238,4 @@ class DiscoverMoviePagingSourceTest {
     private fun refreshParams() = PagingSource.LoadParams.Refresh<Int>(null, 20, false)
 
     private fun appendParams(key: Int) = PagingSource.LoadParams.Append(key, 20, false)
-
-    private fun movieDto(id: Int) =
-        MovieDto(
-            id = id,
-            title = "Film $id",
-            posterPath = null,
-            backdropPath = null,
-            voteAverage = 7.0,
-        )
 }
