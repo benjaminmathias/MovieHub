@@ -32,18 +32,7 @@ abstract class MovieDao {
     open suspend fun upsertMovies(movies: List<MovieEntity>) {
         if (movies.isEmpty()) return
         val localById = getMoviesByIds(movies.map { it.id }).associateBy { it.id }
-        upsertMoviesRaw(
-            movies.map { incoming ->
-                val local = localById[incoming.id]
-                val watched = local?.isWatched ?: incoming.isWatched
-                incoming.copy(
-                    isFavorite = local?.isFavorite ?: incoming.isFavorite,
-                    isWatchlist = (local?.isWatchlist ?: incoming.isWatchlist) && !watched,
-                    isWatched = watched,
-                    runtimeMinutes = incoming.runtimeMinutes ?: local?.runtimeMinutes,
-                )
-            },
-        )
+        upsertMoviesRaw(movies.map { incoming -> incoming.mergedWithLocal(localById[incoming.id]) })
     }
 
     @Transaction
@@ -58,8 +47,7 @@ abstract class MovieDao {
 
     /**
      * Updates one library flag, inserting the movie first when it is not cached.
-     * Setting watchlist or watched true clears the other; setting one false keeps
-     * the other flag unchanged.
+     * The persisted row, not the caller's copy, is the base of the update.
      */
     @Transaction
     open suspend fun setLibraryFlag(
@@ -67,35 +55,20 @@ abstract class MovieDao {
         flag: LibraryFlag,
         value: Boolean,
     ) {
-        if (getMovieById(movie.id) == null) {
-            val initialMovie =
-                when (flag) {
-                    LibraryFlag.FAVORITE -> movie.copy(isFavorite = value)
-                    LibraryFlag.WATCHLIST -> movie.copy(isWatchlist = value, isWatched = movie.isWatched && !value)
-                    LibraryFlag.WATCHED -> movie.copy(isWatchlist = movie.isWatchlist && !value, isWatched = value)
-                }
-            insertMovie(initialMovie)
+        val current = getMovieById(movie.id)
+        if (current == null) {
+            insertMovie(movie.withLibraryFlag(flag, value))
             return
         }
-
-        when (flag) {
-            LibraryFlag.FAVORITE -> updateLocalFlags(movie.id, isFavorite = value, isWatchlist = null, isWatched = null)
-            LibraryFlag.WATCHLIST ->
-                updateLocalFlags(movie.id, isFavorite = null, isWatchlist = value, isWatched = if (value) false else null)
-            LibraryFlag.WATCHED ->
-                updateLocalFlags(movie.id, isFavorite = null, isWatchlist = if (value) false else null, isWatched = value)
-        }
+        val updated = current.withLibraryFlag(flag, value)
+        updateLibraryFlags(movie.id, updated.isFavorite, updated.isWatchlist, updated.isWatched)
     }
 
     /** Toggle against the persisted value so rapid taps cannot reuse a stale UI flag. */
     @Transaction
     open suspend fun toggleFavorite(movie: MovieEntity) {
-        val current = getMovieById(movie.id)
-        if (current == null) {
-            insertMovie(movie.copy(isFavorite = true))
-        } else {
-            updateLocalFlags(movie.id, !current.isFavorite, null, null)
-        }
+        val isFavorite = getMovieById(movie.id)?.isFavorite ?: false
+        setLibraryFlag(movie, LibraryFlag.FAVORITE, !isFavorite)
     }
 
     // endregion
@@ -108,18 +81,12 @@ abstract class MovieDao {
     @Upsert
     protected abstract suspend fun upsertMoviesRaw(movies: List<MovieEntity>)
 
-    @Query(
-        """UPDATE movies SET
-            isFavorite = COALESCE(:isFavorite, isFavorite),
-            isWatchlist = COALESCE(:isWatchlist, isWatchlist),
-            isWatched = COALESCE(:isWatched, isWatched)
-            WHERE id = :movieId""",
-    )
-    protected abstract suspend fun updateLocalFlags(
+    @Query("UPDATE movies SET isFavorite = :isFavorite, isWatchlist = :isWatchlist, isWatched = :isWatched WHERE id = :movieId")
+    protected abstract suspend fun updateLibraryFlags(
         movieId: Int,
-        isFavorite: Boolean?,
-        isWatchlist: Boolean?,
-        isWatched: Boolean?,
+        isFavorite: Boolean,
+        isWatchlist: Boolean,
+        isWatched: Boolean,
     )
 
     // endregion
