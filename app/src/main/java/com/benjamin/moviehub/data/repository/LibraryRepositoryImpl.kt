@@ -1,5 +1,6 @@
 package com.benjamin.moviehub.data.repository
 
+import com.benjamin.moviehub.data.local.GenreDao
 import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.mapper.toDomain
 import com.benjamin.moviehub.data.mapper.toEntity
@@ -14,6 +15,7 @@ class LibraryRepositoryImpl
     @Inject
     constructor(
         private val movieDao: MovieDao,
+        private val genreDao: GenreDao,
     ) : LibraryRepository {
         override suspend fun setLibraryFlag(
             movie: Movie,
@@ -25,7 +27,7 @@ class LibraryRepositoryImpl
 
         override fun getLibraryMovies(): Flow<List<Movie>> =
             movieDao.getLibraryMoviesFlow().map { entities ->
-                val names = movieDao.getGenres().associate { it.id to it.name }
+                val names = genreDao.getGenres().associate { it.id to it.name }
                 entities.map { it.toDomain(names) }
             }
     }

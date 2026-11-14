@@ -52,7 +52,7 @@ class PagingRefreshErrorTest {
 
     @Test
     fun failedMediatorRefreshKeepsCachedRowsAndRetryLoadsFreshRows() {
-        val repository = MovieRepositoryImpl(api, database, database.movieDao())
+        val repository = MovieRepositoryImpl(api, database, database.movieDao(), database.feedDao(), database.genreDao())
         var items: LazyPagingItems<Movie>? = null
 
         composeRule.setContent {

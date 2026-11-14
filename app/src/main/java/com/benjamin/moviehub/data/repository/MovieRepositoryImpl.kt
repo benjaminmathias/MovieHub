@@ -7,6 +7,8 @@ import androidx.paging.PagingSource
 import androidx.paging.RemoteMediator
 import androidx.paging.cachedIn
 import androidx.paging.map
+import com.benjamin.moviehub.data.local.FeedDao
+import com.benjamin.moviehub.data.local.GenreDao
 import com.benjamin.moviehub.data.local.GenreEntity
 import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.local.MovieDatabase
@@ -44,17 +46,19 @@ class MovieRepositoryImpl
         private val apiService: MovieApiService,
         private val database: MovieDatabase,
         private val movieDao: MovieDao,
+        private val feedDao: FeedDao,
+        private val genreDao: GenreDao,
     ) : MovieRepository {
         override fun getCategoryMovies(category: MovieCategory): Flow<PagingData<Movie>> =
             offlineFeed(
                 mediator = MovieRemoteMediator(apiService, database, category),
-                sourceFactory = { movieDao.getCategoryMoviesPaging(category.key) },
+                sourceFactory = { feedDao.getCategoryMoviesPaging(category.key) },
             )
 
         override fun searchMovies(query: String): Flow<PagingData<Movie>> =
             offlineFeed(
                 mediator = SearchMovieRemoteMediator(apiService, database, query),
-                sourceFactory = { movieDao.searchMoviesPaging(SearchQueryKey.normalize(query)) },
+                sourceFactory = { feedDao.searchMoviesPaging(SearchQueryKey.normalize(query)) },
             )
 
         override fun getDiscoverMovies(filters: DiscoverFilters): Flow<PagingData<Movie>> =
@@ -81,7 +85,7 @@ class MovieRepositoryImpl
                         .getMovieGenres()
                         .genres
                         .mapNotNull { genre -> genre.validName()?.let { name -> MovieGenre(id = genre.id, name = name) } }
-                movieDao.upsertGenres(genres.map { GenreEntity(id = it.id, name = it.name) })
+                genreDao.upsertGenres(genres.map { GenreEntity(id = it.id, name = it.name) })
                 genres
             } catch (e: CancellationException) {
                 throw e
@@ -91,7 +95,7 @@ class MovieRepositoryImpl
                 // the persisted dictionary when it still yields at least one usable name,
                 // otherwise surface the original failure.
                 val cached =
-                    movieDao
+                    genreDao
                         .getGenres()
                         .mapNotNull { entity ->
                             entity.name
@@ -103,7 +107,7 @@ class MovieRepositoryImpl
             }
 
         override fun getHeroMovie(category: MovieCategory): Flow<Movie?> =
-            movieDao.getHeroMovieFlow(category.key).map { entity -> entity?.toDomain(genreNameMap()) }
+            feedDao.getHeroMovieFlow(category.key).map { entity -> entity?.toDomain(genreNameMap()) }
 
         override suspend fun getMovieDetails(movieId: Int): Movie {
             val names = genreNameMap()
@@ -145,7 +149,7 @@ class MovieRepositoryImpl
                 pagingData.map { entity -> entity.toDomain(names) }
             }
 
-        private suspend fun genreNameMap(): Map<Int, String> = movieDao.getGenres().toNameMap()
+        private suspend fun genreNameMap(): Map<Int, String> = genreDao.getGenres().toNameMap()
 
         private fun Exception.isRecoverable(): Boolean =
             when (this) {

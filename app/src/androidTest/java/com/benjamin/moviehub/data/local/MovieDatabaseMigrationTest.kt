@@ -49,11 +49,11 @@ class MovieDatabaseMigrationTest {
                 assertEquals(120, favorite?.runtimeMinutes)
 
                 // Legacy popular order is preserved in the association table.
-                assertEquals(listOf(3, 1), dao.getCategoryMovieIds("POPULAR"))
-                assertEquals(2, dao.getRemoteKey("POPULAR")?.nextKey)
+                assertEquals(listOf(3, 1), database.feedDao().getCategoryMovieIds("POPULAR"))
+                assertEquals(2, database.feedDao().getRemoteKey("POPULAR")?.nextKey)
 
                 // Existing search associations survive the movies table rebuild.
-                assertEquals(listOf(1), dao.getSearchResultMovieIds("matrix"))
+                assertEquals(listOf(1), database.feedDao().getSearchResultMovieIds("matrix"))
             } finally {
                 database.close()
             }
@@ -76,9 +76,9 @@ class MovieDatabaseMigrationTest {
                 // The legacy column never existed, so runtime stays null rather than being invented.
                 assertEquals(null, favorite?.runtimeMinutes)
 
-                assertEquals(listOf(3, 1), dao.getCategoryMovieIds("POPULAR"))
-                assertEquals(2, dao.getRemoteKey("POPULAR")?.nextKey)
-                assertEquals(listOf(1), dao.getSearchResultMovieIds("matrix"))
+                assertEquals(listOf(3, 1), database.feedDao().getCategoryMovieIds("POPULAR"))
+                assertEquals(2, database.feedDao().getRemoteKey("POPULAR")?.nextKey)
+                assertEquals(listOf(1), database.feedDao().getSearchResultMovieIds("matrix"))
             } finally {
                 database.close()
             }
@@ -94,9 +94,9 @@ class MovieDatabaseMigrationTest {
                 val dao = database.movieDao()
 
                 // A feed that reached its last page (NULL nextKey) stays exhausted.
-                assertEquals(null, dao.getRemoteKey("POPULAR")?.nextKey)
+                assertEquals(null, database.feedDao().getRemoteKey("POPULAR")?.nextKey)
                 // A partially loaded feed keeps its next page.
-                assertEquals(4, dao.getRemoteKey("UPCOMING")?.nextKey)
+                assertEquals(4, database.feedDao().getRemoteKey("UPCOMING")?.nextKey)
                 assertEquals("Kept", dao.getMovieById(1)?.title)
                 assertTrue(dao.getMovieById(1)?.isFavorite == true)
                 assertEquals(false, dao.getMovieById(1)?.isWatchlist)

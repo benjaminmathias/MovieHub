@@ -86,7 +86,7 @@ class ColdStartCategoryPagingTest {
             val job = collectCategory(MovieCategory.UPCOMING, api, differ)
             awaitRequest { api.upcomingPagesRequested.isNotEmpty() }
             // The failed refresh must not clear the cached rows.
-            assertEquals(listOf(500), database.movieDao().getCategoryMovieIds(MovieCategory.UPCOMING.key))
+            assertEquals(listOf(500), database.feedDao().getCategoryMovieIds(MovieCategory.UPCOMING.key))
             val items = differ.awaitItems()
             job.cancel()
 
@@ -99,7 +99,7 @@ class ColdStartCategoryPagingTest {
         differ: AsyncPagingDataDiffer<Movie>,
     ): Job =
         launch(Dispatchers.Main) {
-            MovieRepositoryImpl(api, database, database.movieDao())
+            MovieRepositoryImpl(api, database, database.movieDao(), database.feedDao(), database.genreDao())
                 .getCategoryMovies(category)
                 .collect { differ.submitData(it) }
         }
@@ -107,10 +107,10 @@ class ColdStartCategoryPagingTest {
     private suspend fun seedCachedUpcoming() {
         val dao = database.movieDao()
         dao.upsertMovies(listOf(movieEntity(id = 500, title = "Cached Upcoming")))
-        dao.insertCategoryMovies(
+        database.feedDao().insertCategoryMovies(
             listOf(MovieCategoryEntity(movieId = 500, category = MovieCategory.UPCOMING.key, pageOrder = 0)),
         )
-        dao.upsertRemoteKey(RemoteKey(type = MovieCategory.UPCOMING.key, nextKey = null))
+        database.feedDao().upsertRemoteKey(RemoteKey(type = MovieCategory.UPCOMING.key, nextKey = null))
     }
 
     private suspend fun awaitRequest(condition: () -> Boolean) {

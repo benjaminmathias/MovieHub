@@ -2,6 +2,8 @@ package com.benjamin.moviehub.di
 
 import android.content.Context
 import androidx.room.Room
+import com.benjamin.moviehub.data.local.FeedDao
+import com.benjamin.moviehub.data.local.GenreDao
 import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.local.MovieDatabase
 import dagger.Module
@@ -27,4 +29,12 @@ object FakeDatabaseModule {
     @Provides
     @Singleton
     fun provideMovieDao(database: MovieDatabase): MovieDao = database.movieDao()
+
+    @Provides
+    @Singleton
+    fun provideFeedDao(database: MovieDatabase): FeedDao = database.feedDao()
+
+    @Provides
+    @Singleton
+    fun provideGenreDao(database: MovieDatabase): GenreDao = database.genreDao()
 }

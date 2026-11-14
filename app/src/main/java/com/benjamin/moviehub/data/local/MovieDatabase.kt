@@ -18,4 +18,8 @@ import androidx.room.TypeConverters
 @TypeConverters(Converters::class)
 abstract class MovieDatabase : RoomDatabase() {
     abstract fun movieDao(): MovieDao
+
+    abstract fun feedDao(): FeedDao
+
+    abstract fun genreDao(): GenreDao
 }

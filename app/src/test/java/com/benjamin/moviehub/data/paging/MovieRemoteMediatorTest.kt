@@ -4,6 +4,7 @@ import androidx.paging.ExperimentalPagingApi
 import androidx.paging.LoadType
 import androidx.paging.PagingState
 import androidx.paging.RemoteMediator
+import com.benjamin.moviehub.data.local.FeedDao
 import com.benjamin.moviehub.data.local.MovieDao
 import com.benjamin.moviehub.data.local.MovieDatabase
 import com.benjamin.moviehub.data.local.MovieEntity
@@ -22,11 +23,13 @@ import org.junit.Test
 @OptIn(ExperimentalPagingApi::class)
 class MovieRemoteMediatorTest {
     private val dao = mockk<MovieDao>()
+    private val feedDao = mockk<FeedDao>()
     private val database = mockk<MovieDatabase>()
     private val api = mockk<MovieApiService>()
 
     private fun mediator(): MovieRemoteMediator {
         every { database.movieDao() } returns dao
+        every { database.feedDao() } returns feedDao
         return MovieRemoteMediator(api, database, MovieCategory.POPULAR)
     }
 
@@ -36,7 +39,7 @@ class MovieRemoteMediatorTest {
     fun `append key read failure becomes a retryable paging error`() =
         runTest {
             val failure = IllegalStateException("key read failed")
-            coEvery { dao.getRemoteKey(MovieCategory.POPULAR.key) } throws failure
+            coEvery { feedDao.getRemoteKey(MovieCategory.POPULAR.key) } throws failure
 
             val result = mediator().load(LoadType.APPEND, state())
 
@@ -49,7 +52,7 @@ class MovieRemoteMediatorTest {
     fun `append key read cancellation is rethrown`() =
         runTest {
             val cancellation = CancellationException("cancelled")
-            coEvery { dao.getRemoteKey(MovieCategory.POPULAR.key) } throws cancellation
+            coEvery { feedDao.getRemoteKey(MovieCategory.POPULAR.key) } throws cancellation
 
             val thrown =
                 try {
@@ -65,7 +68,7 @@ class MovieRemoteMediatorTest {
     @Test
     fun `append without a remote key ends pagination without a network request`() =
         runTest {
-            coEvery { dao.getRemoteKey(MovieCategory.POPULAR.key) } returns null
+            coEvery { feedDao.getRemoteKey(MovieCategory.POPULAR.key) } returns null
 
             val result = mediator().load(LoadType.APPEND, state())
 
