@@ -40,11 +40,13 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            val appTheme by userPreferencesRepository.theme.collectAsStateWithLifecycle(AppTheme.SYSTEM)
+            // Null until DataStore answers: composing with a SYSTEM fallback would flash the
+            // wrong palette for a forced light or dark choice. The window background covers it.
+            val appTheme by userPreferencesRepository.theme.collectAsStateWithLifecycle<AppTheme?>(null)
             val connectivityFlow = remember(connectivityObserver) { connectivityObserver.observe() }
             val networkStatus by
                 connectivityFlow.collectAsStateWithLifecycle(ConnectivityStatus.UNKNOWN)
-            val useDarkTheme = appTheme.isDark(isSystemInDarkTheme())
+            val useDarkTheme = appTheme?.isDark(isSystemInDarkTheme()) ?: return@setContent
 
             MovieHubTheme(darkTheme = useDarkTheme) {
                 SideEffect {
